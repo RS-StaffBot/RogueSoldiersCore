@@ -1,0 +1,29 @@
+{
+    "name": "rogue-soldiers-core",
+    "version": "0.1.0",
+    "description": "The central framework powering the Rogue Soldiers Clan ecosystem.",
+    "author": "RubbaDuckie",
+    "private": true,
+    "license": "UNLICENSED",
+    "main": "src/index.js",
+    "type": "commonjs",
+    "scripts": {
+        "start": "node src/index.js",
+        "dev": "nodemon src/index.js",
+        "lint": "eslint .",
+        "test": "echo \"No tests yet\""
+    },
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "dependencies": {
+        "discord.js": "^14.27.0",
+        "dotenv": "^17.4.2",
+        "uuid": "^14.0.1",
+        "winston": "^3.19.0"
+    },
+    "devDependencies": {
+        "eslint": "^10.7.0",
+        "nodemon": "^3.1.14"
+    }
+}
