@@ -6,12 +6,12 @@ require("dotenv").config();
 class ConfigurationManager {
 
     constructor() {
-
         this.config = {};
-
     }
 
     load() {
+
+        this.config = {};
 
         const configRoot = path.join(process.cwd(), "config");
 
@@ -34,11 +34,8 @@ class ConfigurationManager {
             const fullPath = path.join(directory, entry.name);
 
             if (entry.isDirectory()) {
-
                 this.loadDirectory(fullPath);
-
                 continue;
-
             }
 
             if (!entry.name.endsWith(".json")) {
@@ -50,12 +47,26 @@ class ConfigurationManager {
                 fullPath
             );
 
-            const key = relative
-                .replace(/\\/g, ".")
-                .replace(/\//g, ".")
-                .replace(".json", "");
+            const keys = relative
+                .replace(/\\/g, "/")
+                .replace(".json", "")
+                .split("/");
 
-            this.config[key] = JSON.parse(
+            let current = this.config;
+
+            while (keys.length > 1) {
+
+                const key = keys.shift();
+
+                if (!current[key]) {
+                    current[key] = {};
+                }
+
+                current = current[key];
+
+            }
+
+            current[keys[0]] = JSON.parse(
                 fs.readFileSync(fullPath, "utf8")
             );
 
@@ -65,17 +76,17 @@ class ConfigurationManager {
 
     get(pathString, defaultValue = null) {
 
-        const parts = pathString.split(".");
+        const keys = pathString.split(".");
 
         let current = this.config;
 
-        for (const part of parts) {
+        for (const key of keys) {
 
-            if (!(part in current)) {
+            if (current == null || !(key in current)) {
                 return defaultValue;
             }
 
-            current = current[part];
+            current = current[key];
 
         }
 
@@ -84,9 +95,7 @@ class ConfigurationManager {
     }
 
     getEnv(key, defaultValue = null) {
-
         return process.env[key] ?? defaultValue;
-
     }
 
 }
