@@ -1,8 +1,12 @@
+const PingCommand = require("./PingCommand");
+
 class CommandLoader {
 
     load() {
 
-        return [];
+        return [
+            new PingCommand()
+        ];
 
     }
 
