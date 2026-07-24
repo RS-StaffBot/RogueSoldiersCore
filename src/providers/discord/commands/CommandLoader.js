@@ -1,3 +1,4 @@
+const HelpCommand = require("./HelpCommand");
 const PingCommand = require("./PingCommand");
 
 class CommandLoader {
@@ -5,6 +6,7 @@ class CommandLoader {
     load() {
 
         return [
+            new HelpCommand(),
             new PingCommand()
         ];
 
