@@ -4,43 +4,44 @@
 
 ## Current Version
 
-v0.2.1
+v0.3.0
 
 ---
 
 ## Current Milestone
 
-v0.3.0 — Discord Command Framework
+v0.4.0 — Moderation Module
 
 ---
 
 ## Current Objective
 
-Build a reusable Discord slash command framework.
+Build the first reusable moderation features for the Rogue Soldiers Discord server.
 
-The framework should support automatic command registration and provide a scalable foundation for all future commands.
+The Moderation Module should use the Discord Command Framework while keeping moderation business logic inside Modules and Discord platform integration inside the Discord Provider.
 
 ---
 
 ## Last Completed Milestone
 
-v0.2.1 — Framework Architecture Stabilization
+v0.3.0 — Discord Command Framework
 
 Completed:
 
-- Framework lifecycle
-- Provider system
-- Module system
-- Discord Provider
-- Shared layer
-- Documentation
-- Coding standards
+- Base Command
+- Command Loader
+- Command Registry
+- Interaction Handler
+- Slash Command Registration
+- Automatic command registration
+- Working `/ping` command
+- Working `/help` command
+- No architectural changes required
 
 ---
 
 ## Next Milestones
 
-- v0.3.0 Discord Command Framework
 - v0.4.0 Moderation
 - v0.5.0 Economy
 - v0.6.0 Tickets
@@ -57,6 +58,8 @@ None
 ---
 
 ## Notes
+
+The Discord Command Framework is operational and provides the reusable foundation for future Discord commands.
 
 This document should always reflect the current state of development.
 

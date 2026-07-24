@@ -4,10 +4,10 @@
 
 # Current Status
 
-**Current Version:** v0.2.1
+**Current Version:** v0.3.0
 
 **Current Milestone:**
-➡️ v0.3.0 – Discord Command Framework
+➡️ v0.4.0 — Moderation Module
 
 ---
 
@@ -50,15 +50,15 @@ Completed
 
 ---
 
-## 🚧 v0.3.0 — Discord Command Framework
+## ✅ v0.3.0 — Discord Command Framework
 
-In Progress
+Completed
 
 Goal:
 
 Build a reusable slash command framework.
 
-Planned Features
+Completed Features
 
 - Command Registry
 - Command Loader
@@ -66,20 +66,21 @@ Planned Features
 - Slash Command Registration
 - Base Command
 - Utility Commands
-    - /ping
-    - /help
+    - `/ping`
+    - `/help`
 
 Completion Criteria
 
 - Slash commands automatically register
-- /ping functions correctly
+- `/ping` functions correctly
+- `/help` functions correctly
 - Framework requires no architectural changes
 
 ---
 
-## ⏳ v0.4.0 — Moderation Module
+## 🚧 v0.4.0 — Moderation Module
 
-Planned
+In Progress
 
 Features
 
