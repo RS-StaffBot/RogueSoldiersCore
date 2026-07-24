@@ -3,15 +3,13 @@ const Logger = require("../../core/Logger");
 
 const {
     Client,
-    GatewayIntentBits,
-    Collection,
-    REST,
-    Routes
+    GatewayIntentBits
 } = require("discord.js");
 
 const CommandLoader = require("./commands/CommandLoader");
-const CommandRegistry = require("./services/CommandRegistry");
 const InteractionHandler = require("./handlers/InteractionHandler");
+const CommandRegistrar = require("./services/CommandRegistrar");
+const CommandRegistry = require("./services/CommandRegistry");
 
 class DiscordProvider extends BaseProvider {
 
@@ -20,7 +18,6 @@ class DiscordProvider extends BaseProvider {
         super("Discord");
 
         this.client = null;
-        this.commands = new Collection();
 
     }
 
@@ -50,7 +47,20 @@ class DiscordProvider extends BaseProvider {
             );
             Logger.info("");
 
-            await this.registerSlashCommands();
+            try {
+
+                await CommandRegistrar.register({
+                    applicationId: process.env.DISCORD_CLIENT_ID,
+                    token: process.env.DISCORD_TOKEN
+                });
+
+            } catch (error) {
+
+                Logger.error(
+                    "Discord command registration did not complete."
+                );
+
+            }
 
         });
 
@@ -81,19 +91,11 @@ class DiscordProvider extends BaseProvider {
     loadCommands() {
 
         CommandRegistry.clear();
-        this.commands.clear();
 
         const commands = CommandLoader.load();
 
         for (const command of commands) {
-
             CommandRegistry.register(command);
-
-            this.commands.set(
-                command.data.name,
-                command
-            );
-
         }
 
         Logger.info(
@@ -102,63 +104,13 @@ class DiscordProvider extends BaseProvider {
 
     }
 
-    async registerSlashCommands() {
-
-        const token = process.env.DISCORD_TOKEN;
-        const clientId = process.env.DISCORD_CLIENT_ID;
-
-        if (!clientId) {
-
-            Logger.error(
-                "DISCORD_CLIENT_ID is missing from the .env file."
-            );
-
-            return;
-
-        }
-
-        const rest = new REST({
-            version: "10"
-        }).setToken(token);
-
-        const commandData = [];
-
-        for (const command of this.commands.values()) {
-            commandData.push(command.data.toJSON());
-        }
-
-        try {
-
-            Logger.info("Registering slash commands...");
-
-            await rest.put(
-                Routes.applicationCommands(clientId),
-                {
-                    body: commandData
-                }
-            );
-
-            Logger.info("Slash commands registered.");
-
-        } catch (error) {
-
-            Logger.error(
-                "Failed to register slash commands."
-            );
-
-            Logger.error(
-                error.stack || error.message
-            );
-
-        }
-
-    }
-
     stop() {
 
         if (this.client) {
+
             this.client.destroy();
             this.client = null;
+
         }
 
         super.stop();
