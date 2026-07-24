@@ -1,7 +1,7 @@
 const { SlashCommandBuilder } = require("discord.js");
 
 const BaseCommand = require("./BaseCommand");
-const CommandRegistry = require("./CommandRegistry");
+const CommandRegistry = require("../services/CommandRegistry");
 
 class HelpCommand extends BaseCommand {
 
@@ -20,7 +20,7 @@ class HelpCommand extends BaseCommand {
     async execute(interaction) {
 
         const commands = CommandRegistry
-            .list()
+            .getAll()
             .sort((firstCommand, secondCommand) => {
 
                 return firstCommand.data.name.localeCompare(
@@ -42,10 +42,8 @@ class HelpCommand extends BaseCommand {
         ].join("\n");
 
         await interaction.reply({
-
             content: response,
             ephemeral: true
-
         });
 
     }
