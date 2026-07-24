@@ -1,7 +1,10 @@
 const BaseProvider = require("../core/BaseProvider");
 const Logger = require("../../core/Logger");
 
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
+
+const CommandLoader = require("./commands/CommandLoader");
+const CommandRegistry = require("./commands/CommandRegistry");
 
 class DiscordProvider extends BaseProvider {
 
@@ -10,6 +13,8 @@ class DiscordProvider extends BaseProvider {
         super("Discord");
 
         this.client = null;
+
+        this.commands = new Collection();
 
     }
 
@@ -25,6 +30,8 @@ class DiscordProvider extends BaseProvider {
 
         });
 
+        this.loadCommands();
+
         this.client.once("clientReady", () => {
 
             Logger.info("");
@@ -34,6 +41,31 @@ class DiscordProvider extends BaseProvider {
             Logger.info(`Logged in as ${this.client.user.tag}`);
             Logger.info(`Connected to ${this.client.guilds.cache.size} server(s).`);
             Logger.info("");
+
+        });
+
+        this.client.on("interactionCreate", async interaction => {
+
+            if (!interaction.isChatInputCommand()) {
+                return;
+            }
+
+            const command = this.commands.get(interaction.commandName);
+
+            if (!command) {
+                return;
+            }
+
+            try {
+
+                await command.execute(interaction);
+
+            } catch (error) {
+
+                Logger.error(`Command '${interaction.commandName}' failed.`);
+                Logger.error(error);
+
+            }
 
         });
 
@@ -53,6 +85,22 @@ class DiscordProvider extends BaseProvider {
             Logger.error(error.message);
 
         });
+
+    }
+
+    loadCommands() {
+
+        const commands = CommandLoader.load();
+
+        for (const command of commands) {
+
+            CommandRegistry.register(command);
+
+            this.commands.set(command.data.name, command);
+
+        }
+
+        Logger.info(`Loaded ${this.commands.size} Discord command(s).`);
 
     }
 
