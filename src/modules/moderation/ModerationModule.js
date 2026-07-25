@@ -82,12 +82,14 @@ class ModerationModule extends BaseModule {
         this.auditRecords.push(record);
 
         Logger.info(
-            "[MODERATION AUDIT] " +
-            `Action=${record.action} ` +
-            `Guild=${record.guildId} ` +
-            `Moderator=${record.moderatorId} ` +
-            `Target=${record.targetId || "none"} ` +
-            `Reason=${record.reason}`
+            [
+                "[MODERATION AUDIT]",
+                `Action=${record.action}`,
+                `Guild=${record.guildId}`,
+                `Moderator=${record.moderatorId}`,
+                `Target=${record.targetId || "none"}`,
+                `Reason=${record.reason}`
+            ].join("\n")
         );
 
         return record;
