@@ -3,6 +3,7 @@ const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
 const PingCommand = require("./PingCommand");
 const TimeoutCommand = require("./TimeoutCommand");
+const UntimeoutCommand = require("./UntimeoutCommand");
 
 class CommandLoader {
 
@@ -13,7 +14,8 @@ class CommandLoader {
             new HelpCommand(),
             new KickCommand(),
             new PingCommand(),
-            new TimeoutCommand()
+            new TimeoutCommand(),
+            new UntimeoutCommand()
         ];
 
     }
