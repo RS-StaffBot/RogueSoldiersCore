@@ -1,5 +1,11 @@
 const BaseModule = require("../core/BaseModule");
 const EconomyAccount = require("./EconomyAccount");
+const EconomyTransaction = require(
+    "./EconomyTransaction"
+);
+const EconomyTransactionType = require(
+    "./EconomyTransactionType"
+);
 const EconomyTransferPolicy = require(
     "./EconomyTransferPolicy"
 );
@@ -39,6 +45,8 @@ class EconomyModule extends BaseModule {
         this.startingBalance = startingBalance;
         this.transferPolicy = transferPolicy;
         this.accounts = new Map();
+        this.transactions = [];
+        this.nextTransactionId = 1;
 
     }
 
@@ -79,12 +87,60 @@ class EconomyModule extends BaseModule {
         return this.getAccount(userId).balance;
     }
 
-    credit(userId, amount) {
-        return this.getAccount(userId).credit(amount);
+    createTransaction(transactionData) {
+
+        const transaction = new EconomyTransaction({
+            id: `economy-${this.nextTransactionId}`,
+            ...transactionData
+        });
+
+        this.nextTransactionId += 1;
+        this.transactions.push(transaction);
+
+        return transaction;
+
     }
 
-    debit(userId, amount) {
-        return this.getAccount(userId).debit(amount);
+    credit(
+        userId,
+        amount,
+        reason = "Economy credit."
+    ) {
+
+        const account = this.getAccount(userId);
+        const balanceAfter = account.credit(amount);
+
+        this.createTransaction({
+            type: EconomyTransactionType.CREDIT,
+            userId,
+            amount,
+            balanceAfter,
+            reason
+        });
+
+        return balanceAfter;
+
+    }
+
+    debit(
+        userId,
+        amount,
+        reason = "Economy debit."
+    ) {
+
+        const account = this.getAccount(userId);
+        const balanceAfter = account.debit(amount);
+
+        this.createTransaction({
+            type: EconomyTransactionType.DEBIT,
+            userId,
+            amount,
+            balanceAfter,
+            reason
+        });
+
+        return balanceAfter;
+
     }
 
     getTransferPolicy() {
@@ -167,7 +223,8 @@ class EconomyModule extends BaseModule {
         toUserId,
         amount,
         {
-            actorPermissions = []
+            actorPermissions = [],
+            reason = "Economy transfer."
         } = {}
     ) {
 
@@ -201,13 +258,44 @@ class EconomyModule extends BaseModule {
         fromAccount.debit(amount);
         toAccount.credit(amount);
 
-        return {
+        const result = {
             fromUserId,
             toUserId,
             amount,
             fromBalance: fromAccount.balance,
             toBalance: toAccount.balance
         };
+
+        this.createTransaction({
+            type: EconomyTransactionType.TRANSFER,
+            fromUserId,
+            toUserId,
+            amount,
+            fromBalanceAfter: result.fromBalance,
+            toBalanceAfter: result.toBalance,
+            reason
+        });
+
+        return result;
+
+    }
+
+    getTransactionCount() {
+        return this.transactions.length;
+    }
+
+    listTransactions() {
+        return [...this.transactions];
+    }
+
+    listTransactionsForUser(userId) {
+
+        return this.transactions.filter(
+            (transaction) =>
+                transaction.userId === userId ||
+                transaction.fromUserId === userId ||
+                transaction.toUserId === userId
+        );
 
     }
 
