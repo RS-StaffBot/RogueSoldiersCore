@@ -1,18 +1,46 @@
 class DiscordModerationGuard {
 
+    getActionLanguage(action) {
+
+        const actionLanguage = {
+            ban: {
+                base: "ban",
+                past: "banned"
+            },
+            kick: {
+                base: "kick",
+                past: "kicked"
+            },
+            timeout: {
+                base: "time out",
+                past: "timed out"
+            }
+        };
+
+        return actionLanguage[action] || {
+            base: action,
+            past: `${action}ed`
+        };
+
+    }
+
     async validate(interaction, targetMember, action) {
+
+        const language = this.getActionLanguage(action);
 
         if (targetMember.id === interaction.user.id) {
             return {
                 allowed: false,
-                message: `You cannot ${action} yourself.`
+                message:
+                    `You cannot ${language.base} yourself.`
             };
         }
 
         if (targetMember.id === interaction.guild.ownerId) {
             return {
                 allowed: false,
-                message: `The server owner cannot be ${action}ed.`
+                message:
+                    `The server owner cannot be ${language.past}.`
             };
         }
 
@@ -36,7 +64,8 @@ class DiscordModerationGuard {
             return {
                 allowed: false,
                 message:
-                    `You cannot ${action} a member with an equal or higher role.`
+                    `You cannot ${language.base} a member ` +
+                    "with an equal or higher role."
             };
         }
 
@@ -53,7 +82,8 @@ class DiscordModerationGuard {
             return {
                 allowed: false,
                 message:
-                    `I cannot ${action} that member because their role is equal to or higher than mine.`
+                    `I cannot ${language.base} that member ` +
+                    "because their role is equal to or higher than mine."
             };
         }
 

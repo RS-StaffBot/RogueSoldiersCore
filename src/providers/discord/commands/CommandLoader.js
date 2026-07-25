@@ -2,6 +2,7 @@ const BanCommand = require("./BanCommand");
 const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
 const PingCommand = require("./PingCommand");
+const TimeoutCommand = require("./TimeoutCommand");
 
 class CommandLoader {
 
@@ -11,7 +12,8 @@ class CommandLoader {
             new BanCommand(),
             new HelpCommand(),
             new KickCommand(),
-            new PingCommand()
+            new PingCommand(),
+            new TimeoutCommand()
         ];
 
     }
