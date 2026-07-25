@@ -1,3 +1,4 @@
+const Logger = require("../../core/Logger");
 const BaseModule = require("../core/BaseModule");
 const ModerationAction = require("./ModerationAction");
 const ModerationAuditRecord = require(
@@ -79,6 +80,15 @@ class ModerationModule extends BaseModule {
         );
 
         this.auditRecords.push(record);
+
+        Logger.info(
+            "[MODERATION AUDIT] " +
+            `Action=${record.action} ` +
+            `Guild=${record.guildId} ` +
+            `Moderator=${record.moderatorId} ` +
+            `Target=${record.targetId || "none"} ` +
+            `Reason=${record.reason}`
+        );
 
         return record;
 

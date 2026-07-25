@@ -131,7 +131,7 @@ class WarnCommand extends BaseCommand {
             `**Moderator:** ${interaction.user.tag}`
         ].join("\n");
 
-         try {
+        try {
             await targetUser.send({
                 content: warningMessage
             });
