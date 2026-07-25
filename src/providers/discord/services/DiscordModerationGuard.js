@@ -14,6 +14,10 @@ class DiscordModerationGuard {
             timeout: {
                 base: "time out",
                 past: "timed out"
+            },
+            untimeout: {
+                base: "remove the timeout from",
+                past: "had their timeout removed"
             }
         };
 
