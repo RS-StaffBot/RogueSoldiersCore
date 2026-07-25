@@ -5,6 +5,7 @@ const PingCommand = require("./PingCommand");
 const PurgeCommand = require("./PurgeCommand");
 const TimeoutCommand = require("./TimeoutCommand");
 const UntimeoutCommand = require("./UntimeoutCommand");
+const WarnCommand = require("./WarnCommand");
 
 class CommandLoader {
 
@@ -17,7 +18,8 @@ class CommandLoader {
             new PingCommand(),
             new PurgeCommand(),
             new TimeoutCommand(),
-            new UntimeoutCommand()
+            new UntimeoutCommand(),
+            new WarnCommand()
         ];
 
     }
