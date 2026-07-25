@@ -1,22 +1,56 @@
 const BaseModule = require("../core/BaseModule");
 const ModerationAction = require("./ModerationAction");
+const ModerationPermission = require(
+    "../../shared/permissions/ModerationPermission"
+);
 
 class ModerationModule extends BaseModule {
 
     constructor() {
         super("Moderation");
 
-        this.actions = new Set(
-            Object.values(ModerationAction)
-        );
+        this.actionPermissions = new Map([
+            [
+                ModerationAction.BAN,
+                ModerationPermission.BAN_MEMBERS
+            ],
+            [
+                ModerationAction.KICK,
+                ModerationPermission.KICK_MEMBERS
+            ],
+            [
+                ModerationAction.WARN,
+                ModerationPermission.WARN_MEMBERS
+            ],
+            [
+                ModerationAction.TIMEOUT,
+                ModerationPermission.TIMEOUT_MEMBERS
+            ],
+            [
+                ModerationAction.PURGE,
+                ModerationPermission.PURGE_MESSAGES
+            ]
+        ]);
     }
 
     supports(action) {
-        return this.actions.has(action);
+        return this.actionPermissions.has(action);
     }
 
     listActions() {
-        return [...this.actions];
+        return [...this.actionPermissions.keys()];
+    }
+
+    getRequiredPermission(action) {
+
+        if (!this.supports(action)) {
+            throw new Error(
+                `Unsupported moderation action: ${action}`
+            );
+        }
+
+        return this.actionPermissions.get(action);
+
     }
 
 }
