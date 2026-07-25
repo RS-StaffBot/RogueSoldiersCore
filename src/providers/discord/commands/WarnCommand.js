@@ -131,7 +131,7 @@ class WarnCommand extends BaseCommand {
             `**Moderator:** ${interaction.user.tag}`
         ].join("\n");
 
-        try {
+         try {
             await targetUser.send({
                 content: warningMessage
             });
@@ -145,6 +145,18 @@ class WarnCommand extends BaseCommand {
 
             return;
         }
+
+        moderation.recordAction({
+            action: ModerationAction.WARN,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: targetUser.id,
+            reason,
+            details: {
+                source: "Discord",
+                delivered: true
+            }
+        });
 
         await interaction.reply({
             content:
