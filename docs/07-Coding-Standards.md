@@ -1,149 +1,30 @@
 # Coding Standards
 
-## Purpose
-
-This document defines the coding standards for the Rogue Soldiers Framework.
-
-The goal is to ensure every file in the project follows the same style, structure, and conventions.
-
----
-
-# General Rules
+## General
 
 - One class per file.
-- Keep classes focused on a single responsibility.
-- Prefer readability over clever code.
-- Avoid duplicate code.
-- Keep methods short and purposeful.
-- Framework code should rarely require modification.
+- Keep responsibilities focused.
+- Prefer readability over cleverness.
+- Avoid duplicate ownership.
 
----
+## Logging
 
-# File Organization
+Use the framework Logger.
 
-The filename should always match the class name.
+```js
+Logger.info("Discord connected.");
+Logger.warn("Unknown command.");
+Logger.error(error.message);
+Logger.moderationAudit(message);
+```
 
-Example:
+Do not add ANSI escape sequences outside `src/core/Logger.js`.
 
-DiscordProvider.js
+## Verification
 
-contains
+Before each phase commit, run:
 
-class DiscordProvider
-
----
-
-# Naming
-
-## Classes
-
-PascalCase
-
-Examples
-
-DiscordProvider
-
-EconomyModule
-
-PermissionService
-
----
-
-## Variables
-
-camelCase
-
-Examples
-
-userId
-
-guildMember
-
-commandRegistry
-
----
-
-## Constants
-
-UPPER_CASE
-
-Examples
-
-DEFAULT_TIMEOUT
-
-MAX_WARNINGS
-
----
-
-# Methods
-
-Method names should describe an action.
-
-Examples
-
-initialize()
-
-start()
-
-stop()
-
-register()
-
-execute()
-
-Avoid abbreviations unless universally understood.
-
----
-
-# Logging
-
-Always use the framework Logger.
-
-Good
-
-Logger.info("Discord Connected");
-
-Bad
-
-console.log("Discord Connected");
-
----
-
-# Error Handling
-
-Never silently ignore exceptions.
-
-Always:
-
-- Handle them
-- Log them
-- Re-throw them
-
----
-
-# Async
-
-Prefer async/await over promise chains.
-
-Avoid deeply nested callbacks.
-
----
-
-# Documentation
-
-Complex classes should explain:
-
-- Purpose
-- Responsibilities
-- Important design decisions
-
----
-
-# Git
-
-Every completed implementation phase ends with:
-
-- Testing
-- Git Commit
-
-Major milestones also receive Git tags.
+```powershell
+npm run lint
+git diff --check
+```
