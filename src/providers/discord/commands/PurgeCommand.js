@@ -1,4 +1,5 @@
 const {
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder
 } = require("discord.js");
@@ -46,7 +47,7 @@ class PurgeCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "This command can only be used in a server.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -76,7 +77,7 @@ class PurgeCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "You do not have permission to delete messages.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -91,7 +92,7 @@ class PurgeCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "Messages cannot be bulk deleted in this channel.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -101,13 +102,9 @@ class PurgeCommand extends BaseCommand {
             "amount",
             true
         );
-        const botMember =
-    interaction.guild.members.me ||
-    await interaction.guild.members.fetchMe();
-
 
         await interaction.deferReply({
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
         const deletedMessages =

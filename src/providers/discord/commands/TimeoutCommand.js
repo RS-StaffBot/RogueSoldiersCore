@@ -1,4 +1,5 @@
 const {
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder
 } = require("discord.js");
@@ -64,7 +65,7 @@ class TimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "This command can only be used in a server.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -94,7 +95,7 @@ class TimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "You do not have permission to time out members.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -126,7 +127,7 @@ class TimeoutCommand extends BaseCommand {
         if (!validation.allowed) {
             await interaction.reply({
                 content: validation.message,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -136,7 +137,7 @@ class TimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "I cannot time out that member. Check my role and permissions.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -158,7 +159,7 @@ class TimeoutCommand extends BaseCommand {
             content:
                 `Timed out ${targetUser.tag} for ` +
                 `${durationMinutes} minute(s). Reason: ${reason}`,
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
     }

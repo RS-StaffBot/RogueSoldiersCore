@@ -1,4 +1,5 @@
 const {
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder
 } = require("discord.js");
@@ -49,7 +50,7 @@ class BanCommand extends BaseCommand {
         if (!interaction.guild) {
             await interaction.reply({
                 content: "This command can only be used in a server.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -77,7 +78,7 @@ class BanCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "You do not have permission to ban members.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -103,7 +104,7 @@ class BanCommand extends BaseCommand {
         if (!validation.allowed) {
             await interaction.reply({
                 content: validation.message,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -113,7 +114,7 @@ class BanCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "I cannot ban that member. Check my role and permissions.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -130,7 +131,7 @@ class BanCommand extends BaseCommand {
         await interaction.reply({
             content:
                 `Banned ${targetUser.tag}. Reason: ${reason}`,
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
     }

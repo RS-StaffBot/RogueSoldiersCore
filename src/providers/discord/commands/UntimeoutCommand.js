@@ -1,4 +1,5 @@
 const {
+    MessageFlags,
     PermissionFlagsBits,
     SlashCommandBuilder
 } = require("discord.js");
@@ -54,7 +55,7 @@ class UntimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "This command can only be used in a server.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -84,7 +85,7 @@ class UntimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     "You do not have permission to remove timeouts.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -110,7 +111,7 @@ class UntimeoutCommand extends BaseCommand {
         if (!validation.allowed) {
             await interaction.reply({
                 content: validation.message,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -121,7 +122,7 @@ class UntimeoutCommand extends BaseCommand {
                 content:
                     "I cannot remove that member's timeout. " +
                     "Check my role and permissions.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -131,7 +132,7 @@ class UntimeoutCommand extends BaseCommand {
             await interaction.reply({
                 content:
                     `${targetUser.tag} is not currently timed out.`,
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
             return;
@@ -147,7 +148,7 @@ class UntimeoutCommand extends BaseCommand {
             content:
                 `Removed the timeout from ${targetUser.tag}. ` +
                 `Reason: ${reason}`,
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         });
 
     }

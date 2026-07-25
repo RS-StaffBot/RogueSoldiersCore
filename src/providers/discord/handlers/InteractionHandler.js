@@ -1,3 +1,7 @@
+const {
+    MessageFlags
+} = require("discord.js");
+
 const Logger = require("../../../core/Logger");
 const CommandRegistry = require("../services/CommandRegistry");
 
@@ -57,7 +61,7 @@ class InteractionHandler {
 
         const errorMessage = {
             content: "An unexpected error occurred.",
-            ephemeral: true
+            flags: MessageFlags.Ephemeral
         };
 
         try {

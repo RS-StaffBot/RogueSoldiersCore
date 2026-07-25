@@ -1,4 +1,7 @@
-const { SlashCommandBuilder } = require("discord.js");
+const {
+    MessageFlags,
+    SlashCommandBuilder
+} = require("discord.js");
 
 const BaseCommand = require("./BaseCommand");
 const CommandRegistry = require("../services/CommandRegistry");
@@ -42,9 +45,9 @@ class HelpCommand extends BaseCommand {
         ].join("\n");
 
         await interaction.reply({
-            content: response,
-            ephemeral: true
-        });
+    content: response,
+    flags: MessageFlags.Ephemeral
+});
 
     }
 
