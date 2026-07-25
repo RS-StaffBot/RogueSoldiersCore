@@ -72,7 +72,7 @@ class UntimeoutCommand extends BaseCommand {
 
         const requiredPermission =
             moderation.getRequiredPermission(
-                ModerationAction.TIMEOUT
+                ModerationAction.UNTIMEOUT
             );
 
         const hasPermission =
@@ -143,6 +143,17 @@ class UntimeoutCommand extends BaseCommand {
             `Timeout removed by ${interaction.user.tag}`;
 
         await targetMember.timeout(null, reason);
+
+        moderation.recordAction({
+            action: ModerationAction.UNTIMEOUT,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: targetUser.id,
+            reason,
+            details: {
+                source: "Discord"
+            }
+        });
 
         await interaction.reply({
             content:

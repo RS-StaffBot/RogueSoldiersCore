@@ -32,6 +32,10 @@ class ModerationModule extends BaseModule {
                 ModerationPermission.TIMEOUT_MEMBERS
             ],
             [
+                ModerationAction.UNTIMEOUT,
+                ModerationPermission.TIMEOUT_MEMBERS
+            ],
+            [
                 ModerationAction.PURGE,
                 ModerationPermission.PURGE_MESSAGES
             ]

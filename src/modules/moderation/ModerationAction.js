@@ -3,6 +3,7 @@ const ModerationAction = Object.freeze({
     KICK: "KICK",
     WARN: "WARN",
     TIMEOUT: "TIMEOUT",
+    UNTIMEOUT: "UNTIMEOUT",
     PURGE: "PURGE"
 });
 

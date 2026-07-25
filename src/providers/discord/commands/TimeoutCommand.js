@@ -155,6 +155,18 @@ class TimeoutCommand extends BaseCommand {
             reason
         );
 
+        moderation.recordAction({
+            action: ModerationAction.TIMEOUT,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: targetUser.id,
+            reason,
+            details: {
+                source: "Discord",
+                durationMinutes
+            }
+        });
+
         await interaction.reply({
             content:
                 `Timed out ${targetUser.tag} for ` +
