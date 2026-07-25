@@ -62,6 +62,14 @@ class EconomyModule extends BaseModule {
         return this.getAccount(userId).balance;
     }
 
+    credit(userId, amount) {
+        return this.getAccount(userId).credit(amount);
+    }
+
+    debit(userId, amount) {
+        return this.getAccount(userId).debit(amount);
+    }
+
     getAccountCount() {
         return this.accounts.size;
     }
