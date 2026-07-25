@@ -135,7 +135,8 @@ class PurgeCommand extends BaseCommand {
             }
         });
 
-        await interaction.editReply({            content:
+        await interaction.editReply({
+            content:
                 `Deleted ${deletedCount} message(s). ` +
                 "Messages older than 14 days were skipped."
         });
