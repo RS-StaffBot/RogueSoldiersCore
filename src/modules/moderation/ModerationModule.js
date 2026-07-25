@@ -85,9 +85,8 @@ class ModerationModule extends BaseModule {
 
         this.auditRecords.push(record);
 
-        Logger.info(
+        Logger.moderationAudit(
             [
-                "[MODERATION AUDIT]",
                 `Action=${record.action}`,
                 `Guild=${record.guildId}`,
                 `Moderator=${record.moderatorId}`,
