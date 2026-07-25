@@ -4,9 +4,9 @@
 
 **Repository Version:** v0.4.0
 
-**Current Milestone:** v0.4.0 - Moderation Module
+**Current Milestone:** v0.5.0 - Economy Module
 
-**Status:** Closeout in progress
+**Status:** Planned
 
 ## Completed Milestones
 
@@ -15,8 +15,11 @@
 - v0.2.1 - Architecture Stabilization
 - v0.3.0 - Discord Command Framework
 - v0.3.1 - Command Framework Architecture Consolidation
+- v0.4.0 - Moderation Module
 
 ## v0.4.0 - Moderation Module
+
+Status: Completed
 
 Implemented:
 
@@ -28,12 +31,12 @@ Implemented:
 - Colored log categories
 - ESLint configuration
 - Version synchronization
+- Synchronized documentation
+- Final milestone verification
 
-Remaining:
+Release action:
 
-- Documentation commit
-- Final verification
-- `v0.4.0` tag
+- Create and push the `v0.4.0` Git tag
 
 ## Future Milestones
 
