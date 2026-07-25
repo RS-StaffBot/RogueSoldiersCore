@@ -5,6 +5,9 @@ const {
 
 const Registry = require("../../../core/Registry");
 const BaseCommand = require("./BaseCommand");
+const DiscordModerationGuard = require(
+    "../services/DiscordModerationGuard"
+);
 const DiscordPermissionService = require(
     "../services/DiscordPermissionService"
 );
@@ -44,14 +47,12 @@ class BanCommand extends BaseCommand {
     async execute(interaction) {
 
         if (!interaction.guild) {
-
             await interaction.reply({
                 content: "This command can only be used in a server.",
                 ephemeral: true
             });
 
             return;
-
         }
 
         const moduleManager = Registry.get("modules");
@@ -73,7 +74,6 @@ class BanCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
-
             await interaction.reply({
                 content:
                     "You do not have permission to ban members.",
@@ -81,7 +81,6 @@ class BanCommand extends BaseCommand {
             });
 
             return;
-
         }
 
         const targetUser = interaction.options.getUser(
@@ -89,24 +88,28 @@ class BanCommand extends BaseCommand {
             true
         );
 
-        if (targetUser.id === interaction.user.id) {
-
-            await interaction.reply({
-                content: "You cannot ban yourself.",
-                ephemeral: true
-            });
-
-            return;
-
-        }
-
         const targetMember =
             await interaction.guild.members.fetch(
                 targetUser.id
             );
 
-        if (!targetMember.bannable) {
+        const validation =
+            await DiscordModerationGuard.validate(
+                interaction,
+                targetMember,
+                "ban"
+            );
 
+        if (!validation.allowed) {
+            await interaction.reply({
+                content: validation.message,
+                ephemeral: true
+            });
+
+            return;
+        }
+
+        if (!targetMember.bannable) {
             await interaction.reply({
                 content:
                     "I cannot ban that member. Check my role and permissions.",
@@ -114,7 +117,6 @@ class BanCommand extends BaseCommand {
             });
 
             return;
-
         }
 
         const reason =
