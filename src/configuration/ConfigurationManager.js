@@ -82,7 +82,11 @@ class ConfigurationManager {
 
         for (const key of keys) {
 
-            if (current == null || !(key in current)) {
+            if (
+                current === null ||
+                current === undefined ||
+                !(key in current)
+            ) {
                 return defaultValue;
             }
 

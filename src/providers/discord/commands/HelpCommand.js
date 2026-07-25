@@ -45,9 +45,9 @@ class HelpCommand extends BaseCommand {
         ].join("\n");
 
         await interaction.reply({
-    content: response,
-    flags: MessageFlags.Ephemeral
-});
+            content: response,
+            flags: MessageFlags.Ephemeral
+        });
 
     }
 
