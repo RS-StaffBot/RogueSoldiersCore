@@ -128,6 +128,17 @@ class BanCommand extends BaseCommand {
             reason
         });
 
+        moderation.recordAction({
+            action: ModerationAction.BAN,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: targetUser.id,
+            reason,
+            details: {
+                source: "Discord"
+            }
+        });
+
         await interaction.reply({
             content:
                 `Banned ${targetUser.tag}. Reason: ${reason}`,

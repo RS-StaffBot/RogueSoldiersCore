@@ -126,6 +126,17 @@ class KickCommand extends BaseCommand {
 
         await targetMember.kick(reason);
 
+        moderation.recordAction({
+            action: ModerationAction.KICK,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: targetUser.id,
+            reason,
+            details: {
+                source: "Discord"
+            }
+        });
+
         await interaction.reply({
             content:
                 `Kicked ${targetUser.tag}. Reason: ${reason}`,
