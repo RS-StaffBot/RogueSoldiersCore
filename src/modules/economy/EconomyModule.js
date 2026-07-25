@@ -1,10 +1,17 @@
 const BaseModule = require("../core/BaseModule");
 const EconomyAccount = require("./EconomyAccount");
+const EconomyTransferPolicy = require(
+    "./EconomyTransferPolicy"
+);
+const EconomyPermission = require(
+    "../../shared/permissions/EconomyPermission"
+);
 
 class EconomyModule extends BaseModule {
 
     constructor({
-        startingBalance = 0
+        startingBalance = 0,
+        transferPolicy = EconomyTransferPolicy.STAFF_ONLY
     } = {}) {
 
         super("Economy");
@@ -20,7 +27,17 @@ class EconomyModule extends BaseModule {
             );
         }
 
+        if (
+            !Object.values(EconomyTransferPolicy)
+                .includes(transferPolicy)
+        ) {
+            throw new Error(
+                `Unsupported economy transfer policy: ${transferPolicy}`
+            );
+        }
+
         this.startingBalance = startingBalance;
+        this.transferPolicy = transferPolicy;
         this.accounts = new Map();
 
     }
@@ -70,7 +87,91 @@ class EconomyModule extends BaseModule {
         return this.getAccount(userId).debit(amount);
     }
 
-    transfer(fromUserId, toUserId, amount) {
+    getTransferPolicy() {
+        return this.transferPolicy;
+    }
+
+    setTransferPolicy(transferPolicy) {
+
+        if (
+            !Object.values(EconomyTransferPolicy)
+                .includes(transferPolicy)
+        ) {
+            throw new Error(
+                `Unsupported economy transfer policy: ${transferPolicy}`
+            );
+        }
+
+        this.transferPolicy = transferPolicy;
+
+        return this.transferPolicy;
+
+    }
+
+    canTransfer(actorPermissions = []) {
+
+        if (!Array.isArray(actorPermissions)) {
+            throw new Error(
+                "Economy actor permissions must be an array."
+            );
+        }
+
+        if (
+            this.transferPolicy ===
+            EconomyTransferPolicy.DISABLED
+        ) {
+            return false;
+        }
+
+        if (
+            this.transferPolicy ===
+            EconomyTransferPolicy.EVERYONE
+        ) {
+            return true;
+        }
+
+        return (
+            actorPermissions.includes(
+                EconomyPermission.TRANSFER
+            ) ||
+            actorPermissions.includes(
+                EconomyPermission.ADMINISTRATE
+            )
+        );
+
+    }
+
+    requireTransferPermission(actorPermissions = []) {
+
+        if (!this.canTransfer(actorPermissions)) {
+
+            if (
+                this.transferPolicy ===
+                EconomyTransferPolicy.DISABLED
+            ) {
+                throw new Error(
+                    "Economy transfers are currently disabled."
+                );
+            }
+
+            throw new Error(
+                "Economy transfer permission is required."
+            );
+
+        }
+
+    }
+
+    transfer(
+        fromUserId,
+        toUserId,
+        amount,
+        {
+            actorPermissions = []
+        } = {}
+    ) {
+
+        this.requireTransferPermission(actorPermissions);
 
         if (fromUserId === toUserId) {
             throw new Error(
