@@ -409,7 +409,7 @@ from environment variables.
 
 `DISCORD_CLIENT_ID` is used as the application ID during slash-command registration.
 
-Both should exist in `.env.example` before v0.3.1 closes.
+Both variables are documented in `.env.example` as part of the v0.3.1 closeout.
 
 ---
 

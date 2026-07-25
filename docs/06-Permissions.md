@@ -79,7 +79,7 @@ These are intended boundaries, not implemented classes.
 
 The future Moderation Module will require permission integration.
 
-Moderation must not resume until v0.3.1 is closed.
+v0.4.0 moderation work may now begin on top of the completed v0.3.1 command architecture.
 
 When moderation begins:
 

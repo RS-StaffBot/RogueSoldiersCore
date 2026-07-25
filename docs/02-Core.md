@@ -166,7 +166,9 @@ Current output prefixes are:
 [ERROR]
 ```
 
-The declared `winston` package is not currently used by this Logger implementation.
+The project does not currently use `winston`.
+
+`winston` was removed as a direct dependency during the v0.3.1 dependency cleanup because the current Logger implementation does not import or require it.
 
 ---
 

@@ -2,36 +2,29 @@
 
 ## Current Version
 
-v0.3.0
-
-The repository version remains v0.3.0 until the v0.3.1 version files are synchronized and committed.
+v0.3.1
 
 ---
 
 ## Current Milestone
 
+v0.4.0 - Moderation Module
+
+Status: Active
+
+---
+
+## Last Completed Milestone
+
 v0.3.1 - Discord Command Framework Architecture Consolidation
 
----
-
-## Current Objective
-
-Complete the v0.3.1 corrective milestone by:
-
-- Finalizing documentation
-- Synchronizing version values
-- Running final framework tests
-- Verifying the working tree
-- Committing the closeout changes
-- Creating the v0.3.1 Git tag
-
-Moderation remains paused until v0.3.1 is fully closed.
+Status: Completed
 
 ---
 
-## Completed v0.3.1 Implementation
+## v0.3.1 Completed Work
 
-The command architecture has been consolidated and tested.
+The Discord command architecture was consolidated into one verified implementation path.
 
 Completed:
 
@@ -48,10 +41,16 @@ Completed:
 - Verified invalid-command rejection
 - Verified one interaction path
 - Verified one registration path
+- Synchronized repository version values to `0.3.1`
+- Added `DISCORD_CLIENT_ID` to `.env.example`
+- Removed unused direct dependencies
+- Resolved the reported npm audit vulnerability
+- Reconstructed and verified architecture documentation
+- Replaced known character-encoding corruption with ASCII-safe text
 
 ---
 
-## Active Command Architecture
+## Active Discord Command Architecture
 
 The active Discord Command Registry is:
 
@@ -92,40 +91,43 @@ CommandRegistry
 command.execute()
 ```
 
----
+There is:
 
-## Last Completed Release
-
-v0.3.0 - Discord Command Framework
-
-Completed:
-
-- BaseCommand
-- CommandLoader
-- CommandRegistry foundation
-- InteractionHandler foundation
-- Slash-command registration foundation
-- Automatic command registration
-- Working `/ping`
-- Working `/help`
+- One active Command Registry
+- One runtime interaction handler
+- One slash-command registration service
+- One command-loading path
 
 ---
 
-## Next Milestone
+## Current Objective
 
-v0.4.0 - Moderation Module
-
-The Moderation Module must use the consolidated v0.3.1 command architecture.
+Begin v0.4.0 by designing and implementing the Moderation Module against the consolidated v0.3.1 command architecture.
 
 Moderation business logic belongs inside Modules.
 
-Discord-specific command input, interaction responses, and Discord API operations belong inside the Discord Provider area.
+Discord-specific command input, interaction responses, member resolution, and Discord API operations belong inside the Discord Provider area.
+
+Permission requirements must be designed explicitly before protected moderation actions are implemented.
 
 ---
 
-## Planned Milestones
+## Planned v0.4.0 Features
 
-- v0.4.0 Moderation
+- Ban
+- Kick
+- Warn
+- Timeout
+- Purge
+- Audit logging
+- Permission integration
+
+Implementation must proceed in small tested phases.
+
+---
+
+## Future Milestones
+
 - v0.5.0 Economy
 - v0.6.0 Tickets
 - v0.7.0 Database
@@ -135,29 +137,12 @@ Discord-specific command input, interaction responses, and Discord API operation
 
 ---
 
-## Known Issues
+## Known Limitations
 
-- Version values still need synchronization from `0.3.0` to `0.3.1`.
-- The `.env.example` file does not yet list `DISCORD_CLIENT_ID`.
-- Declared dependencies need final documentation review.
-- Existing source files contain some character-encoding corruption in log output.
 - Automated tests are not yet implemented.
+- Moderation is not yet implemented.
+- Persistent economy behavior is not yet implemented.
+- Permission infrastructure is not yet implemented.
+- Coordinated application shutdown is not yet implemented.
 
-These items must be assessed during closeout. Only required v0.3.1 corrections should be included before tagging.
-
----
-
-## v0.3.1 Closing Requirements
-
-Do not close or tag v0.3.1 until:
-
-- v0.3.1 code is tested.
-- Command architecture is consolidated.
-- No duplicate command paths remain.
-- Required documentation is complete.
-- Documentation matches the repository.
-- Version values are synchronized.
-- The working tree is clean.
-- All v0.3.1 changes are committed.
-- The v0.3.1 tag is created.
-- Updated documentation is uploaded to ChatGPT when requested.
+These are future milestone concerns and do not affect the completed v0.3.1 release.
