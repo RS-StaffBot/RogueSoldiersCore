@@ -1,5 +1,8 @@
 const BaseModule = require("../core/BaseModule");
 const ModerationAction = require("./ModerationAction");
+const ModerationAuditRecord = require(
+    "./ModerationAuditRecord"
+);
 const ModerationPermission = require(
     "../../shared/permissions/ModerationPermission"
 );
@@ -7,6 +10,7 @@ const ModerationPermission = require(
 class ModerationModule extends BaseModule {
 
     constructor() {
+
         super("Moderation");
 
         this.actionPermissions = new Map([
@@ -31,6 +35,9 @@ class ModerationModule extends BaseModule {
                 ModerationPermission.PURGE_MESSAGES
             ]
         ]);
+
+        this.auditRecords = [];
+
     }
 
     supports(action) {
@@ -51,6 +58,38 @@ class ModerationModule extends BaseModule {
 
         return this.actionPermissions.get(action);
 
+    }
+
+    recordAction(recordData) {
+
+        if (!recordData || typeof recordData !== "object") {
+            throw new Error(
+                "Moderation audit record data is required."
+            );
+        }
+
+        if (!this.supports(recordData.action)) {
+            throw new Error(
+                `Unsupported moderation action: ${recordData.action}`
+            );
+        }
+
+        const record = new ModerationAuditRecord(
+            recordData
+        );
+
+        this.auditRecords.push(record);
+
+        return record;
+
+    }
+
+    listAuditRecords() {
+        return [...this.auditRecords];
+    }
+
+    getAuditRecordCount() {
+        return this.auditRecords.length;
     }
 
 }
