@@ -118,8 +118,24 @@ class PurgeCommand extends BaseCommand {
             deletedMessages.length ??
             0;
 
-        await interaction.editReply({
-            content:
+        const reason =
+            `Deleted ${deletedCount} message(s).`;
+
+        moderation.recordAction({
+            action: ModerationAction.PURGE,
+            guildId: interaction.guild.id,
+            moderatorId: interaction.user.id,
+            targetId: null,
+            reason,
+            details: {
+                source: "Discord",
+                channelId: channel.id,
+                requestedAmount: amount,
+                deletedCount
+            }
+        });
+
+        await interaction.editReply({            content:
                 `Deleted ${deletedCount} message(s). ` +
                 "Messages older than 14 days were skipped."
         });
