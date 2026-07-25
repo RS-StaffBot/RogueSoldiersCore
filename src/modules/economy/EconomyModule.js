@@ -70,6 +70,46 @@ class EconomyModule extends BaseModule {
         return this.getAccount(userId).debit(amount);
     }
 
+    transfer(fromUserId, toUserId, amount) {
+
+        if (fromUserId === toUserId) {
+            throw new Error(
+                "Economy transfers require different accounts."
+            );
+        }
+
+        const fromAccount = this.getAccount(fromUserId);
+        const toAccount = this.getAccount(toUserId);
+
+        fromAccount.validateAmount(amount);
+
+        if (amount > fromAccount.balance) {
+            throw new Error(
+                `Insufficient economy balance for user: ${fromUserId}`
+            );
+        }
+
+        const recipientBalance = toAccount.balance + amount;
+
+        if (!Number.isSafeInteger(recipientBalance)) {
+            throw new Error(
+                "Economy balance would exceed the safe integer limit."
+            );
+        }
+
+        fromAccount.debit(amount);
+        toAccount.credit(amount);
+
+        return {
+            fromUserId,
+            toUserId,
+            amount,
+            fromBalance: fromAccount.balance,
+            toBalance: toAccount.balance
+        };
+
+    }
+
     getAccountCount() {
         return this.accounts.size;
     }
