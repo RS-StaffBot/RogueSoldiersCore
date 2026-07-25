@@ -4,17 +4,17 @@ The central framework powering the Rogue Soldiers Clan ecosystem.
 
 ## Planned Features
 
-- Discord Bot
-- Website Backend
+- Discord bot
+- Website backend
 - REST API
 - Economy
 - Moderation
 - Tickets
-- Member Management
-- Game Server Integration
+- Member management
+- Game-server integration
 - Logging
-- Plugin System
+- Plugin system
 
 ## Status
 
-🚧 Under Development
+Under Development

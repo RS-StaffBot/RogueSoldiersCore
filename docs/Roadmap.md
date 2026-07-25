@@ -1,21 +1,22 @@
 # Rogue Soldiers Framework Roadmap
 
+## Current Status
+
+**Repository Version:** v0.3.0
+
+**Active Milestone:** v0.3.1 - Discord Command Framework Architecture Consolidation
+
+The repository version remains v0.3.0 until version synchronization is completed during v0.3.1 closeout.
+
+Moderation is paused until v0.3.1 is fully tested, documented, committed, and tagged.
+
 ---
 
-# Current Status
+## v0.1.0 - Project Foundation
 
-**Current Version:** v0.3.0
+Status: Completed
 
-**Current Milestone:**
-➡️ v0.4.0 — Moderation Module
-
----
-
-# Milestones
-
-## ✅ v0.1.0 — Project Foundation
-
-Completed
+Completed:
 
 - Initial project structure
 - Git repository
@@ -26,180 +27,222 @@ Completed
 
 ---
 
-## ✅ v0.2.0 — Framework Online
+## v0.2.0 - Framework Online
 
-Completed
+Status: Completed
+
+Completed:
 
 - Provider system
 - Module system
 - Discord Provider
-- Discord Bot connection
+- Discord bot connection
 - Framework lifecycle
 
 ---
 
-## ✅ v0.2.1 — Architecture Stabilization
+## v0.2.1 - Architecture Stabilization
 
-Completed
+Status: Completed
 
-- Shared layer
-- Documentation
+Completed:
+
+- Shared layer structure
+- Documentation structure
 - Coding standards
-- Stable architecture
-- Git workflow established
+- Stable architecture boundaries
+- Git workflow
 
 ---
 
-## ✅ v0.3.0 — Discord Command Framework
+## v0.3.0 - Discord Command Framework
 
-Completed
+Status: Completed
 
 Goal:
 
-Build a reusable slash command framework.
+Build a reusable Discord slash-command framework.
 
-Completed Features
+Completed:
 
-- Command Registry
-- Command Loader
-- Interaction Handler
-- Slash Command Registration
-- Base Command
-- Utility Commands
-    - `/ping`
-    - `/help`
-
-Completion Criteria
-
-- Slash commands automatically register
-- `/ping` functions correctly
-- `/help` functions correctly
-- Framework requires no architectural changes
+- BaseCommand
+- CommandLoader
+- Command Registry foundation
+- Interaction Handler foundation
+- Slash-command registration foundation
+- Automatic command registration
+- `/ping`
+- `/help`
 
 ---
 
-## 🚧 v0.4.0 — Moderation Module
+## v0.3.1 - Discord Command Framework Architecture Consolidation
 
-In Progress
+Status: In Progress
 
-Features
+Goal:
+
+Consolidate the v0.3.0 command framework into one verified architecture before future commands depend on it.
+
+Completed implementation:
+
+- Strengthened the active Command Registry
+- Added dedicated CommandRegistrar
+- Activated InteractionHandler as the runtime dispatch owner
+- Updated DiscordProvider to coordinate command components
+- Removed the duplicate command registry
+- Preserved Discord login
+- Preserved automatic registration
+- Preserved `/ping`
+- Preserved `/help`
+- Verified duplicate-command rejection
+- Verified invalid-command rejection
+- Verified one runtime interaction path
+- Verified one slash-command registration path
+
+Remaining closeout:
+
+- Complete and verify documentation
+- Synchronize version values to `0.3.1`
+- Review `.env.example`
+- Review dependency documentation
+- Run final framework validation
+- Commit final closeout changes
+- Verify a clean working tree
+- Create the `v0.3.1` tag
+
+---
+
+## v0.4.0 - Moderation Module
+
+Status: Planned
+
+Features:
 
 - Ban
 - Kick
 - Warn
 - Timeout
 - Purge
-- Audit Logging
-- Permission Integration
+- Audit logging
+- Permission integration
+
+Moderation must use the consolidated v0.3.1 command architecture.
 
 ---
 
-## ⏳ v0.5.0 — Economy Module
+## v0.5.0 - Economy Module
 
-Planned
+Status: Planned
 
-Features
+Features:
 
 - Balance
-- Daily
-- Transfer
+- Daily rewards
+- Transfers
 - Shop
 - Transactions
 - Leaderboards
 
+The current Economy Module is only a lifecycle foundation.
+
 ---
 
-## ⏳ v0.6.0 — Ticket Module
+## v0.6.0 - Ticket Module
 
-Planned
+Status: Planned
 
-Features
+Features:
 
-- Support Tickets
+- Support tickets
 - Appeals
 - Transcripts
-- Staff Controls
+- Staff controls
 
 ---
 
-## ⏳ v0.7.0 — Database Layer
+## v0.7.0 - Database Layer
 
-Planned
+Status: Planned
 
-Features
+Features:
 
-- SQLite
-- Repository Pattern
-- Automatic Migrations
 - Persistence
+- Repository pattern
+- Automatic migrations
+- Storage-provider decision based on current project requirements
+
+SQLite is configured as a future provider value but is not currently implemented.
 
 ---
 
-## ⏳ v0.8.0 — 7 Days to Die Provider
+## v0.8.0 - 7 Days to Die Provider
 
-Planned
+Status: Planned
 
-Features
+Features:
 
-- Server Connection
-- Player Management
-- Economy Integration
-- Game Events
+- Server connection
+- Player management
+- Economy integration
+- Game events
+- Discord-to-game messaging
 
 ---
 
-## ⏳ v0.9.0 — Website Provider
+## v0.9.0 - Website Provider
 
-Planned
+Status: Planned
 
-Features
+Features:
 
 - Dashboard
 - Authentication
-- Live Status
-- Economy
-- Tickets
+- Live status
+- Economy access
+- Ticket access
 
 ---
 
-## ⏳ v1.0.0 — Production Release
+## v1.0.0 - Production Release
 
-Release Requirements
+Status: Planned
 
-- Stable Framework
-- Documentation Complete
-- Full Testing
-- Deployment Ready
-- Community Ready
+Release requirements:
+
+- Stable framework
+- Documentation complete
+- Testing complete
+- Deployment ready
+- Community ready
 
 ---
 
-# Development Workflow
+## Development Workflow
 
-Every milestone follows the same process.
+Every milestone follows:
 
+```text
 Design
-
-↓
-
+    |
+    v
 Implement
-
-↓
-
+    |
+    v
 Test
-
-↓
-
+    |
+    v
 Git Commit
-
-↓
-
-Milestone Complete
-
-↓
-
-Update Roadmap
-
-↓
-
+    |
+    v
+Update Documentation
+    |
+    v
+Final Verification
+    |
+    v
+Tag Milestone
+    |
+    v
 Begin Next Milestone
+```

@@ -50,7 +50,7 @@ class Bootstrap {
 
             const provider = ProviderManager.get(name);
 
-            Logger.info(`• ${provider.name} (${provider.state})`);
+            Logger.info(`- ${provider.name} (${provider.state})`);
 
         }
 
@@ -62,7 +62,7 @@ class Bootstrap {
 
             const module = ModuleManager.get(name);
 
-            Logger.info(`• ${module.name} (${module.state})`);
+            Logger.info(`- ${module.name} (${module.state})`);
 
         }
 
