@@ -1,4 +1,5 @@
 const BaseModule = require("../core/BaseModule");
+const TicketMessage = require("./TicketMessage");
 const TicketRecord = require("./TicketRecord");
 const TicketStatus = require("./TicketStatus");
 
@@ -23,6 +24,8 @@ class TicketModule extends BaseModule {
         ]);
         this.tickets = new Map();
         this.nextTicketId = 1;
+        this.messagesByTicket = new Map();
+        this.nextMessageId = 1;
 
     }
 
@@ -71,6 +74,29 @@ class TicketModule extends BaseModule {
             status: ticket.status,
             createdAt: new Date(ticket.createdAt)
         });
+
+    }
+
+    createMessageSnapshot(message) {
+
+        return new TicketMessage({
+            id: message.id,
+            ticketId: message.ticketId,
+            authorId: message.authorId,
+            content: message.content,
+            createdAt: new Date(message.createdAt)
+        });
+
+    }
+
+    hasMessageId(messageId) {
+
+        return [...this.messagesByTicket.values()]
+            .some(messages =>
+                messages.some(message =>
+                    message.id === messageId
+                )
+            );
 
     }
 
@@ -260,6 +286,146 @@ class TicketModule extends BaseModule {
             ticketId,
             TicketStatus.CLOSED
         );
+
+    }
+
+    addMessage(
+        ticketId,
+        authorId,
+        content,
+        createdAt = new Date()
+    ) {
+
+        this.validateTicketId(ticketId);
+
+        const ticket = this.tickets.get(ticketId);
+
+        if (!ticket) {
+            throw new Error(
+                `Ticket not found: ${ticketId}`
+            );
+        }
+
+        if (ticket.status !== TicketStatus.OPEN) {
+            throw new Error(
+                "Ticket messages require an open ticket."
+            );
+        }
+
+        if (
+            !Number.isSafeInteger(this.nextMessageId) ||
+            this.nextMessageId <= 0 ||
+            this.nextMessageId >= Number.MAX_SAFE_INTEGER
+        ) {
+            throw new Error(
+                "Ticket message ID sequence has " +
+                "reached its safe limit."
+            );
+        }
+
+        const messageId =
+            `ticket-message-${this.nextMessageId}`;
+
+        if (this.hasMessageId(messageId)) {
+            throw new Error(
+                `Ticket message ID already exists: ${messageId}`
+            );
+        }
+
+        const message = new TicketMessage({
+            id: messageId,
+            ticketId,
+            authorId,
+            content,
+            createdAt
+        });
+
+        if (
+            new Date(message.createdAt).getTime() <
+            new Date(ticket.createdAt).getTime()
+        ) {
+            throw new Error(
+                "Ticket message date cannot be before " +
+                "the ticket creation date."
+            );
+        }
+
+        const snapshot =
+            this.createMessageSnapshot(message);
+        const previousMessages =
+            this.messagesByTicket.get(ticketId);
+        const updatedMessages = [
+            ...(previousMessages || []),
+            message
+        ];
+        const previousNextMessageId =
+            this.nextMessageId;
+
+        try {
+
+            this.messagesByTicket.set(
+                ticketId,
+                updatedMessages
+            );
+            this.nextMessageId += 1;
+
+        } catch (error) {
+
+            if (previousMessages) {
+                Map.prototype.set.call(
+                    this.messagesByTicket,
+                    ticketId,
+                    previousMessages
+                );
+            } else {
+                Map.prototype.delete.call(
+                    this.messagesByTicket,
+                    ticketId
+                );
+            }
+
+            this.nextMessageId =
+                previousNextMessageId;
+
+            throw error;
+
+        }
+
+        return snapshot;
+
+    }
+
+    listMessages(ticketId) {
+
+        this.validateTicketId(ticketId);
+
+        if (!this.tickets.has(ticketId)) {
+            throw new Error(
+                `Ticket not found: ${ticketId}`
+            );
+        }
+
+        return (
+            this.messagesByTicket.get(ticketId) || []
+        ).map(message =>
+            this.createMessageSnapshot(message)
+        );
+
+    }
+
+    getMessageCount(ticketId) {
+
+        this.validateTicketId(ticketId);
+
+        if (!this.tickets.has(ticketId)) {
+            throw new Error(
+                `Ticket not found: ${ticketId}`
+            );
+        }
+
+        return (
+            this.messagesByTicket.get(ticketId) || []
+        ).length;
 
     }
 
