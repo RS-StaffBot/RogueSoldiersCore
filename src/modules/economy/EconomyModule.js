@@ -70,33 +70,33 @@ class EconomyModule extends BaseModule {
 
         if (
             typeof defaultLeaderboardLimit !== "number" ||
-    !Number.isSafeInteger(defaultLeaderboardLimit) ||
-    defaultLeaderboardLimit <= 0
+            !Number.isSafeInteger(defaultLeaderboardLimit) ||
+            defaultLeaderboardLimit <= 0
         ) {
             throw new Error(
                 "Economy default leaderboard limit must be a " +
-        "positive safe integer."
+                "positive safe integer."
             );
         }
 
         if (
             typeof maximumLeaderboardLimit !== "number" ||
-    !Number.isSafeInteger(maximumLeaderboardLimit) ||
-    maximumLeaderboardLimit <= 0
+            !Number.isSafeInteger(maximumLeaderboardLimit) ||
+            maximumLeaderboardLimit <= 0
         ) {
             throw new Error(
                 "Economy maximum leaderboard limit must be a " +
-        "positive safe integer."
+                "positive safe integer."
             );
         }
 
         if (
             defaultLeaderboardLimit >
-    maximumLeaderboardLimit
+            maximumLeaderboardLimit
         ) {
             throw new Error(
                 "Economy default leaderboard limit cannot " +
-        "exceed the maximum leaderboard limit."
+                "exceed the maximum leaderboard limit."
             );
         }
 
@@ -229,9 +229,9 @@ class EconomyModule extends BaseModule {
             dailyRewardAmount: this.dailyRewardAmount,
             dailyCooldownMs: this.dailyCooldownMs,
             defaultLeaderboardLimit:
-            this.defaultLeaderboardLimit,
+                this.defaultLeaderboardLimit,
             maximumLeaderboardLimit:
-            this.maximumLeaderboardLimit
+                this.maximumLeaderboardLimit
         };
 
     }
@@ -244,12 +244,12 @@ class EconomyModule extends BaseModule {
 
         if (
             typeof dailyRewardAmount !== "number" ||
-        !Number.isSafeInteger(dailyRewardAmount) ||
-        dailyRewardAmount <= 0
+            !Number.isSafeInteger(dailyRewardAmount) ||
+            dailyRewardAmount <= 0
         ) {
             throw new Error(
                 "Economy daily reward must be a " +
-            "positive safe integer."
+                "positive safe integer."
             );
         }
 
@@ -259,20 +259,16 @@ class EconomyModule extends BaseModule {
 
     }
 
-    getDailyCooldownMs() {
-        return this.dailyCooldownMs;
-    }
-
     setDailyCooldownMs(dailyCooldownMs) {
 
         if (
             typeof dailyCooldownMs !== "number" ||
-        !Number.isSafeInteger(dailyCooldownMs) ||
-        dailyCooldownMs <= 0
+            !Number.isSafeInteger(dailyCooldownMs) ||
+            dailyCooldownMs <= 0
         ) {
             throw new Error(
                 "Economy daily cooldown must be a " +
-            "positive safe integer."
+                "positive safe integer."
             );
         }
 
@@ -292,27 +288,27 @@ class EconomyModule extends BaseModule {
 
         if (
             typeof defaultLeaderboardLimit !== "number" ||
-        !Number.isSafeInteger(defaultLeaderboardLimit) ||
-        defaultLeaderboardLimit <= 0
+            !Number.isSafeInteger(defaultLeaderboardLimit) ||
+            defaultLeaderboardLimit <= 0
         ) {
             throw new Error(
-                "Economy default leaderboard limit must " +
-            "be a positive safe integer."
+                "Economy default leaderboard limit must be a " +
+                "positive safe integer."
             );
         }
 
         if (
             defaultLeaderboardLimit >
-        this.maximumLeaderboardLimit
+            this.maximumLeaderboardLimit
         ) {
             throw new Error(
                 "Economy default leaderboard limit cannot " +
-            "exceed the maximum leaderboard limit."
+                "exceed the maximum leaderboard limit."
             );
         }
 
         this.defaultLeaderboardLimit =
-        defaultLeaderboardLimit;
+            defaultLeaderboardLimit;
 
         return this.defaultLeaderboardLimit;
 
@@ -328,27 +324,27 @@ class EconomyModule extends BaseModule {
 
         if (
             typeof maximumLeaderboardLimit !== "number" ||
-        !Number.isSafeInteger(maximumLeaderboardLimit) ||
-        maximumLeaderboardLimit <= 0
+            !Number.isSafeInteger(maximumLeaderboardLimit) ||
+            maximumLeaderboardLimit <= 0
         ) {
             throw new Error(
                 "Economy maximum leaderboard limit must " +
-            "be a positive safe integer."
+                "be a positive safe integer."
             );
         }
 
         if (
             maximumLeaderboardLimit <
-        this.defaultLeaderboardLimit
+            this.defaultLeaderboardLimit
         ) {
             throw new Error(
                 "Economy maximum leaderboard limit cannot " +
-            "be lower than the default leaderboard limit."
+                "be lower than the default leaderboard limit."
             );
         }
 
         this.maximumLeaderboardLimit =
-        maximumLeaderboardLimit;
+            maximumLeaderboardLimit;
 
         return this.maximumLeaderboardLimit;
 
@@ -610,19 +606,19 @@ class EconomyModule extends BaseModule {
 
         if (
             typeof limit !== "number" ||
-        !Number.isSafeInteger(limit) ||
-        limit <= 0
+            !Number.isSafeInteger(limit) ||
+            limit <= 0
         ) {
             throw new Error(
                 "Economy leaderboard limit must be a " +
-            "positive safe integer."
+                "positive safe integer."
             );
         }
 
         if (limit > this.maximumLeaderboardLimit) {
             throw new Error(
                 "Economy leaderboard limit cannot exceed " +
-            `${this.maximumLeaderboardLimit}.`
+                `${this.maximumLeaderboardLimit}.`
             );
         }
 
@@ -631,11 +627,11 @@ class EconomyModule extends BaseModule {
 
                 if (
                     firstAccount.balance !==
-                secondAccount.balance
+                    secondAccount.balance
                 ) {
                     return (
                         secondAccount.balance -
-                    firstAccount.balance
+                        firstAccount.balance
                     );
                 }
 
