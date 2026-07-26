@@ -1,5 +1,6 @@
 const BanCommand = require("./BanCommand");
 const BalanceCommand = require("./BalanceCommand");
+const DailyCommand = require("./DailyCommand");
 const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
 const PingCommand = require("./PingCommand");
@@ -15,6 +16,7 @@ class CommandLoader {
         return [
             new BanCommand(),
             new BalanceCommand(),
+            new DailyCommand(),
             new HelpCommand(),
             new KickCommand(),
             new PingCommand(),
