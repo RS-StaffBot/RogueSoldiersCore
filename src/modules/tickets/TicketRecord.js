@@ -5,6 +5,7 @@ class TicketRecord {
     constructor({
         id,
         creatorId,
+        assigneeId = null,
         status = TicketStatus.OPEN,
         createdAt = new Date()
     } = {}) {
@@ -24,6 +25,19 @@ class TicketRecord {
         ) {
             throw new Error(
                 "Ticket creator ID is required."
+            );
+        }
+
+        if (
+            assigneeId !== null &&
+            (
+                typeof assigneeId !== "string" ||
+                assigneeId.trim().length === 0
+            )
+        ) {
+            throw new Error(
+                "Ticket assignee ID must be a " +
+                "non-empty string or null."
             );
         }
 
@@ -48,6 +62,7 @@ class TicketRecord {
 
         this.id = id;
         this.creatorId = creatorId;
+        this.assigneeId = assigneeId;
         this.status = status;
         this.createdAt = createdAt.toISOString();
 
