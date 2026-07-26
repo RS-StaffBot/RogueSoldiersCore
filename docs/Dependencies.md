@@ -2,9 +2,15 @@
 
 ## Runtime
 
-- Node.js 22 or newer
+- Node.js 22.13 or newer
 - `discord.js`
 - `dotenv`
+
+## Database Runtime
+
+RSF uses SQLite through Node's built-in `node:sqlite` API. No third-party database package, native npm add-on, ORM, or query builder is required by the Database infrastructure foundation.
+
+Node 22.13 is the minimum supported runtime because that version made `node:sqlite` available without the `--experimental-sqlite` launch flag. The API remains marked active development in the Node 22 documentation.
 
 ## Development
 

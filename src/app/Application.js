@@ -15,6 +15,12 @@ class Application {
 
     }
 
+    stop() {
+
+        Bootstrap.stop();
+
+    }
+
 }
 
 module.exports = Application;

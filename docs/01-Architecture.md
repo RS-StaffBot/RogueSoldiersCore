@@ -6,7 +6,11 @@ RSF is organized into Core, Providers, Modules, and Shared.
 
 ## Core
 
-Core coordinates lifecycle, configuration, events, logging, and framework-wide services. ANSI-aware terminal formatting is centralized in `src/core/Logger.js`.
+Core coordinates lifecycle, configuration, events, logging, database infrastructure, and framework-wide services. ANSI-aware terminal formatting is centralized in `src/core/Logger.js`.
+
+SQLite is the selected local database engine. One Core-owned Database service owns connection initialization, health checks, migration coordination, and shutdown. The service uses Node's built-in `node:sqlite` API, so it does not require a native npm database add-on.
+
+Database migrations are ordered, tracked, and applied transactionally through Core. Migration SQL defines storage schema only; Module business validation remains in Modules. Providers and commands do not access the database directly.
 
 ## Providers
 

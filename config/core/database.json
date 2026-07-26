@@ -1,4 +1,5 @@
 {
     "provider": "sqlite",
+    "filename": "data/rogue-soldiers.sqlite3",
     "autoMigrate": true
 }

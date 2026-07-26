@@ -60,6 +60,18 @@ Ticket persistence belongs to v0.7.0 and will be required for multi-process atom
 
 Future administrative interfaces must invoke validated RSF settings and operations. They must not directly mutate Module properties, configuration files, or database rows. Such an interface will require permissions, audit logging, and persistence; its technology is not fixed and it is not currently implemented.
 
+## Database Infrastructure Foundation
+
+### Decision
+
+SQLite is the selected local database engine. Database lifecycle and migration coordination are Core responsibilities, while Modules retain business validation and Providers remain independent of storage.
+
+RSF uses the `node:sqlite` API included with Node 22.13 and newer. This avoids reintroducing a native npm SQLite add-on and its Windows compilation toolchain. No ORM or query builder is selected by this foundation checkpoint.
+
+Bootstrap creates and registers one Database service. The service owns connection initialization, health checks, transactional migration application, migration history, and controlled shutdown. It does not expose its connection through the Registry.
+
+Module schemas and persistence integrations remain separate checkpoints. Providers and commands must not access database tables directly.
+
 ## Existing Decisions Retained
 
 - Discord is a Provider.

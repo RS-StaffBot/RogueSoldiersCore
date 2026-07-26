@@ -27,3 +27,22 @@ ANSI formatting belongs only in `src/core/Logger.js`.
 ## Other Core Services
 
 Core continues to provide Registry, EventBus, component lifecycle, Bootstrap coordination, and configuration loading.
+
+## Database Infrastructure
+
+Core owns one framework Database service backed by SQLite through Node's built-in `node:sqlite` API.
+
+Verified responsibilities:
+
+- Validate Database configuration
+- Normalize local database paths
+- Initialize one connection through Bootstrap
+- Report connection health
+- Enable SQLite foreign-key enforcement
+- Use write-ahead logging for file-backed databases
+- Create and query migration history
+- Apply ordered migrations transactionally
+- Roll back a failed migration
+- Close the connection through controlled framework shutdown
+
+The Database service does not contain Module business rules. Modules, Providers, and commands do not access its connection directly.

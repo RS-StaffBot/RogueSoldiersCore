@@ -1,6 +1,9 @@
 const Logger = require("../core/Logger");
 const Registry = require("../core/Registry");
 const EventBus = require("../core/EventBus");
+const DatabaseService = require(
+    "../core/database/DatabaseService"
+);
 
 const Configuration = require("../configuration/ConfigurationManager");
 
@@ -9,6 +12,8 @@ const ProviderLoader = require("../providers/core/ProviderLoader");
 
 const ModuleManager = require("../modules/core/ModuleManager");
 const ModuleLoader = require("../modules/core/ModuleLoader");
+
+const Database = new DatabaseService();
 
 class Bootstrap {
 
@@ -19,12 +24,16 @@ class Bootstrap {
         Registry.register("logger", Logger);
         Registry.register("config", Configuration);
         Registry.register("eventBus", EventBus);
+        Registry.register("database", Database);
         Registry.register("providers", ProviderManager);
         Registry.register("modules", ModuleManager);
 
         Logger.info(`Starting ${Configuration.get("core.app.name")}`);
         Logger.info(`Version ${Configuration.get("core.app.version")}`);
         Logger.info("");
+
+        Database.initialize();
+        Database.start();
 
         const providers = ProviderLoader.load();
 
@@ -43,6 +52,13 @@ class Bootstrap {
 
         ModuleManager.initializeAll();
         ModuleManager.startAll();
+
+        Logger.info("Loaded Core Services:");
+        Logger.info(
+            `- ${Database.name} (${Database.state}, ` +
+            `${Database.checkHealth() ? "HEALTHY" : "UNHEALTHY"})`
+        );
+        Logger.info("");
 
         Logger.info("Loaded Providers:");
 
@@ -68,6 +84,16 @@ class Bootstrap {
 
         Logger.info("");
         Logger.info("Framework started successfully.");
+
+    }
+
+    static stop() {
+
+        ModuleManager.stopAll();
+        ProviderManager.stopAll();
+        Database.stop();
+
+        Logger.info("Framework stopped successfully.");
 
     }
 
