@@ -2,10 +2,12 @@ class FakeWebsiteAuthenticator {
 
     constructor({
         authenticate = null,
+        clearSessionCookie = false,
         identity = null
     } = {}) {
 
         this.authenticateImplementation = authenticate;
+        this.clearSessionCookie = clearSessionCookie;
         this.identity = identity;
         this.authenticateCalls = [];
 
@@ -19,16 +21,23 @@ class FakeWebsiteAuthenticator {
             return this.authenticateImplementation(request);
         }
 
-        if (this.identity === null) {
-            return null;
-        }
-
         return {
-            ...this.identity,
-            permissions:
-                Array.isArray(this.identity.permissions)
-                    ? [...this.identity.permissions]
-                    : this.identity.permissions
+            clearSessionCookie:
+                this.clearSessionCookie,
+            identity:
+                this.identity === null
+                    ? null
+                    : {
+                        ...this.identity,
+                        permissions:
+                            Array.isArray(
+                                this.identity.permissions
+                            )
+                                ? [
+                                    ...this.identity.permissions
+                                ]
+                                : this.identity.permissions
+                    }
         };
 
     }

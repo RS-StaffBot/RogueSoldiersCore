@@ -23,6 +23,7 @@ function createHarness({
         shutdownTimeoutMs: 5000
     },
     environment = {},
+    providerOptions = {},
     server = new FakeWebsiteServer()
 } = {}) {
 
@@ -30,6 +31,7 @@ function createHarness({
         provider: new WebsiteProvider({
             configuration,
             environment,
+            ...providerOptions,
             server
         }),
         server
@@ -153,7 +155,7 @@ test("rejects invalid enabled authentication before listening", () => {
 
 });
 
-test("rejects configured authentication until implemented", () => {
+test("initializes valid enabled authentication without exposing secrets", () => {
 
     const secret = "never-expose-this-secret";
     const harness = createHarness({
@@ -179,25 +181,16 @@ test("rejects configured authentication until implemented", () => {
         }
     });
 
-    assert.throws(
-        () => harness.provider.initialize(),
-        error => {
-            assert.strictEqual(
-                error.message,
-                "Website authentication is configured but is " +
-                "not implemented."
-            );
-            assert.strictEqual(
-                error.message.includes(secret),
-                false
-            );
-
-            return true;
+    assert.deepStrictEqual(
+        harness.provider.initialize(),
+        {
+            name: "Website",
+            state: ComponentState.READY
         }
     );
     assert.strictEqual(
         harness.provider.state,
-        ComponentState.ERROR
+        ComponentState.READY
     );
     assert.strictEqual(
         Object.isFrozen(
@@ -214,6 +207,143 @@ test("rejects configured authentication until implemented", () => {
     assert.deepStrictEqual(
         harness.server.startCalls,
         []
+    );
+    assert.notStrictEqual(
+        harness.provider.oauthFlow,
+        null
+    );
+    assert.notStrictEqual(
+        harness.provider.sessionStore,
+        null
+    );
+
+});
+
+test("disabled authentication constructs no OAuth dependencies", () => {
+
+    const unexpected = () => {
+        throw new Error(
+            "Disabled authentication dependency was constructed."
+        );
+    };
+    const harness = createHarness({
+        providerOptions: {
+            createCookieService: unexpected,
+            createDiscordOAuthClient: unexpected,
+            createOAuthFlow: unexpected,
+            createOAuthStateStore: unexpected,
+            createSessionStore: unexpected
+        }
+    });
+
+    harness.provider.initialize();
+
+    assert.strictEqual(
+        harness.provider.oauthFlow,
+        null
+    );
+    assert.strictEqual(
+        harness.provider.oauthStateStore,
+        null
+    );
+    assert.strictEqual(
+        harness.provider.sessionStore,
+        null
+    );
+
+});
+
+test("enabled shutdown stops transport before clearing stores", async () => {
+
+    const events = [];
+    const oauthFlow = {
+        beginLogin() {},
+        completeCallback() {},
+        logout() {},
+        beginShutdown() {
+            events.push("stopping");
+        }
+    };
+    const stateStore = {
+        clear() {
+            events.push("state");
+        },
+        consume() {},
+        save() {}
+    };
+    const sessionStore = {
+        clear() {
+            events.push("sessions");
+        },
+        create() {},
+        resolve() {},
+        revoke() {}
+    };
+    const server = new FakeWebsiteServer({
+        stop() {
+            events.push("server");
+        }
+    });
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: true,
+                publicOrigin:
+                    "https://community.example",
+                discordGuildId:
+                    "123456789012345678",
+                discordRequestTimeoutMs: 10000,
+                oauthStateLifetimeMs: 600000,
+                sessionIdleLifetimeMs: 1800000,
+                sessionAbsoluteLifetimeMs: 28800000
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        },
+        environment: {
+            DISCORD_CLIENT_ID:
+                "234567890123456789",
+            DISCORD_CLIENT_SECRET: "secret"
+        },
+        providerOptions: {
+            createCookieService() {
+                return {
+                    clearSessionCookie() {},
+                    readSessionCookie() {}
+                };
+            },
+            createDiscordOAuthClient() {
+                return {};
+            },
+            createOAuthFlow() {
+                return oauthFlow;
+            },
+            createOAuthStateStore() {
+                return stateStore;
+            },
+            createSessionStore() {
+                return sessionStore;
+            }
+        },
+        server
+    });
+
+    harness.provider.initialize();
+    await harness.provider.start();
+    await harness.provider.stop();
+
+    assert.deepStrictEqual(events, [
+        "stopping",
+        "server",
+        "state",
+        "sessions"
+    ]);
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.STOPPED
     );
 
 });

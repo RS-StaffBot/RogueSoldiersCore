@@ -329,6 +329,7 @@ test("loads the real Website server for enabled configuration", () => {
         providers.map(provider => provider.name),
         ["Discord", "Website"]
     );
+    providers[1].initialize();
     assert.strictEqual(
         providers[1].server instanceof WebsiteServer,
         true
@@ -380,12 +381,13 @@ test("loads one Website Provider after existing Providers", () => {
         providers.map(provider => provider.name),
         ["Discord", "7 Days to Die", "Website"]
     );
-    assert.strictEqual(serverCreationCount, 1);
+    assert.strictEqual(serverCreationCount, 0);
 
     const websiteProvider = providers[2];
 
     websiteProvider.initialize();
 
+    assert.strictEqual(serverCreationCount, 1);
     assert.strictEqual(
         websiteProvider.server,
         server

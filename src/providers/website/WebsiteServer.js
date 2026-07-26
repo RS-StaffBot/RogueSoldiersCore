@@ -1,4 +1,5 @@
 const http = require("node:http");
+const { URL } = require("node:url");
 const WebsiteAuthenticator = require(
     "./WebsiteAuthenticator"
 );
@@ -10,6 +11,9 @@ class WebsiteServer {
         clearTimer = clearTimeout,
         createServer = (options, requestListener) =>
             http.createServer(options, requestListener),
+        cookieService = null,
+        oauthFlow = null,
+        publicOrigin = null,
         setTimer = setTimeout
     } = {}) {
 
@@ -28,9 +32,43 @@ class WebsiteServer {
             );
         }
 
+        if (
+            oauthFlow !== null &&
+            (
+                typeof oauthFlow.beginLogin !== "function" ||
+                typeof oauthFlow.completeCallback !==
+                    "function" ||
+                typeof oauthFlow.logout !== "function"
+            )
+        ) {
+            throw new Error(
+                "Website OAuth flow boundary is invalid."
+            );
+        }
+
+        if (
+            oauthFlow !== null &&
+            (
+                !cookieService ||
+                typeof cookieService.clearSessionCookie !==
+                    "function" ||
+                typeof cookieService
+                    .clearOAuthBindingCookie !==
+                    "function" ||
+                typeof publicOrigin !== "string"
+            )
+        ) {
+            throw new Error(
+                "Website authentication response boundaries are invalid."
+            );
+        }
+
         this.authenticator = authenticator;
         this.clearTimer = clearTimer;
+        this.cookieService = cookieService;
         this.createServer = createServer;
+        this.oauthFlow = oauthFlow;
+        this.publicOrigin = publicOrigin;
         this.setTimer = setTimer;
         this.server = null;
         this.starting = false;
@@ -395,7 +433,31 @@ class WebsiteServer {
 
     async handleRequest(request, response) {
 
-        if (request.url === "/health") {
+        let url;
+
+        try {
+            url = new URL(
+                request.url,
+                "http://127.0.0.1"
+            );
+        } catch {
+            this.writeJson(
+                response,
+                400,
+                {
+                    error: "Bad request."
+                }
+            );
+
+            return;
+        }
+
+        const exactPath =
+            url.search.length === 0
+                ? url.pathname
+                : null;
+
+        if (exactPath === "/health") {
 
             if (request.method !== "GET") {
                 this.writeJson(
@@ -424,7 +486,7 @@ class WebsiteServer {
             return;
         }
 
-        if (request.url === "/api/me") {
+        if (exactPath === "/api/me") {
 
             if (request.method !== "GET") {
                 this.writeJson(
@@ -449,6 +511,44 @@ class WebsiteServer {
             return;
         }
 
+        if (
+            this.oauthFlow !== null &&
+            exactPath === "/auth/discord"
+        ) {
+            this.handleLoginRequest(
+                request,
+                response
+            );
+
+            return;
+        }
+
+        if (
+            this.oauthFlow !== null &&
+            url.pathname ===
+                "/auth/discord/callback"
+        ) {
+            await this.handleCallbackRequest(
+                request,
+                response,
+                url
+            );
+
+            return;
+        }
+
+        if (
+            this.oauthFlow !== null &&
+            exactPath === "/auth/logout"
+        ) {
+            this.handleLogoutRequest(
+                request,
+                response
+            );
+
+            return;
+        }
+
         this.writeJson(
             response,
             404,
@@ -461,12 +561,13 @@ class WebsiteServer {
 
     async handleIdentityRequest(request, response) {
 
-        let identity;
+        let authentication;
 
         try {
-            identity = await this.authenticator.authenticate(
-                request
-            );
+            authentication =
+                await this.authenticator.authenticate(
+                    request
+                );
         } catch {
             this.writeJson(
                 response,
@@ -482,9 +583,23 @@ class WebsiteServer {
         let actor;
 
         try {
-            actor = this.createActorSnapshot(identity);
+            actor = this.createActorSnapshot(
+                authentication?.identity
+            );
         } catch {
             actor = null;
+        }
+
+        const headers = {};
+
+        if (
+            authentication?.clearSessionCookie ===
+                true &&
+            this.cookieService !== null
+        ) {
+            headers["Set-Cookie"] =
+                this.cookieService
+                    .clearSessionCookie();
         }
 
         if (actor === null) {
@@ -493,7 +608,8 @@ class WebsiteServer {
                 401,
                 {
                     error: "Authentication required."
-                }
+                },
+                headers
             );
 
             return;
@@ -509,7 +625,235 @@ class WebsiteServer {
                     displayName: actor.displayName,
                     permissions: [...actor.permissions]
                 }
-            }
+            },
+            headers
+        );
+
+    }
+
+    handleLoginRequest(request, response) {
+
+        if (request.method !== "GET") {
+            this.writeJson(
+                response,
+                405,
+                {
+                    error: "Method not allowed."
+                },
+                {
+                    Allow: "GET",
+                    "Referrer-Policy": "no-referrer"
+                }
+            );
+
+            return;
+        }
+
+        this.writeFlowResult(
+            response,
+            this.oauthFlow.beginLogin(),
+            true
+        );
+
+    }
+
+    async handleCallbackRequest(
+        request,
+        response,
+        url
+    ) {
+
+        if (request.method !== "GET") {
+            this.writeJson(
+                response,
+                405,
+                {
+                    error: "Method not allowed."
+                },
+                {
+                    Allow: "GET",
+                    "Referrer-Policy": "no-referrer"
+                }
+            );
+
+            return;
+        }
+
+        let result;
+
+        try {
+            result =
+                await this.oauthFlow.completeCallback({
+                    callback:
+                        this.parseOAuthCallback(url),
+                    request
+                });
+        } catch {
+            result = {
+                cookies: [
+                    this.cookieService
+                        .clearOAuthBindingCookie()
+                ],
+                location: null,
+                statusCode: 503
+            };
+        }
+
+        this.writeFlowResult(
+            response,
+            result,
+            true
+        );
+
+    }
+
+    handleLogoutRequest(request, response) {
+
+        if (request.method !== "POST") {
+            this.writeJson(
+                response,
+                405,
+                {
+                    error: "Method not allowed."
+                },
+                {
+                    Allow: "POST"
+                }
+            );
+
+            return;
+        }
+
+        let result;
+
+        try {
+            result = this.oauthFlow.logout(
+                request,
+                this.publicOrigin
+            );
+        } catch {
+            result = {
+                cookies: [],
+                location: null,
+                statusCode: 503
+            };
+        }
+
+        this.writeFlowResult(
+            response,
+            result,
+            false
+        );
+
+    }
+
+    parseOAuthCallback(url) {
+
+        const fields = {
+            code: url.searchParams.getAll("code"),
+            error: url.searchParams.getAll("error"),
+            state: url.searchParams.getAll("state")
+        };
+        const malformed =
+            fields.code.length > 1 ||
+            fields.error.length > 1 ||
+            fields.state.length !== 1 ||
+            (
+                fields.code.length +
+                fields.error.length
+            ) !== 1;
+
+        return Object.freeze({
+            code:
+                fields.code.length === 1
+                    ? fields.code[0]
+                    : null,
+            error:
+                fields.error.length === 1
+                    ? fields.error[0]
+                    : null,
+            malformed,
+            state:
+                fields.state.length === 1
+                    ? fields.state[0]
+                    : null
+        });
+
+    }
+
+    writeFlowResult(
+        response,
+        result,
+        includeReferrerPolicy
+    ) {
+
+        const headers = {};
+
+        if (includeReferrerPolicy) {
+            headers["Referrer-Policy"] =
+                "no-referrer";
+        }
+
+        if (
+            Array.isArray(result?.cookies) &&
+            result.cookies.length > 0
+        ) {
+            headers["Set-Cookie"] =
+                result.cookies;
+        }
+
+        if (
+            result?.statusCode === 303 &&
+            typeof result.location === "string"
+        ) {
+            response.writeHead(
+                303,
+                {
+                    "Cache-Control": "no-store",
+                    Location: result.location,
+                    "X-Content-Type-Options":
+                        "nosniff",
+                    ...headers
+                }
+            );
+            response.end();
+
+            return;
+        }
+
+        if (result?.statusCode === 204) {
+            response.writeHead(
+                204,
+                {
+                    "Cache-Control": "no-store",
+                    "X-Content-Type-Options":
+                        "nosniff",
+                    ...headers
+                }
+            );
+            response.end();
+
+            return;
+        }
+
+        const errors = {
+            400: "Bad request.",
+            401: "Authentication required.",
+            403: "Forbidden.",
+            503: "Service unavailable."
+        };
+        const statusCode =
+            Object.hasOwn(errors, result?.statusCode)
+                ? result.statusCode
+                : 503;
+
+        this.writeJson(
+            response,
+            statusCode,
+            {
+                error: errors[statusCode]
+            },
+            headers
         );
 
     }

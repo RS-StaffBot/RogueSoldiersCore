@@ -9,9 +9,12 @@ test("denies production authentication by default", async () => {
 
     const authenticator = new WebsiteAuthenticator();
 
-    assert.strictEqual(
+    assert.deepStrictEqual(
         await authenticator.authenticate(),
-        null
+        {
+            clearSessionCookie: false,
+            identity: null
+        }
     );
 
 });
@@ -26,9 +29,12 @@ test("does not trust request data into an identity", async () => {
         permissions: ["tickets.administrate"]
     };
 
-    assert.strictEqual(
+    assert.deepStrictEqual(
         await authenticator.authenticate(request),
-        null
+        {
+            clearSessionCookie: false,
+            identity: null
+        }
     );
 
 });
@@ -48,7 +54,153 @@ test("supports safe repeated await-compatible calls", async () => {
 
     assert.deepStrictEqual(
         results,
-        [null, null, null]
+        [
+            {
+                clearSessionCookie: false,
+                identity: null
+            },
+            {
+                clearSessionCookie: false,
+                identity: null
+            },
+            {
+                clearSessionCookie: false,
+                identity: null
+            }
+        ]
+    );
+
+});
+
+test("authenticates and refreshes a valid session", async () => {
+
+    const identity = Object.freeze({
+        actorId: "123",
+        displayName: "Member",
+        permissions: Object.freeze([])
+    });
+    const resolvedTokens = [];
+    const authenticator = new WebsiteAuthenticator({
+        cookieService: {
+            readSessionCookie() {
+                return {
+                    present: true,
+                    token: "valid-token",
+                    valid: true
+                };
+            }
+        },
+        sessionStore: {
+            resolve(token) {
+                resolvedTokens.push(token);
+
+                return identity;
+            }
+        }
+    });
+
+    const result = await authenticator.authenticate({
+        headers: {}
+    });
+
+    assert.deepStrictEqual(result, {
+        clearSessionCookie: false,
+        identity
+    });
+    assert.deepStrictEqual(
+        resolvedTokens,
+        ["valid-token"]
+    );
+    assert.strictEqual(
+        Object.hasOwn(result, "token"),
+        false
+    );
+
+});
+
+test("distinguishes missing and invalid supplied sessions", async () => {
+
+    const cases = [
+        {
+            cookie: {
+                present: false,
+                token: null,
+                valid: true
+            },
+            expectedClear: false
+        },
+        {
+            cookie: {
+                present: true,
+                token: null,
+                valid: false
+            },
+            expectedClear: true
+        },
+        {
+            cookie: {
+                present: true,
+                token: "unknown-token",
+                valid: true
+            },
+            expectedClear: true
+        }
+    ];
+
+    for (const item of cases) {
+
+        const authenticator =
+            new WebsiteAuthenticator({
+                cookieService: {
+                    readSessionCookie() {
+                        return item.cookie;
+                    }
+                },
+                sessionStore: {
+                    resolve() {
+                        return null;
+                    }
+                }
+            });
+
+        assert.deepStrictEqual(
+            await authenticator.authenticate({}),
+            {
+                clearSessionCookie:
+                    item.expectedClear,
+                identity: null
+            }
+        );
+
+    }
+
+});
+
+test("propagates session-store failures", async () => {
+
+    const failure = new Error(
+        "Session store failed."
+    );
+    const authenticator = new WebsiteAuthenticator({
+        cookieService: {
+            readSessionCookie() {
+                return {
+                    present: true,
+                    token: "valid-token",
+                    valid: true
+                };
+            }
+        },
+        sessionStore: {
+            resolve() {
+                throw failure;
+            }
+        }
+    });
+
+    await assert.rejects(
+        authenticator.authenticate({}),
+        error => error === failure
     );
 
 });

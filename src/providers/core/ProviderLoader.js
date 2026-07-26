@@ -21,8 +21,8 @@ class ProviderLoader {
         configuration = Configuration,
         createSevenDaysToDieClient = () =>
             new SevenDaysToDieTelnetClient(),
-        createWebsiteServer = () =>
-            new WebsiteServer(),
+        createWebsiteServer = options =>
+            new WebsiteServer(options),
         environment = process.env
     } = {}) {
 
@@ -120,8 +120,8 @@ class ProviderLoader {
         providers.push(
             new WebsiteProvider({
                 configuration: websiteSettings,
-                environment,
-                server: createWebsiteServer()
+                createServer: createWebsiteServer,
+                environment
             })
         );
 

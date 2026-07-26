@@ -3,20 +3,69 @@ const ComponentState = require("../../core/ComponentState");
 const WebsiteAuthenticationConfiguration = require(
     "./WebsiteAuthenticationConfiguration"
 );
+const DiscordOAuthClient = require(
+    "./DiscordOAuthClient"
+);
+const InMemoryWebsiteOAuthStateStore = require(
+    "./InMemoryWebsiteOAuthStateStore"
+);
+const InMemoryWebsiteSessionStore = require(
+    "./InMemoryWebsiteSessionStore"
+);
+const WebsiteAuthenticator = require(
+    "./WebsiteAuthenticator"
+);
+const WebsiteCookieService = require(
+    "./WebsiteCookieService"
+);
+const WebsiteOAuthFlow = require(
+    "./WebsiteOAuthFlow"
+);
+const WebsiteServer = require("./WebsiteServer");
 
 class WebsiteProvider extends BaseProvider {
 
     constructor({
         configuration,
+        createAuthenticator = options =>
+            new WebsiteAuthenticator(options),
+        createCookieService = options =>
+            new WebsiteCookieService(options),
+        createDiscordOAuthClient = options =>
+            new DiscordOAuthClient(options),
+        createOAuthFlow = options =>
+            new WebsiteOAuthFlow(options),
+        createOAuthStateStore = options =>
+            new InMemoryWebsiteOAuthStateStore(options),
+        createServer = options =>
+            new WebsiteServer(options),
+        createSessionStore = options =>
+            new InMemoryWebsiteSessionStore(options),
         environment = process.env,
-        server
+        server = null
     } = {}) {
 
         super("Website");
 
         this.configuration = configuration;
+        this.createAuthenticator = createAuthenticator;
+        this.createCookieService = createCookieService;
+        this.createDiscordOAuthClient =
+            createDiscordOAuthClient;
+        this.createOAuthFlow = createOAuthFlow;
+        this.createOAuthStateStore =
+            createOAuthStateStore;
+        this.createServer =
+            server === null
+                ? createServer
+                : () => server;
+        this.createSessionStore =
+            createSessionStore;
         this.environment = environment;
-        this.server = server;
+        this.server = null;
+        this.oauthFlow = null;
+        this.oauthStateStore = null;
+        this.sessionStore = null;
         this.authenticationOptions = null;
         this.serverOptions = null;
         this.serverStartAttempted = false;
@@ -29,7 +78,6 @@ class WebsiteProvider extends BaseProvider {
 
         try {
 
-            this.validateServer();
             this.serverOptions = this.createServerOptions();
             this.authenticationOptions =
                 new WebsiteAuthenticationConfiguration({
@@ -38,12 +86,8 @@ class WebsiteProvider extends BaseProvider {
                     environment: this.environment
                 }).getSnapshot();
 
-            if (this.authenticationOptions.enabled) {
-                throw new Error(
-                    "Website authentication is configured but is " +
-                    "not implemented."
-                );
-            }
+            this.constructBoundaries();
+            this.validateServer();
 
             super.initialize();
 
@@ -114,21 +158,56 @@ class WebsiteProvider extends BaseProvider {
 
         this.state = ComponentState.STOPPING;
 
+        const errors = [];
+
+        if (this.oauthFlow !== null) {
+            try {
+                this.oauthFlow.beginShutdown();
+            } catch (error) {
+                errors.push(error);
+            }
+        }
+
         try {
 
-            if (this.serverStartAttempted) {
+            if (
+                this.serverStartAttempted &&
+                this.server !== null
+            ) {
                 await this.server.stop();
                 this.serverStartAttempted = false;
             }
 
-            super.stop();
-
-            return this.getStatus();
-
         } catch (error) {
-            this.setError();
-            throw error;
+            errors.push(error);
+        } finally {
+
+            for (const store of [
+                this.oauthStateStore,
+                this.sessionStore
+            ]) {
+                if (store !== null) {
+                    try {
+                        store.clear();
+                    } catch (error) {
+                        errors.push(error);
+                    }
+                }
+            }
+
         }
+
+        if (errors.length > 0) {
+            this.setError();
+            throw new AggregateError(
+                errors,
+                "Website Provider cleanup failed."
+            );
+        }
+
+        super.stop();
+
+        return this.getStatus();
 
     }
 
@@ -164,6 +243,106 @@ class WebsiteProvider extends BaseProvider {
         ) {
             throw new Error(
                 "Website server must provide start and stop operations."
+            );
+        }
+
+    }
+
+    constructBoundaries() {
+
+        this.validateFactories(
+            this.authenticationOptions.enabled
+        );
+
+        if (!this.authenticationOptions.enabled) {
+
+            const authenticator =
+                this.createAuthenticator();
+
+            this.server = this.createServer({
+                authenticator
+            });
+
+            return;
+        }
+
+        const options = this.authenticationOptions;
+        const oauthClient =
+            this.createDiscordOAuthClient({
+                callbackUri: options.callbackUri,
+                clientId: options.discordClientId,
+                clientSecret:
+                    this.environment
+                        .DISCORD_CLIENT_SECRET,
+                guildId: options.discordGuildId,
+                requestTimeoutMs:
+                    options.discordRequestTimeoutMs
+            });
+        this.oauthStateStore =
+            this.createOAuthStateStore({
+                lifetimeMs:
+                    options.oauthStateLifetimeMs
+            });
+        this.sessionStore =
+            this.createSessionStore({
+                absoluteLifetimeMs:
+                    options.sessionAbsoluteLifetimeMs,
+                idleLifetimeMs:
+                    options.sessionIdleLifetimeMs
+            });
+        const cookieService =
+            this.createCookieService({
+                oauthStateLifetimeMs:
+                    options.oauthStateLifetimeMs,
+                sessionAbsoluteLifetimeMs:
+                    options.sessionAbsoluteLifetimeMs
+            });
+        this.oauthFlow = this.createOAuthFlow({
+            cookieService,
+            oauthClient,
+            sessionStore: this.sessionStore,
+            stateStore: this.oauthStateStore
+        });
+        const authenticator =
+            this.createAuthenticator({
+                cookieService,
+                sessionStore: this.sessionStore
+            });
+
+        this.server = this.createServer({
+            authenticator,
+            cookieService,
+            oauthFlow: this.oauthFlow,
+            publicOrigin: options.publicOrigin
+        });
+
+    }
+
+    validateFactories(authenticationEnabled) {
+
+        const factories = [
+            this.createAuthenticator,
+            this.createServer
+        ];
+
+        if (authenticationEnabled) {
+            factories.push(
+                this.createCookieService,
+                this.createDiscordOAuthClient,
+                this.createOAuthFlow,
+                this.createOAuthStateStore,
+                this.createSessionStore
+            );
+        }
+
+        if (
+            factories.some(
+                factory =>
+                    typeof factory !== "function"
+            )
+        ) {
+            throw new Error(
+                "Website Provider construction boundary is invalid."
             );
         }
 

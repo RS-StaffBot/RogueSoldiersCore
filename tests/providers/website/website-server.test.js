@@ -10,6 +10,9 @@ const FakeHttpServer = require(
 const FakeWebsiteAuthenticator = require(
     "./fakes/FakeWebsiteAuthenticator"
 );
+const FakeWebsiteOAuthFlow = require(
+    "./fakes/FakeWebsiteOAuthFlow"
+);
 
 const defaultOptions = Object.freeze({
     host: "127.0.0.1",
@@ -22,7 +25,10 @@ function createHarness({
     authenticator = undefined,
     autoClose = true,
     autoListen = true,
+    cookieService = null,
     listenError = null,
+    oauthFlow = null,
+    publicOrigin = null,
     timers = null
 } = {}) {
 
@@ -34,9 +40,19 @@ function createHarness({
             return Symbol("timer");
         }
     };
+    const resolvedCookieService =
+        cookieService === null
+            ? null
+            : {
+                clearOAuthBindingCookie() {
+                    return "clear-binding";
+                },
+                ...cookieService
+            };
     const server = new WebsiteServer({
         authenticator,
         clearTimer: timerHarness.clearTimer,
+        cookieService: resolvedCookieService,
         createServer(options, requestListener) {
             factoryCount += 1;
             httpServer = new FakeHttpServer({
@@ -49,6 +65,8 @@ function createHarness({
 
             return httpServer;
         },
+        oauthFlow,
+        publicOrigin,
         setTimer: timerHarness.setTimer
     });
 
@@ -903,5 +921,377 @@ test("server listener and timer cleanup remains stable", async () => {
     await harness.server.stop();
 
     assert.deepStrictEqual(clearedTimers, [timer]);
+
+});
+
+test("authentication routes remain hidden when disabled", async () => {
+
+    const harness = createHarness();
+
+    await harness.server.start(defaultOptions);
+
+    for (const [method, url] of [
+        ["GET", "/auth/discord"],
+        ["GET", "/auth/discord/callback"],
+        ["POST", "/auth/logout"]
+    ]) {
+        const response =
+            await harness.httpServer.request({
+                method,
+                url
+            });
+
+        assert.strictEqual(response.statusCode, 404);
+        assert.strictEqual(
+            Object.hasOwn(
+                response.headers,
+                "set-cookie"
+            ),
+            false
+        );
+    }
+
+    await harness.server.stop();
+
+});
+
+test("dispatches enabled login and callback routes safely", async () => {
+
+    const oauthFlow = new FakeWebsiteOAuthFlow({
+        beginLogin() {
+            return {
+                cookies: ["binding-cookie"],
+                location:
+                    "https://discord.com/oauth2/authorize",
+                statusCode: 303
+            };
+        },
+        completeCallback(input) {
+            assert.deepStrictEqual(input.callback, {
+                code: "code-1",
+                error: null,
+                malformed: false,
+                state: "state-1"
+            });
+
+            return {
+                cookies: [
+                    "clear-binding",
+                    "session-cookie"
+                ],
+                location: "/api/me",
+                statusCode: 303
+            };
+        }
+    });
+    const harness = createHarness({
+        cookieService: {
+            clearSessionCookie() {
+                return "clear-session";
+            }
+        },
+        oauthFlow,
+        publicOrigin:
+            "https://community.example"
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const login =
+        await harness.httpServer.request({
+            url: "/auth/discord"
+        });
+    const callback =
+        await harness.httpServer.request({
+            url:
+                "/auth/discord/callback" +
+                "?code=code-1&state=state-1"
+        });
+
+    assert.strictEqual(login.statusCode, 303);
+    assert.strictEqual(
+        login.headers.location,
+        "https://discord.com/oauth2/authorize"
+    );
+    assert.deepStrictEqual(
+        login.headers["set-cookie"],
+        ["binding-cookie"]
+    );
+    assert.strictEqual(
+        login.headers["referrer-policy"],
+        "no-referrer"
+    );
+    assert.strictEqual(callback.statusCode, 303);
+    assert.strictEqual(
+        callback.headers.location,
+        "/api/me"
+    );
+    assert.deepStrictEqual(
+        callback.headers["set-cookie"],
+        ["clear-binding", "session-cookie"]
+    );
+    assert.strictEqual(callback.body, "");
+
+    await harness.server.stop();
+
+});
+
+test("maps callback failures to generic responses", async () => {
+
+    const statuses = [400, 401, 403, 503];
+
+    for (const statusCode of statuses) {
+
+        const oauthFlow =
+            new FakeWebsiteOAuthFlow({
+                completeCallback() {
+                    return {
+                        cookies: ["clear-binding"],
+                        location: null,
+                        statusCode
+                    };
+                }
+            });
+        const harness = createHarness({
+            cookieService: {
+                clearSessionCookie() {
+                    return "clear-session";
+                }
+            },
+            oauthFlow,
+            publicOrigin:
+                "https://community.example"
+        });
+
+        await harness.server.start(defaultOptions);
+
+        const response =
+            await harness.httpServer.request({
+                url:
+                    "/auth/discord/callback" +
+                    "?error=access_denied" +
+                    "&state=state-1"
+            });
+
+        assert.strictEqual(
+            response.statusCode,
+            statusCode
+        );
+        assert.deepStrictEqual(
+            response.headers["set-cookie"],
+            ["clear-binding"]
+        );
+        assert.strictEqual(
+            response.body.includes("state-1"),
+            false
+        );
+
+        await harness.server.stop();
+
+    }
+
+});
+
+test("enforces authentication route methods", async () => {
+
+    const oauthFlow = new FakeWebsiteOAuthFlow();
+    const harness = createHarness({
+        cookieService: {
+            clearSessionCookie() {
+                return "clear-session";
+            }
+        },
+        oauthFlow,
+        publicOrigin:
+            "https://community.example"
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const login =
+        await harness.httpServer.request({
+            method: "POST",
+            url: "/auth/discord"
+        });
+    const callback =
+        await harness.httpServer.request({
+            method: "POST",
+            url: "/auth/discord/callback"
+        });
+    const logout =
+        await harness.httpServer.request({
+            method: "GET",
+            url: "/auth/logout"
+        });
+
+    assert.strictEqual(login.statusCode, 405);
+    assert.strictEqual(login.headers.allow, "GET");
+    assert.strictEqual(callback.statusCode, 405);
+    assert.strictEqual(callback.headers.allow, "GET");
+    assert.strictEqual(logout.statusCode, 405);
+    assert.strictEqual(logout.headers.allow, "POST");
+    assert.strictEqual(
+        oauthFlow.loginCount,
+        0
+    );
+
+    await harness.server.stop();
+
+});
+
+test("logout delegates exact Origin policy and clears cookies", async () => {
+
+    const origin =
+        "https://community.example";
+    const oauthFlow = new FakeWebsiteOAuthFlow({
+        logout(request, publicOrigin) {
+            assert.strictEqual(
+                request.headers.origin,
+                origin
+            );
+            assert.strictEqual(publicOrigin, origin);
+
+            return {
+                cookies: [
+                    "clear-session",
+                    "clear-binding"
+                ],
+                location: null,
+                statusCode: 204
+            };
+        }
+    });
+    const harness = createHarness({
+        cookieService: {
+            clearSessionCookie() {
+                return "clear-session";
+            }
+        },
+        oauthFlow,
+        publicOrigin: origin
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response =
+        await harness.httpServer.request({
+            headers: {
+                origin
+            },
+            method: "POST",
+            url: "/auth/logout"
+        });
+
+    assert.strictEqual(response.statusCode, 204);
+    assert.strictEqual(response.body, "");
+    assert.deepStrictEqual(
+        response.headers["set-cookie"],
+        ["clear-session", "clear-binding"]
+    );
+    assert.strictEqual(
+        Object.hasOwn(
+            response.headers,
+            "access-control-allow-origin"
+        ),
+        false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("logout rejects missing and mismatched Origin without cookies", async () => {
+
+    const origin =
+        "https://community.example";
+    const oauthFlow = new FakeWebsiteOAuthFlow({
+        logout(request, publicOrigin) {
+            assert.strictEqual(publicOrigin, origin);
+
+            return {
+                cookies: [],
+                location: null,
+                statusCode:
+                    request.headers.origin ===
+                        publicOrigin
+                        ? 204
+                        : 403
+            };
+        }
+    });
+    const harness = createHarness({
+        cookieService: {
+            clearSessionCookie() {
+                return "clear-session";
+            }
+        },
+        oauthFlow,
+        publicOrigin: origin
+    });
+
+    await harness.server.start(defaultOptions);
+
+    for (const headers of [
+        {},
+        {
+            origin: "https://wrong.example"
+        }
+    ]) {
+        const response =
+            await harness.httpServer.request({
+                headers,
+                method: "POST",
+                url: "/auth/logout"
+            });
+
+        assert.strictEqual(response.statusCode, 403);
+        assert.strictEqual(
+            Object.hasOwn(
+                response.headers,
+                "set-cookie"
+            ),
+            false
+        );
+        assert.deepStrictEqual(
+            JSON.parse(response.body),
+            {
+                error: "Forbidden."
+            }
+        );
+    }
+
+    await harness.server.stop();
+
+});
+
+test("invalid api session clears the session cookie", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            clearSessionCookie: true
+        });
+    const harness = createHarness({
+        authenticator,
+        cookieService: {
+            clearSessionCookie() {
+                return "clear-session";
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response =
+        await harness.httpServer.request({
+            url: "/api/me"
+        });
+
+    assert.strictEqual(response.statusCode, 401);
+    assert.strictEqual(
+        response.headers["set-cookie"],
+        "clear-session"
+    );
+
+    await harness.server.stop();
 
 });
