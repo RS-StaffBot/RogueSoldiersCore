@@ -29,6 +29,30 @@ class TicketModule extends BaseModule {
 
     }
 
+    validateCreatorId(creatorId) {
+
+        if (
+            typeof creatorId !== "string" ||
+            creatorId.trim().length === 0
+        ) {
+            throw new Error(
+                "Ticket creator ID is required."
+            );
+        }
+
+    }
+
+    requireSupportedStatus(status) {
+
+        if (!this.supportsStatus(status)) {
+            throw new Error(
+                "Unsupported ticket status: " +
+                String(status)
+            );
+        }
+
+    }
+
     createTicketSnapshot(ticket) {
 
         return new TicketRecord({
@@ -125,6 +149,42 @@ class TicketModule extends BaseModule {
 
     getTicketCount() {
         return this.tickets.size;
+    }
+
+    listTickets() {
+
+        return [...this.tickets.values()].map(
+            ticket => this.createTicketSnapshot(ticket)
+        );
+
+    }
+
+    listTicketsForCreator(creatorId) {
+
+        this.validateCreatorId(creatorId);
+
+        return [...this.tickets.values()]
+            .filter(ticket =>
+                ticket.creatorId === creatorId
+            )
+            .map(ticket =>
+                this.createTicketSnapshot(ticket)
+            );
+
+    }
+
+    listTicketsByStatus(status) {
+
+        this.requireSupportedStatus(status);
+
+        return [...this.tickets.values()]
+            .filter(ticket =>
+                ticket.status === status
+            )
+            .map(ticket =>
+                this.createTicketSnapshot(ticket)
+            );
+
     }
 
 }
