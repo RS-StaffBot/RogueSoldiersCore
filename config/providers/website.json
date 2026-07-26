@@ -1,0 +1,7 @@
+{
+  "enabled": false,
+  "host": "127.0.0.1",
+  "port": 8080,
+  "requestTimeoutMs": 10000,
+  "shutdownTimeoutMs": 5000
+}

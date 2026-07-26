@@ -11,23 +11,39 @@ const SevenDaysToDieTelnetClient = require(
     "../../src/providers/sevendaystodie/" +
     "SevenDaysToDieTelnetClient"
 );
+const WebsiteServer = require(
+    "../../src/providers/website/WebsiteServer"
+);
 const FakeSevenDaysToDieClient = require(
     "./sevendaystodie/fakes/FakeSevenDaysToDieClient"
 );
+const FakeWebsiteServer = require(
+    "./website/fakes/FakeWebsiteServer"
+);
 
-function createConfiguration(settings) {
+function createConfiguration(
+    gameSettings,
+    websiteSettings
+) {
 
     return {
         get(path, defaultValue = null) {
 
-            assert.strictEqual(
-                path,
-                "providers.sevendaystodie"
-            );
+            if (path === "providers.sevendaystodie") {
+                return gameSettings === undefined
+                    ? defaultValue
+                    : gameSettings;
+            }
 
-            return settings === undefined
-                ? defaultValue
-                : settings;
+            if (path === "providers.website") {
+                return websiteSettings === undefined
+                    ? defaultValue
+                    : websiteSettings;
+            }
+
+            assert.fail(
+                `Unexpected configuration path: ${path}`
+            );
 
         }
     };
@@ -225,6 +241,167 @@ test("loads one game Provider after Discord when a client is injected", () => {
             host: "game.internal",
             password: "test-password",
             port: 8081
+        }
+    );
+
+});
+
+test("omits missing Website configuration", () => {
+
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            undefined,
+            undefined
+        )
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord"]
+    );
+
+});
+
+test("omits disabled Website without constructing a server", () => {
+
+    let serverCreationCount = 0;
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            undefined,
+            {
+                enabled: false,
+                host: "invalid",
+                port: "invalid",
+                requestTimeoutMs: null,
+                shutdownTimeoutMs: null
+            }
+        ),
+        createWebsiteServer() {
+            serverCreationCount += 1;
+
+            return new FakeWebsiteServer();
+        }
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord"]
+    );
+    assert.strictEqual(serverCreationCount, 0);
+
+});
+
+test("rejects a non-boolean Website enabled setting", () => {
+
+    assert.throws(
+        () => ProviderLoader.load({
+            configuration: createConfiguration(
+                undefined,
+                {
+                    enabled: "true"
+                }
+            )
+        }),
+        {
+            message:
+                "Website enabled configuration must be a boolean."
+        }
+    );
+
+});
+
+test("loads the real Website server for enabled configuration", () => {
+
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            undefined,
+            {
+                enabled: true,
+                host: "127.0.0.1",
+                port: 8080,
+                requestTimeoutMs: 10000,
+                shutdownTimeoutMs: 5000
+            }
+        )
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord", "Website"]
+    );
+    assert.strictEqual(
+        providers[1].server instanceof WebsiteServer,
+        true
+    );
+
+});
+
+test("loads one Website Provider after existing Providers", () => {
+
+    let serverCreationCount = 0;
+    const server = new FakeWebsiteServer();
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            {
+                connectionTimeoutMs: 10000,
+                enabled: true,
+                host: "game.internal",
+                port: 8081
+            },
+            {
+                enabled: true,
+                host: "127.0.0.1",
+                port: 8080,
+                requestTimeoutMs: 10000,
+                shutdownTimeoutMs: 5000
+            }
+        ),
+        createSevenDaysToDieClient() {
+            return new FakeSevenDaysToDieClient();
+        },
+        createWebsiteServer() {
+            serverCreationCount += 1;
+
+            return server;
+        },
+        environment: {
+            SEVEN_DAYS_TO_DIE_TELNET_PASSWORD:
+                "test-password"
+        }
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord", "7 Days to Die", "Website"]
+    );
+    assert.strictEqual(serverCreationCount, 1);
+
+    const websiteProvider = providers[2];
+
+    websiteProvider.initialize();
+
+    assert.strictEqual(
+        websiteProvider.server,
+        server
+    );
+
+});
+
+test("rejects an invalid enabled Website server factory", () => {
+
+    assert.throws(
+        () => ProviderLoader.load({
+            configuration: createConfiguration(
+                undefined,
+                {
+                    enabled: true
+                }
+            ),
+            createWebsiteServer: null
+        }),
+        {
+            message:
+                "Website server factory must be a function."
         }
     );
 

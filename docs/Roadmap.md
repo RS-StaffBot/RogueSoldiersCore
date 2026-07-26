@@ -119,7 +119,7 @@ Boundaries:
 - Database transactions cannot roll back external Discord actions.
 - Backup and restore tooling, production storage deployment, remote databases, replication, clustering, and database administration remain future work.
 - Cross-platform identity remains future work.
-- Game-server integration was outside v0.7.0; its initial v0.8.0 Provider boundary is now in progress.
+- Game-server integration was outside v0.7.0; its initial v0.8.0 Provider boundary has been completed.
 
 ## v0.8.0 - 7 Days to Die Provider
 

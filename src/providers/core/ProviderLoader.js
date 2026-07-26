@@ -8,6 +8,12 @@ const SevenDaysToDieProvider = require(
 const SevenDaysToDieTelnetClient = require(
     "../sevendaystodie/SevenDaysToDieTelnetClient"
 );
+const WebsiteProvider = require(
+    "../website/WebsiteProvider"
+);
+const WebsiteServer = require(
+    "../website/WebsiteServer"
+);
 
 class ProviderLoader {
 
@@ -15,58 +21,106 @@ class ProviderLoader {
         configuration = Configuration,
         createSevenDaysToDieClient = () =>
             new SevenDaysToDieTelnetClient(),
+        createWebsiteServer = () =>
+            new WebsiteServer(),
         environment = process.env
     } = {}) {
 
         const providers = [
             new DiscordProvider()
         ];
-        const settings = configuration.get(
+        const gameSettings = configuration.get(
             "providers.sevendaystodie",
             null
         );
 
-        if (settings === null) {
+        if (gameSettings !== null) {
+
+            if (
+                typeof gameSettings !== "object" ||
+                Array.isArray(gameSettings)
+            ) {
+                throw new Error(
+                    "7 Days to Die Provider configuration must be " +
+                    "an object."
+                );
+            }
+
+            const gameEnabled =
+                gameSettings.enabled ?? false;
+
+            if (typeof gameEnabled !== "boolean") {
+                throw new Error(
+                    "7 Days to Die enabled configuration must be " +
+                    "a boolean."
+                );
+            }
+
+            if (gameEnabled) {
+
+                if (
+                    typeof createSevenDaysToDieClient !==
+                    "function"
+                ) {
+                    throw new Error(
+                        "7 Days to Die client factory must be a function."
+                    );
+                }
+
+                providers.push(
+                    new SevenDaysToDieProvider({
+                        client:
+                            createSevenDaysToDieClient(),
+                        configuration: gameSettings,
+                        environment
+                    })
+                );
+
+            }
+
+        }
+
+        const websiteSettings = configuration.get(
+            "providers.website",
+            null
+        );
+
+        if (websiteSettings === null) {
             return providers;
         }
 
         if (
-            typeof settings !== "object" ||
-            Array.isArray(settings)
+            typeof websiteSettings !== "object" ||
+            Array.isArray(websiteSettings)
         ) {
             throw new Error(
-                "7 Days to Die Provider configuration must be " +
-                "an object."
+                "Website Provider configuration must be an object."
             );
         }
 
-        const enabled = settings.enabled ?? false;
+        const websiteEnabled =
+            websiteSettings.enabled ?? false;
 
-        if (typeof enabled !== "boolean") {
+        if (typeof websiteEnabled !== "boolean") {
             throw new Error(
-                "7 Days to Die enabled configuration must be " +
-                "a boolean."
+                "Website enabled configuration must be a boolean."
             );
         }
 
-        if (!enabled) {
+        if (!websiteEnabled) {
             return providers;
         }
 
-        if (
-            typeof createSevenDaysToDieClient !==
-            "function"
-        ) {
+        if (typeof createWebsiteServer !== "function") {
             throw new Error(
-                "7 Days to Die client factory must be a function."
+                "Website server factory must be a function."
             );
         }
 
         providers.push(
-            new SevenDaysToDieProvider({
-                client: createSevenDaysToDieClient(),
-                configuration: settings,
-                environment
+            new WebsiteProvider({
+                configuration: websiteSettings,
+                server: createWebsiteServer()
             })
         );
 
