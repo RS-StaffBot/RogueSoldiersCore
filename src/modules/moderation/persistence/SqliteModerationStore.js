@@ -1,3 +1,7 @@
+const ModerationAuditRecord = require(
+    "../ModerationAuditRecord"
+);
+
 class SqliteModerationStore {
 
     #insertRecord;
@@ -45,6 +49,10 @@ class SqliteModerationStore {
 
     append(record) {
 
+        const details =
+            ModerationAuditRecord
+                .createDetailsSnapshot(record.details);
+
         try {
 
             this.#insertRecord.run(
@@ -53,7 +61,7 @@ class SqliteModerationStore {
                 record.moderatorId,
                 record.targetId,
                 record.reason,
-                JSON.stringify(record.details),
+                JSON.stringify(details),
                 record.createdAt
             );
 
@@ -79,11 +87,11 @@ class SqliteModerationStore {
                 );
             }
 
-            if (
-                !details ||
-                typeof details !== "object" ||
-                Array.isArray(details)
-            ) {
+            try {
+                details =
+                    ModerationAuditRecord
+                        .createDetailsSnapshot(details);
+            } catch (error) {
                 throw new Error(
                     "Stored moderation details are invalid."
                 );

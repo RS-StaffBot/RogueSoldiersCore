@@ -1,3 +1,7 @@
+const ModerationAuditRecord = require(
+    "../ModerationAuditRecord"
+);
+
 class InMemoryModerationStore {
 
     constructor() {
@@ -32,9 +36,11 @@ class InMemoryModerationStore {
             moderatorId: record.moderatorId,
             targetId: record.targetId,
             reason: record.reason,
-            details: {
-                ...record.details
-            },
+            details:
+                ModerationAuditRecord
+                    .createDetailsSnapshot(
+                        record.details
+                    ),
             createdAt: record.createdAt
         };
 
