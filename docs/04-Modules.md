@@ -8,7 +8,7 @@
 
 ## Economy Module
 
-The Economy Module owns platform-neutral Economy business logic and in-memory state.
+The Economy Module owns platform-neutral Economy business logic and validates state reconstructed through its store contract.
 
 Verified responsibilities:
 
@@ -24,14 +24,16 @@ Verified responsibilities:
 - Rank accounts by descending balance with deterministic user-ID tie ordering
 - Validate configurable reward, cooldown, leaderboard, pagination, and transfer-policy settings
 - Validate public user IDs as non-empty strings
+- Persist production accounts, transactions, daily claims, bounded transaction pages, and leaderboard queries in SQLite
+- Recover balances, history, claims, ordering, and transaction identity after restart
 
-Economy write operations validate the complete operation before committing state. Failed credits, debits, transfers, and daily claims leave balances, account count, daily claim timestamps, transaction history, ordering, and transaction IDs unchanged. Transaction IDs are sequential for successfully stored transactions.
+Economy write operations validate the complete operation before committing state. Failed credits, debits, transfers, and daily claims leave balances, account count, daily claim timestamps, transaction history, ordering, and transaction IDs unchanged. Production writes use one SQLite transaction, and transaction IDs are allocated only for successfully committed transaction rows.
 
 Public account, transaction, configuration, leaderboard, daily-status, and claim results are defensive snapshots. Returned arrays and `Date` objects do not expose the Module's internal mutable instances.
 
 Discord Economy commands resolve the framework-loaded Module instance through the Core Registry and Module Manager. The Module does not depend on Discord, and commands do not create a separate Economy instance.
 
-Economy storage is in memory and is lost when the process stops. Database persistence belongs to v0.7.0. Database-backed operations will be required for multi-process atomicity, and future transaction pagination should query bounded database pages rather than loading every transaction. Leaderboard indexes or caches should be introduced only when persistence and measured scale justify them.
+SQLite is authoritative for production Economy state. Direct `EconomyModule` construction uses an in-memory implementation of the same store contract for isolated tests. Production transaction pagination uses bounded indexed queries, and leaderboards read durable balances in deterministic order without a second cache.
 
 The Economy Module does not implement a shop, cross-platform identity mapping, a Discord `/transfer` command, or an administrative interface.
 

@@ -1,4 +1,7 @@
 const EconomyModule = require("../economy/EconomyModule");
+const SqliteEconomyStore = require(
+    "../economy/persistence/SqliteEconomyStore"
+);
 const ModerationModule = require("../moderation/ModerationModule");
 const SqliteModerationStore = require(
     "../moderation/persistence/SqliteModerationStore"
@@ -11,6 +14,11 @@ class ModuleLoader {
         database = null
     } = {}) {
 
+        const economyStore = database
+            ? database.createStore(
+                SqliteEconomyStore
+            )
+            : undefined;
         const moderationStore = database
             ? database.createStore(
                 SqliteModerationStore
@@ -18,7 +26,9 @@ class ModuleLoader {
             : undefined;
 
         return [
-            new EconomyModule(),
+            new EconomyModule({
+                store: economyStore
+            }),
             new ModerationModule({
                 store: moderationStore
             }),

@@ -2,15 +2,15 @@
 
 ## Economy Module
 
-The platform-neutral Module that owns Economy accounts, balances, transfers, transactions, daily rewards, leaderboards, validated settings, and in-memory state integrity.
+The platform-neutral Module that owns Economy business rules, validation, transfers, transactions, daily rewards, leaderboards, validated settings, and public state integrity.
 
 ## Economy Account
 
-An in-memory record identified by a non-empty user ID with a non-negative safe-integer balance and creation date.
+A record identified by a non-empty user ID with a non-negative safe-integer balance and creation date. Production accounts are durable in SQLite.
 
 ## Economy Transaction
 
-An in-memory `CREDIT`, `DEBIT`, or `TRANSFER` record with a sequential successful transaction ID, validated amount, reason, resulting balance data, and creation date.
+A `CREDIT`, `DEBIT`, or `TRANSFER` record with a durable sequential successful transaction ID, validated amount, reason, resulting balance data, and creation date.
 
 ## Economy Transfer Policy
 
@@ -32,9 +32,9 @@ The Economy Module API that returns bounded, newest-first transaction pages with
 
 An independently mutable account, transaction, configuration, array, or `Date` result that does not expose the Economy Module's internal state.
 
-## Atomic In-Memory Write
+## Atomic Economy Write
 
-An Economy operation that either commits all related in-memory balance, account, daily claim, transaction, and ID changes or leaves all of them unchanged on failure. Multi-process atomicity requires future database support.
+An Economy operation that either commits all related balance, account, daily claim, transaction, and ID changes or leaves all of them unchanged on failure. Production writes use one SQLite transaction; direct isolated use provides the same guarantee through the in-memory store.
 
 ## Ticket Module
 
@@ -122,7 +122,7 @@ Durable storage of Moderation audit records outside process memory. Production M
 
 ## Economy Persistence
 
-Future storage of Economy accounts, balances, claims, and transactions outside process memory. It belongs to the v0.7.0 Database milestone and is not implemented in v0.5.0.
+SQLite-authoritative production storage of Economy accounts, balances, claims, and transactions. Credits, debits, transfers, and daily claims commit all related durable facts atomically, and direct Module construction retains an in-memory store for isolated use.
 
 ## Ticket Persistence
 

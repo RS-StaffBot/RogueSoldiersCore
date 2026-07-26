@@ -12,7 +12,7 @@ SQLite is the selected local database engine. One Core-owned Database service ow
 
 Database migrations are ordered, tracked, and applied transactionally through Core. Migration SQL defines storage schema only; Module business validation remains in Modules. Providers and commands do not access the database directly.
 
-Module-specific stores receive the private Core connection through a controlled factory. The first production integration is a SQLite-backed Moderation store. The Moderation Module remains authoritative for record validation and public objects, while SQLite is authoritative for durable audit state.
+Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Moderation and Economy stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
 
 ## Providers
 
@@ -38,15 +38,20 @@ Core Registry and Module Manager
 EconomyModule validated operation
     |
     v
-In-memory accounts, transactions, and daily-claim state
+Economy store contract
     |
     v
-Calculated balances, history, rewards, and leaderboard results
+SQLite-authoritative accounts, transactions, and daily claims
+    |
+    v
+Calculated balances, bounded history pages, rewards, and leaderboard results
 ```
 
 Economy business logic remains platform-neutral and Module-owned. Discord commands translate interactions and format responses without constructing their own Economy Module.
 
-Economy persistence, multi-process atomicity, and cross-platform identity remain future work. A future framework-wide administration interface must use validated RSF settings and operations rather than directly mutating Module properties, configuration files, or database rows. Its technology is not yet selected, and it is not currently implemented.
+Production Economy state is SQLite-authoritative. Credits, debits, transfers, and daily claims commit all affected accounts, claim timestamps, transaction rows, and successful transaction identity in one SQLite transaction before returning success. Direct Module construction uses the same contract with an in-memory store for isolated use.
+
+Cross-platform identity remains future work. A future framework-wide administration interface must use validated RSF settings and operations rather than directly mutating Module properties, configuration files, or database rows. Its technology is not yet selected, and it is not currently implemented.
 
 ## Ticket Flow
 

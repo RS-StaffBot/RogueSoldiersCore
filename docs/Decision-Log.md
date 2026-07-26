@@ -38,11 +38,11 @@ Terminal formatting and ANSI color behavior belong only in Core Logger. This pro
 
 Economy business logic is platform-neutral and owned by `EconomyModule`. Discord commands resolve the framework-loaded Economy Module through the Core Registry and Module Manager rather than constructing a separate instance.
 
-Economy writes are atomic within the current in-memory implementation. Failed operations do not partially change balances, accounts, daily claim timestamps, transactions, ordering, or transaction ID sequencing.
+Economy writes are atomic through the selected store implementation. Failed operations do not partially change balances, accounts, daily claim timestamps, transactions, ordering, or transaction ID sequencing.
 
 Public Economy reads return defensive account, transaction, configuration, array, and `Date` snapshots so callers cannot mutate internal state through returned values.
 
-Persistence and multi-process atomicity remain deferred to the v0.7.0 Database milestone.
+Production Economy persistence and database-backed atomicity are implemented through the v0.7.0 SQLite store integration described below.
 
 ## Ticket Ownership, Authorization, and State Integrity
 
@@ -81,6 +81,18 @@ Moderation is the first Module persistence integration because its single append
 SQLite is authoritative for production Moderation audit state. `ModerationModule` retains action validation, immutable public record construction, and logging order. A Module-specific store owns parameterized SQL and row mapping. Bootstrap injects that store through `ModuleLoader`; Providers and commands do not access it. Module migrations join one globally ordered `NNN_lowercase_name` sequence through the Core migration loader.
 
 Audit storage must succeed before the Module logs or reports a successful action. Stored records are reconstructed through `ModerationAuditRecord`, so invalid durable data fails Module initialization instead of bypassing Module validation.
+
+## Economy Persistence Authority
+
+### Decision
+
+SQLite is authoritative for production Economy accounts, balances, transaction history, and daily-claim timestamps. Direct `EconomyModule` construction uses an in-memory store implementing the same Module-specific contract.
+
+The Economy Module retains input validation, transfer policy and authorization, balance calculations, transaction construction, public records, and public errors. The store owns durable rows, parameterized queries, transaction boundaries, deterministic ordering, restart recovery, and durable transaction sequence allocation.
+
+Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction. Public transaction IDs retain the `economy-N` format and derive from committed SQLite transaction sequence values. A rolled-back operation does not consume the next successful public ID.
+
+Daily claims are included with the core ledger because leaving cooldown timestamps in memory would permit duplicate rewards after restart and create mixed persistence authority. Economy configuration remains validated Module configuration rather than durable user state.
 
 ## Existing Decisions Retained
 
