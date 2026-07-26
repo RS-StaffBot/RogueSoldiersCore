@@ -107,6 +107,23 @@ A direct single-command client operation remains the preferred future shape. No 
 
 A future validated web administration interface may collect game-server connection settings and deployment-specific console information. It must invoke validated RSF configuration operations rather than edit source files directly. Telnet passwords or secret references must remain outside tracked JSON.
 
-This is future architecture only. No web interface, Website Provider responsibility, configuration persistence design, or live deployment workflow is currently implemented. Game-server protocol and command behavior remain owned by the 7 Days to Die Provider, and command execution must remain unavailable until its connection and response-boundary requirements are satisfied.
+This is future architecture only. The current Website Provider does not expose game-server configuration, persist configuration changes, or provide a live administration workflow. Game-server protocol and command behavior remain owned by the 7 Days to Die Provider, and command execution must remain unavailable until its connection and response-boundary requirements are satisfied.
 
 Reusable moderation, Economy, authorization, transaction, and cross-platform business policy remains Module-owned. Game Providers must invoke validated Module operations and must not directly access Module database tables.
+
+## Website Provider
+
+`WebsiteProvider` is optional and disabled by default. When enabled, `ProviderLoader` adds it after Discord and the optional 7 Days to Die Provider. Production configuration requires the exact loopback host `127.0.0.1`; public binding is not implemented.
+
+`WebsiteServer` uses Node's built-in `node:http` API and reports readiness only after listening succeeds. It retains the tested Provider lifecycle behavior for startup failure, unexpected post-readiness server loss, bounded shutdown, forced connection cleanup, and repeated safe shutdown.
+
+The server currently exposes two fixed routes:
+
+- `GET /health` is unauthenticated and reports Website transport readiness only.
+- `GET /api/me` invokes the Website authentication boundary.
+
+`WebsiteAuthenticator` defines the Provider-local `authenticate(request)` boundary. The production implementation intentionally denies every request by returning no authenticated identity. Automated tests may inject `FakeWebsiteAuthenticator` to prove deterministic authenticated responses without providing a production login mechanism.
+
+An injected authenticated identity must contain a non-empty actor ID, a non-empty display name, and an array of non-empty permission strings. `WebsiteServer` normalizes duplicate permissions, creates a frozen defensive snapshot, and returns only allowlisted identity fields. Invalid or missing identities return `401`, unsupported `/api/me` methods return `405`, and authenticator operational failures return a generic `503` without changing Website Provider transport state.
+
+This authentication contract is not working end-user login. Discord OAuth, sessions, cookies, CORS, Module and Registry access, stores, database access, frontend behavior, public network exposure, and permission translation remain unimplemented.

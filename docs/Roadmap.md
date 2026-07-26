@@ -6,7 +6,7 @@
 
 **Current Milestone:** v0.9.0 - Website Provider
 
-**Status:** Next Planned
+**Status:** In Progress
 
 ## Completed Milestones
 
@@ -147,7 +147,38 @@ Boundaries:
 
 Command execution remains deferred because no deterministic response terminator or reliable isolation from unsolicited logs is currently established. Deployment-specific evidence must confirm response completion, log filtering, server-version and hosting compatibility, and safe command-timeout behavior before implementation.
 
-A future web administration interface may collect and validate game-server configuration, but it must call validated RSF configuration operations rather than edit source files. Secrets must remain outside tracked JSON. This future interface is only a configuration surface; game-server behavior remains owned by the 7 Days to Die Provider. No web interface or configuration persistence implementation is selected.
+A future web administration interface may collect and validate game-server configuration, but it must call validated RSF configuration operations rather than edit source files. Secrets must remain outside tracked JSON. Such an interface would only provide a configuration surface; game-server behavior remains owned by the 7 Days to Die Provider. The current Website Provider does not expose game-server configuration or persist configuration changes.
+
+## v0.9.0 - Website Provider
+
+Status: In Progress
+
+Implemented:
+
+- Optional `WebsiteProvider`, disabled by default
+- Conditional loading after Discord and the optional 7 Days to Die Provider
+- Exact loopback-only production binding
+- HTTP readiness and lifecycle through Node's built-in `node:http` API
+- Awaited, bounded, and idempotent shutdown
+- Unauthenticated `GET /health` transport-readiness route
+- Provider-local `WebsiteAuthenticator` contract
+- Production authentication that intentionally denies all requests
+- Deterministic authenticated-identity injection for automated tests
+- `GET /api/me` with exact allowlisted identity responses
+- Identity validation, duplicate-permission normalization, and defensive frozen snapshots
+- `401`, `405`, and generic request-level `503` behavior
+- Automated coverage without live authentication or a public listener
+
+Current boundaries:
+
+- The authentication contract is not working end-user login.
+- Discord OAuth, sessions, cookies, persistence, logout, and production identity are not implemented.
+- Website Module, Registry, store, and database access are not implemented.
+- Ticket, Moderation, Economy, and administration routes are not implemented.
+- Permission translation and cross-platform identity remain future work.
+- Frontend behavior, CORS, proxy trust, TLS termination, and public binding are not implemented.
+- `GET /health` remains unauthenticated and reports Website transport readiness only.
+- v0.9.0 is not closed, versioned, or tagged.
 
 ## Future Direction
 
@@ -161,5 +192,4 @@ The following items are future intent, not implemented features or detailed mile
 
 ## Remaining Future Milestones
 
-- v0.9.0 - Website Provider
 - v1.0.0 - Production Release

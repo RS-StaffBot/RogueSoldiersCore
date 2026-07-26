@@ -6,27 +6,21 @@ v0.8.0
 
 ## Current Milestone
 
-v0.8.0 - 7 Days to Die Provider
+v0.9.0 - Website Provider
 
-Status: Completed
+Status: In Progress
 
 ## Last Completed Milestone
 
-v0.7.0 - Database
+v0.8.0 - 7 Days to Die Provider
 
 Status: Completed
 
 ## Previous Completed Milestone
 
-v0.6.0 - Ticket Module
+v0.7.0 - Database
 
 Status: Completed
-
-## Next Planned Milestone
-
-v0.9.0 - Website Provider
-
-Status: Next Planned
 
 ## Verified v0.4.0 Implementation
 
@@ -145,3 +139,34 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Live web-based configuration is not implemented.
 - Raw TCP management must use loopback, a LAN, a VPN, or another protected private path.
 - Command response handling requires deployment-specific evidence for completion boundaries, unsolicited-log filtering, server-version and hosting compatibility, and safe timeouts.
+
+## Verified v0.9.0 Implementation In Progress
+
+- Optional `WebsiteProvider`, disabled by default
+- Conditional `ProviderLoader` integration after Discord and the optional 7 Days to Die Provider
+- Exact production binding to `127.0.0.1`
+- HTTP lifecycle through Node's built-in `node:http` API
+- Truthful listening readiness, startup failure propagation, and unexpected server-loss handling
+- Awaited, bounded, and idempotent shutdown
+- Unauthenticated `GET /health` transport-readiness route
+- Provider-local `WebsiteAuthenticator` contract
+- Production authentication that intentionally denies every request
+- Deterministic authenticated-identity injection through `FakeWebsiteAuthenticator`
+- `GET /api/me` with allowlisted identity responses
+- Validated actor IDs, display names, and permission strings
+- Normalized duplicate permissions and defensive frozen identity snapshots
+- `401` for missing or invalid identity
+- `405` for unsupported `/api/me` methods
+- Generic request-level `503` for authenticator operational failure
+- Automated verification without OAuth, external identity services, or a public listener
+
+## v0.9.0 Current Boundaries
+
+- The authentication contract is not working end-user login.
+- Discord OAuth, OAuth callbacks, tokens, and refresh behavior are not implemented.
+- Sessions, cookies, logout, and identity persistence are not implemented.
+- Website Module, Registry, store, and database access are not implemented.
+- Ticket, Moderation, Economy, and administration routes are not implemented.
+- Permission translation and cross-platform identity are not implemented.
+- Frontend behavior and public network exposure are not implemented.
+- `GET /health` reports Website transport readiness only and does not authenticate requests.

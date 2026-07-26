@@ -162,7 +162,27 @@ Production Ticket persistence and database-backed atomicity are implemented thro
 
 ## Future Administration Boundary
 
-Future administrative interfaces must invoke validated RSF settings and operations. They must not directly mutate Module properties, configuration files, or database rows. Such an interface will require permissions, audit logging, and persistence; its technology is not fixed and it is not currently implemented.
+Future administrative interfaces must invoke validated RSF settings and operations. They must not directly mutate Module properties, configuration files, or database rows. Such an interface will require permissions, audit logging, and persistence. The current Website Provider and authentication contract do not implement that administrative interface.
+
+## Website Authentication Contract
+
+### Decision
+
+The Website Provider uses a focused, Provider-local `WebsiteAuthenticator` boundary. `WebsiteServer` retains explicit routing for `GET /health` and `GET /api/me`; two fixed routes do not justify a generic router or middleware framework.
+
+Production authentication denies access by default. Tests may inject deterministic identities to verify request handling, validation, allowlisting, and failure behavior. Authenticated identity results remain Provider-local and do not introduce a Shared principal model.
+
+### Boundaries
+
+- `GET /health` remains unauthenticated and reports Website transport readiness only.
+- `GET /api/me` returns identity only when an injected authenticator supplies a valid result.
+- Missing or invalid identities fail closed with `401`.
+- Authenticator operational failures return a generic request-level `503` and do not move the Website Provider to `ERROR`.
+- Discord OAuth, sessions, cookies, permission translation, Module access, persistence, frontend behavior, and production login are not implemented.
+
+### Reason
+
+The contract proves separation between HTTP transport and future authentication without selecting or simulating a production login system. A Shared principal, session system, OAuth client, Module route, or generic routing abstraction would exceed the current verified requirement.
 
 ## 7 Days to Die Command Execution Deferral
 
@@ -172,7 +192,7 @@ The optional `SevenDaysToDieProvider` currently owns configuration validation an
 
 A direct single-command client operation remains the preferred future command-execution shape. Its implementation is deferred until deployment-specific output evidence establishes deterministic response completion, unsolicited-log filtering, server-version and hosting compatibility, and safe command-timeout behavior. No command queue, separate command coordinator, generic command framework, response marker, or prompt delimiter is approved.
 
-Future game-server configuration may be entered through a validated web administration interface. That interface must call validated RSF configuration operations rather than edit source files, and secrets must remain outside tracked configuration files. No web interface or configuration persistence implementation is selected by this decision. Game-server behavior remains Provider-owned.
+Future game-server configuration may be entered through a validated web administration interface. That interface must call validated RSF configuration operations rather than edit source files, and secrets must remain outside tracked configuration files. The current Website Provider does not expose game-server configuration or persist configuration changes. Game-server behavior remains Provider-owned.
 
 ## Database Infrastructure Foundation
 

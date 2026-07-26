@@ -16,6 +16,26 @@ A platform boundary that owns platform clients, protocols, input and output tran
 
 The first active Provider and interface. It owns the Discord client, slash commands, interactions, Discord permission and hierarchy checks, Discord API operations, and response formatting.
 
+## WebsiteProvider
+
+The optional, disabled-by-default Provider that coordinates validated loopback-only Website configuration and the lifecycle of `WebsiteServer`.
+
+## WebsiteServer
+
+The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health` and `GET /api/me`.
+
+## WebsiteAuthenticator
+
+The Website Provider-local `authenticate(request)` contract. Its production implementation intentionally denies all authentication. Tests may inject deterministic identities, but no working end-user login is implemented.
+
+## Website Authenticated Identity
+
+A Provider-local identity containing an actor ID, display name, and permission-string array. Valid identities are normalized into defensive frozen snapshots and only allowlisted fields are returned by `GET /api/me`. This is not a Shared principal or cross-platform identity model.
+
+## Website Health
+
+The unauthenticated `GET /health` response that reports Website HTTP transport readiness only. It does not report authentication, Discord, Module, or database state.
+
 ## Game Provider
 
 A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first current game Provider boundary.
