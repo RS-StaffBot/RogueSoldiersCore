@@ -5,12 +5,16 @@ const Configuration = require(
 const SevenDaysToDieProvider = require(
     "../sevendaystodie/SevenDaysToDieProvider"
 );
+const SevenDaysToDieTelnetClient = require(
+    "../sevendaystodie/SevenDaysToDieTelnetClient"
+);
 
 class ProviderLoader {
 
     load({
         configuration = Configuration,
-        createSevenDaysToDieClient = null,
+        createSevenDaysToDieClient = () =>
+            new SevenDaysToDieTelnetClient(),
         environment = process.env
     } = {}) {
 
@@ -54,8 +58,7 @@ class ProviderLoader {
             "function"
         ) {
             throw new Error(
-                "7 Days to Die Provider requires an injected " +
-                "client until Phase 2."
+                "7 Days to Die client factory must be a function."
             );
         }
 

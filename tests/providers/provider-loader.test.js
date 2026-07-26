@@ -7,6 +7,10 @@ const DiscordProvider = require(
 const ProviderLoader = require(
     "../../src/providers/core/ProviderLoader"
 );
+const SevenDaysToDieTelnetClient = require(
+    "../../src/providers/sevendaystodie/" +
+    "SevenDaysToDieTelnetClient"
+);
 const FakeSevenDaysToDieClient = require(
     "./sevendaystodie/fakes/FakeSevenDaysToDieClient"
 );
@@ -87,18 +91,82 @@ test("rejects a non-boolean enabled setting", () => {
 
 });
 
-test("makes the enabled Phase 1 client limitation explicit", () => {
+test("loads the real client for enabled production configuration", () => {
+
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration({
+            connectionTimeoutMs: 10000,
+            enabled: true,
+            host: "game.internal",
+            port: 8081
+        }),
+        environment: {
+            SEVEN_DAYS_TO_DIE_TELNET_PASSWORD:
+                "test-password"
+        }
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord", "7 Days to Die"]
+    );
+    assert.strictEqual(
+        providers[1].client instanceof
+            SevenDaysToDieTelnetClient,
+        true
+    );
+
+});
+
+test("invalid enabled configuration opens no socket", () => {
+
+    let socketCreationCount = 0;
+    const client = new SevenDaysToDieTelnetClient({
+        createSocket() {
+            socketCreationCount += 1;
+
+            throw new Error("Socket should not open.");
+        }
+    });
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration({
+            connectionTimeoutMs: 10000,
+            enabled: true,
+            host: "",
+            port: 8081
+        }),
+        createSevenDaysToDieClient() {
+            return client;
+        },
+        environment: {
+            SEVEN_DAYS_TO_DIE_TELNET_PASSWORD:
+                "test-password"
+        }
+    });
+
+    assert.throws(
+        () => providers[1].initialize(),
+        {
+            message:
+                "7 Days to Die host must be a non-empty string."
+        }
+    );
+    assert.strictEqual(socketCreationCount, 0);
+
+});
+
+test("rejects an invalid enabled client factory", () => {
 
     assert.throws(
         () => ProviderLoader.load({
             configuration: createConfiguration({
                 enabled: true
-            })
+            }),
+            createSevenDaysToDieClient: null
         }),
         {
             message:
-                "7 Days to Die Provider requires an injected " +
-                "client until Phase 2."
+                "7 Days to Die client factory must be a function."
         }
     );
 
