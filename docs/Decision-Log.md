@@ -13,7 +13,7 @@ Moderation Module:
 - Supported actions
 - Action-to-permission mapping
 - Audit records
-- In-memory audit storage
+- Audit store contract and validated public records
 
 Shared:
 
@@ -103,6 +103,18 @@ SQLite is authoritative for production Ticket records, status, assignment, messa
 `TicketModule` retains validation, creator ownership, staff authorization, administrative override, status transitions, open-Ticket restrictions, public errors, and frozen public records. The store owns durable rows, parameterized queries, transaction boundaries, explicit ordering, restart recovery, and independent Ticket and message sequence allocation.
 
 Public IDs retain the `ticket-N` and `ticket-message-N` formats and derive from separate committed SQLite sequences. Failed writes roll back their row and sequence change together. Discord list and recent-message presentation uses optional bounded Module reads while existing unbounded Module APIs remain compatible for non-interaction callers.
+
+## v0.7.0 Persistence Boundary
+
+### Decision
+
+The completed v0.7.0 architecture uses SQLite for the current single-process deployment boundary through Node's built-in `node:sqlite` API. Core owns the single connection, migration lifecycle, health checks, controlled store construction, and shutdown. Migrations run before Module loading.
+
+Moderation, Economy, and Tickets use separate Module-specific store contracts. SQLite is authoritative in production, while direct isolated Module construction uses in-memory stores. Providers, commands, and Shared components remain persistence-blind.
+
+Public Module identities remain domain identities rather than exposed database row types. Database transactions protect multi-row Module writes and successful ID sequencing. They do not roll back external Discord actions.
+
+No ORM, query builder, native SQLite npm package, remote database, replication, clustering, backup system, or administration interface is selected. A future database replacement must preserve Module validation, authorization, public identities, store contracts, transactional guarantees, and Provider isolation.
 
 ## Existing Decisions Retained
 

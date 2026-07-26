@@ -6,6 +6,8 @@ The Discord Provider owns Discord clients, interactions, REST registration, Disc
 
 ## Verified Commands
 
+The Discord Provider loads exactly 12 unique commands:
+
 - `/ping`
 - `/help`
 - `/ban`
@@ -50,7 +52,7 @@ The command also provides a staff subcommand group:
 - `/ticket staff unassign`
 - `/ticket staff close`
 
-Ticket responses are ephemeral. Creator and staff lists display at most 20 Tickets and report any remainder. Staff Ticket views display at most the latest five messages, normalize message whitespace, and truncate long displayed content.
+Ticket responses are ephemeral. Creator and staff lists request at most 20 Tickets from the Module and report any remainder. Staff Ticket views request at most the latest five messages, normalize message whitespace, and truncate long displayed content.
 
 Discord user IDs are translated into Ticket actor, creator, author, and assignee identities. Discord permissions are translated into reusable Ticket permission identifiers, while final validation and authorization remain in `TicketModule`. Discord mentions, timestamps, response wording, and presentation limits belong to the Provider.
 
@@ -78,3 +80,5 @@ Checks include:
 ## Boundary
 
 Discord-specific behavior remains in the Provider. Reusable moderation actions, Economy and Ticket business operations, permission identifiers, authorization, and audit-record behavior remain outside the Provider.
+
+Providers and commands are persistence-blind. They resolve framework-loaded Modules and do not access Module stores, issue SQL, construct database connections, or depend on SQLite row formats.

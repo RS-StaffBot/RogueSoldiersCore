@@ -8,9 +8,11 @@
 
 ## Database Runtime
 
-RSF uses SQLite through Node's built-in `node:sqlite` API. No third-party database package, native npm add-on, ORM, or query builder is required by the Database infrastructure foundation.
+RSF uses SQLite support bundled with Node through the built-in `node:sqlite` API. No third-party database package, native npm add-on, native compilation toolchain, ORM, or query builder is required.
 
 Node 22.13 is the minimum supported runtime because that version made `node:sqlite` available without the `--experimental-sqlite` launch flag. The API remains marked active development in the Node 22 documentation.
+
+`node:sqlite` executes synchronously. The current persistence architecture targets one application process and one Core-owned SQLite connection. Remote database hosting, replication, clustering, backup and restore tooling, and operational database administration are not current dependencies or capabilities.
 
 ## Development
 

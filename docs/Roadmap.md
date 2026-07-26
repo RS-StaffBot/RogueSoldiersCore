@@ -2,9 +2,9 @@
 
 ## Current Status
 
-**Repository Version:** v0.6.0
+**Repository Version:** v0.7.0
 
-**Current Milestone:** v0.7.0 - Database
+**Current Milestone:** v0.8.0 - 7 Days to Die Provider
 
 **Status:** Next Planned
 
@@ -18,6 +18,7 @@
 - v0.4.0 - Moderation Module
 - v0.5.0 - Economy Module
 - v0.6.0 - Tickets
+- v0.7.0 - Database
 
 ## v0.4.0 - Moderation Module
 
@@ -56,10 +57,10 @@ Implemented:
 
 Boundaries:
 
-- State is lost on restart; database persistence belongs to v0.7.0.
-- Multi-process atomicity requires future database-backed operations.
+- At v0.5.0 completion, Economy state was in memory and persistence was deferred to v0.7.0; that persistence is now completed.
+- At v0.5.0 completion, multi-process atomicity required database-backed operations.
 - A shop, Discord `/transfer` command, cross-platform identity mapping, and administrative interface are not implemented.
-- Future database transaction pagination should retrieve bounded pages rather than loading the full history.
+- At v0.5.0 completion, database transaction pagination was deferred; bounded SQLite pagination is now completed.
 - Leaderboard indexes or caches should be introduced only when persistence and measured scale justify them.
 
 ## v0.6.0 - Tickets
@@ -83,19 +84,43 @@ Implemented:
 
 Boundaries:
 
-- Ticket state and ID sequences reset on restart; persistence belongs to v0.7.0.
-- Multi-process atomicity requires database-backed writes.
+- At v0.6.0 completion, Ticket state and ID sequences reset on restart and persistence was deferred to v0.7.0; that persistence is now completed.
+- At v0.6.0 completion, multi-process atomicity required database-backed writes.
 - Discord channels, threads, categories, permission overwrites, transcripts, configurable staff roles, external portals, and web administration are not implemented.
 - Reopening, deletion, attachments, priorities, escalation, and SLA systems remain future work.
 - Future administration must use validated RSF operations rather than direct state, configuration-file, or database-row mutation.
 
-Release action:
+## v0.7.0 - Database
 
-- Commit the closure changes and create and push the `v0.6.0` Git tag
+Status: Completed
+
+Implemented:
+
+- Core-owned SQLite connection lifecycle, health checks, and controlled shutdown
+- Built-in `node:sqlite` with no external database package, ORM, or query builder
+- Ordered transactional migrations tracked in `rsf_schema_migrations`
+- Moderation, Economy, and Ticket Module-specific SQLite stores
+- SQLite-authoritative production state and in-memory stores for direct isolated construction
+- Moderation audit restart recovery and deterministic ordering
+- Economy account, balance, transaction, transfer, daily-claim, pagination, leaderboard, and ID persistence
+- Ticket record, message, status, assignment, ordering, authorization, and independent ID persistence
+- Atomic durable writes, failed-operation rollback, and successful ID-sequence preservation
+- Validated durable reconstruction and safe initialization failure
+- Provider and command isolation from stores and SQL
+- Twelve existing Discord commands preserved
+
+Boundaries:
+
+- SQLite targets the current single-process deployment model.
+- `node:sqlite` is synchronous and remains an active-development API on Node 22.
+- Startup validation reads full durable Module state where required; very large datasets may require future optimization.
+- Database transactions cannot roll back external Discord actions.
+- Backup and restore tooling, production storage deployment, remote databases, replication, clustering, and database administration remain future work.
+- Cross-platform identity remains future work.
+- v0.8.0 game-server integration is not implemented.
 
 ## Future Milestones
 
-- v0.7.0 - Database
 - v0.8.0 - 7 Days to Die Provider
 - v0.9.0 - Website Provider
 - v1.0.0 - Production Release

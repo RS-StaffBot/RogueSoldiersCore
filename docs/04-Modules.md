@@ -6,6 +6,20 @@
 - Moderation
 - Tickets
 
+## Persistence Convention
+
+Production Moderation, Economy, and Ticket state is SQLite-authoritative. Direct isolated Module construction defaults to an in-memory store implementing the same Module-specific contract.
+
+Core applies the Module migrations before loading Modules:
+
+```text
+001_create_moderation_audit_records
+002_create_economy_ledger
+003_create_ticket_aggregate
+```
+
+Modules retain validation, authorization, state transitions, public errors, public identities, and defensive public records. Stores own durable rows, parameterized SQL, explicit ordering, transactions, and restart recovery. Modules do not open database connections, and Providers and commands do not access stores.
+
 ## Economy Module
 
 The Economy Module owns platform-neutral Economy business logic and validates state reconstructed through its store contract.
@@ -100,3 +114,5 @@ Production Moderation audit records are durable in SQLite and ordered by their s
 SQLite is authoritative for production Moderation audit state. Direct `ModerationModule` construction uses the same store contract with an in-memory implementation for isolated use and testing. Providers and commands do not access the store or database.
 
 An invalid durable record causes Moderation initialization to fail rather than being silently accepted. Storage failures do not report success or emit a successful moderation audit log.
+
+Moderation, Economy, and Ticket persistence has been verified across restart. Database transactions protect the durable facts owned by each Module but cannot roll back external Discord actions.

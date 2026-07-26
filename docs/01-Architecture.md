@@ -14,6 +14,36 @@ Database migrations are ordered, tracked, and applied transactionally through Co
 
 Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Moderation, Economy, and Ticket stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
 
+## Database Startup Flow
+
+```text
+Bootstrap
+    |
+    v
+DatabaseService opens one connection
+    |
+    v
+DatabaseMigrationLoader supplies ordered migrations
+    |
+    v
+DatabaseMigrationManager applies and tracks migrations
+    |
+    v
+ModuleLoader creates one Module-specific store per Module
+    |
+    v
+Modules reconstruct and validate durable state
+    |
+    v
+Modules enter RUNNING
+```
+
+Migrations run before Module loading. Stores own SQL and durable mapping but not business rules. Stored rows are reconstructed through Module-owned records before becoming public results. Invalid durable state fails Module initialization rather than bypassing validation.
+
+Module writes report success only after the responsible store commits. Economy multi-row balance, transaction, transfer, and daily-claim changes use database transactions. Ticket row, message, assignment, status, and sequence changes use database transactions. Database transactions do not extend to external Discord actions.
+
+Providers, commands, Shared components, and Modules do not open SQLite connections or issue SQL. This keeps the database engine replaceable without moving business logic out of Module contracts.
+
 ## Providers
 
 Providers integrate external platforms. Discord-specific clients, interactions, validation, hierarchy checks, API operations, and responses belong in the Discord Provider.
@@ -117,3 +147,9 @@ Recommend a major architectural change only when at least two are true:
 - Long-term value
 - Architectural improvement beyond naming
 - Last practical opportunity
+
+## Persistence Boundary
+
+SQLite supports the current single-process deployment model. `node:sqlite` is synchronous, so queries and transactions remain focused and Discord-facing history paths use bounded reads where implemented. Startup validation reads complete durable Module state where required.
+
+Backup and restore tooling, remote hosting, replication, clustering, multi-process deployment, database administration, and optimized very-large-dataset startup validation remain future work. A future database engine must preserve Module-owned validation, public identities, store contracts, transactional behavior, and Provider isolation.

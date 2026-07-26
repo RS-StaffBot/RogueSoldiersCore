@@ -2,9 +2,15 @@
 
 ## Current Version
 
-v0.6.0
+v0.7.0
 
 ## Current Milestone
+
+v0.7.0 - Database
+
+Status: Completed
+
+## Last Completed Milestone
 
 v0.6.0 - Ticket Module
 
@@ -13,12 +19,6 @@ Status: Completed
 ## Previous Completed Milestone
 
 v0.5.0 - Economy Module
-
-Status: Completed
-
-## Earlier Completed Milestone
-
-v0.4.0 - Moderation Module
 
 Status: Completed
 
@@ -77,29 +77,45 @@ Status: Completed
 - Twelve total Discord commands
 - Final Ticket, command, permission-translation, lifecycle, and startup verification
 
-## v0.5.0 Boundaries
+## Verified v0.7.0 Implementation
 
-- Economy state is in memory and is lost on restart.
-- Database persistence and multi-instance atomicity belong to v0.7.0.
-- Cross-platform identity mapping remains future work.
-- A shop, Discord `/transfer` command, and administrative interface are not implemented.
-- Economy settings are available through validated Module APIs but are not connected to a web interface.
+- Core-owned `DatabaseService`, `DatabaseMigrationManager`, and `DatabaseMigrationLoader`
+- SQLite through Node's built-in `node:sqlite` API
+- One private Core-owned connection with health checks and controlled shutdown
+- Foreign keys and file-backed write-ahead logging
+- Ordered transactional migrations tracked in `rsf_schema_migrations`
+- `001_create_moderation_audit_records`
+- `002_create_economy_ledger`
+- `003_create_ticket_aggregate`
+- Controlled Module-specific store construction without exposing the raw connection
+- SQLite-authoritative production state with in-memory stores for direct isolated Module construction
+- Durable Moderation audit records with deterministic ordering and restart recovery
+- Durable Economy accounts, balances, transactions, transfers, daily claims, pagination, leaderboards, and transaction IDs
+- Durable Tickets, messages, status, assignment, ordering, and independent Ticket and message IDs
+- Transactional multi-row writes and failed-operation sequence preservation
+- Validated durable reconstruction and initialization failure for unsafe durable state
+- Bounded Discord-facing Ticket lists and latest-message reads
+- Providers, commands, and Shared remain persistence-blind
+- Twelve total Discord commands preserved
+- Final Database, Moderation, Economy, Ticket, Discord, startup, and shutdown verification
 
-## v0.6.0 Boundaries
+## v0.7.0 Boundaries
 
-- Ticket state and ID sequences are in memory and reset on restart.
-- Database persistence and multi-process atomicity belong to v0.7.0.
-- The `ManageMessages` Ticket staff mapping is fixed and non-configurable.
-- Discord channels, threads, categories, permission overwrites, transcripts, configurable staff roles, external portals, and web administration are not implemented.
-- Reopening, deletion, attachments, priorities, escalation, and SLA systems remain future work.
-- Future administration must use validated RSF operations rather than directly mutate Module properties, configuration files, or database rows.
+- SQLite supports the current single-process deployment boundary.
+- `node:sqlite` is synchronous and remains an active-development API on Node 22.
+- Startup validation reads complete durable Module state where required.
+- Very large datasets may require optimized validation and additional bounded queries.
+- Database transactions cannot roll back external Discord actions.
+- Backup and restore tooling, remote hosting, replication, clustering, operational maintenance, and database administration remain future work.
+- Cross-platform identity remains future work.
+- Economy shops and Discord transfers remain future work.
+- Discord Ticket channels, threads, transcripts, configurable staff roles, and related infrastructure remain future work.
+- Game-server integration belongs to v0.8.0 and is not implemented.
 
-## v0.6.0 Completion
+## v0.7.0 Completion
 
-The Ticket Module milestone is complete, tested, documented, and versioned in the repository files.
-
-The remaining release actions are to commit the closure changes and create and push the `v0.6.0` Git tag.
+The Database milestone is implementation-complete, tested, documented, and versioned in the repository files.
 
 ## Next Planned Milestone
 
-v0.7.0 - Database
+v0.8.0 - 7 Days to Die Provider

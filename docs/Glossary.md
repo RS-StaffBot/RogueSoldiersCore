@@ -26,7 +26,7 @@ A ranked defensive snapshot of Economy accounts ordered by descending balance an
 
 ## Transaction Pagination
 
-The Economy Module API that returns bounded, newest-first transaction pages with page metadata. Future database-backed pagination should retrieve bounded database results instead of loading every transaction.
+The Economy Module API that returns bounded, newest-first transaction pages with page metadata. Production pagination retrieves bounded SQLite results.
 
 ## Defensive Snapshot
 
@@ -46,7 +46,7 @@ An immutable record containing a Ticket ID, creator identity, optional assignee 
 
 ## Ticket Status
 
-The current Ticket state. v0.6.0 supports `OPEN` and `CLOSED`, with only the `OPEN` to `CLOSED` transition.
+The current Ticket state. RSF supports `OPEN` and `CLOSED`, with only the `OPEN` to `CLOSED` transition.
 
 ## Ticket Message
 
@@ -86,11 +86,11 @@ A Ticket operation that either commits its complete record, history, and ID-sequ
 
 ## Discord Ticket Permission Translation
 
-The Provider process that maps Discord permissions into reusable Ticket permission identifiers before `TicketModule` makes the final authorization decision. The v0.6.0 mapping is fixed and non-configurable.
+The Provider process that maps Discord permissions into reusable Ticket permission identifiers before `TicketModule` makes the final authorization decision. The fixed, non-configurable mapping introduced in v0.6.0 remains current.
 
 ## Moderation Module
 
-The Module that owns supported moderation actions, action-to-permission mapping, audit-record creation, and in-memory audit storage.
+The Module that owns supported moderation actions, action-to-permission mapping, audit-record creation, validated reconstruction, and its audit store contract.
 
 ## Moderation Action
 
@@ -106,7 +106,7 @@ A Discord Provider service that centralizes target safety, hierarchy, manageabil
 
 ## Moderation Audit Record
 
-An in-memory record containing action, guild, moderator, optional target, reason, and details.
+An immutable record containing action, guild, moderator, optional target, reason, and details. Production records are durable in SQLite.
 
 ## Moderation Audit
 
@@ -130,4 +130,68 @@ SQLite-authoritative production storage of Tickets, messages, assignments, statu
 
 ## Discord Ticket Infrastructure
 
-Future channel, thread, category, permission-overwrite, transcript, and configurable-role workflows. They are not implemented in v0.6.0.
+Future channel, thread, category, permission-overwrite, transcript, and configurable-role workflows. They are not implemented.
+
+## Database Service
+
+The Core component that owns the single SQLite connection lifecycle, configuration validation, health checks, controlled store construction, and shutdown.
+
+## Migration Manager
+
+The Core component that validates, transactionally applies, tracks, skips, and rolls back ordered schema migrations.
+
+## Migration Loader
+
+The Core component that combines Module migrations into one globally ordered migration list before Module loading.
+
+## Schema Migration
+
+A deterministic `NNN_lowercase_name` database change applied transactionally before Modules reconstruct durable state.
+
+## Migration History
+
+The `rsf_schema_migrations` table that records successfully applied migration IDs and timestamps.
+
+## Module Store
+
+A Module-specific persistence contract that separates Module business rules and public records from durable row mapping and storage operations.
+
+## In-Memory Store
+
+The non-durable store implementation used by direct isolated Module construction and tests.
+
+## SQLite Store
+
+The production implementation of a Module store that uses the private Core-owned SQLite connection and parameterized SQL.
+
+## Durable State
+
+Module state stored outside process memory so it survives framework shutdown and restart.
+
+## SQLite-Authoritative State
+
+Production state for which a successful SQLite commit is the source of truth and no separate in-memory authority reports success first.
+
+## Restart Recovery
+
+Reconstruction and validation of committed Module state when the framework starts again.
+
+## Durable Reconstruction
+
+The process of rebuilding stored rows through Module-owned record validation before exposing public results.
+
+## Durable Sequence
+
+A committed SQLite sequence used to preserve public identity continuation across restart without consuming the next successful ID on rollback.
+
+## Transactional Write
+
+A durable operation that commits all related database facts together or rolls them all back on failure.
+
+## WAL Mode
+
+SQLite write-ahead logging enabled by the Database Service for file-backed databases.
+
+## Single-Process Persistence Boundary
+
+The current deployment model using one framework process and one Core-owned SQLite connection. Multi-process databases, replication, clustering, and remote hosting remain future work.

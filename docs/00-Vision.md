@@ -8,7 +8,7 @@ RSF coordinates Discord features, community Modules, game-server Providers, and 
 
 ## Current Verified Capabilities
 
-As of v0.6.0, RSF supports:
+As of v0.7.0, RSF supports:
 
 - Framework startup, configuration, lifecycle, and service registration
 - Discord connection and slash-command registration
@@ -20,6 +20,7 @@ As of v0.6.0, RSF supports:
 - SQLite-backed Economy accounts, balances, transaction history, daily rewards, and leaderboards with restart recovery
 - Atomic Economy credits, debits, transfers, and daily claims with durable sequential successful transaction IDs, defensive public snapshots, and validated settings
 - SQLite-backed Tickets with immutable records, messages, assignment, closing, creator ownership, staff authorization, and restart recovery
+- Ordered transactional migrations and controlled database health and shutdown
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
@@ -34,3 +35,5 @@ The following are not complete production systems:
 - Website integration
 - Cross-platform identity and permission administration
 - Automated test coverage
+- Backup and restore tooling, remote databases, replication, clustering, and database administration
+- Multi-process persistence beyond the current SQLite deployment boundary
