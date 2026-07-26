@@ -21,7 +21,9 @@ class EconomyModule extends BaseModule {
         dailyRewardAmount = 100,
         dailyCooldownMs = 24 * 60 * 60 * 1000,
         defaultLeaderboardLimit = 10,
-        maximumLeaderboardLimit = 100
+        maximumLeaderboardLimit = 100,
+        defaultTransactionPageSize = 25,
+        maximumTransactionPageSize = 100
     } = {}) {
 
         super("Economy");
@@ -100,6 +102,38 @@ class EconomyModule extends BaseModule {
             );
         }
 
+        if (
+            typeof defaultTransactionPageSize !== "number" ||
+            !Number.isSafeInteger(defaultTransactionPageSize) ||
+            defaultTransactionPageSize <= 0
+        ) {
+            throw new Error(
+                "Economy default transaction page size must " +
+                "be a positive safe integer."
+            );
+        }
+
+        if (
+            typeof maximumTransactionPageSize !== "number" ||
+            !Number.isSafeInteger(maximumTransactionPageSize) ||
+            maximumTransactionPageSize <= 0
+        ) {
+            throw new Error(
+                "Economy maximum transaction page size must " +
+                "be a positive safe integer."
+            );
+        }
+
+        if (
+            defaultTransactionPageSize >
+            maximumTransactionPageSize
+        ) {
+            throw new Error(
+                "Economy default transaction page size cannot " +
+                "exceed the maximum transaction page size."
+            );
+        }
+
         this.startingBalance = startingBalance;
         this.transferPolicy = transferPolicy;
         this.dailyRewardAmount = dailyRewardAmount;
@@ -108,6 +142,10 @@ class EconomyModule extends BaseModule {
             defaultLeaderboardLimit;
         this.maximumLeaderboardLimit =
             maximumLeaderboardLimit;
+        this.defaultTransactionPageSize =
+            defaultTransactionPageSize;
+        this.maximumTransactionPageSize =
+            maximumTransactionPageSize;
         this.accounts = new Map();
         this.transactions = [];
         this.nextTransactionId = 1;
@@ -231,7 +269,11 @@ class EconomyModule extends BaseModule {
             defaultLeaderboardLimit:
                 this.defaultLeaderboardLimit,
             maximumLeaderboardLimit:
-                this.maximumLeaderboardLimit
+                this.maximumLeaderboardLimit,
+            defaultTransactionPageSize:
+                this.defaultTransactionPageSize,
+            maximumTransactionPageSize:
+                this.maximumTransactionPageSize
         };
 
     }
@@ -352,6 +394,78 @@ class EconomyModule extends BaseModule {
 
     getDailyCooldownMs() {
         return this.dailyCooldownMs;
+    }
+
+    getDefaultTransactionPageSize() {
+        return this.defaultTransactionPageSize;
+    }
+
+    setDefaultTransactionPageSize(
+        defaultTransactionPageSize
+    ) {
+
+        if (
+            typeof defaultTransactionPageSize !== "number" ||
+            !Number.isSafeInteger(defaultTransactionPageSize) ||
+            defaultTransactionPageSize <= 0
+        ) {
+            throw new Error(
+                "Economy default transaction page size must " +
+                "be a positive safe integer."
+            );
+        }
+
+        if (
+            defaultTransactionPageSize >
+            this.maximumTransactionPageSize
+        ) {
+            throw new Error(
+                "Economy default transaction page size cannot " +
+                "exceed the maximum transaction page size."
+            );
+        }
+
+        this.defaultTransactionPageSize =
+            defaultTransactionPageSize;
+
+        return this.defaultTransactionPageSize;
+
+    }
+
+    getMaximumTransactionPageSize() {
+        return this.maximumTransactionPageSize;
+    }
+
+    setMaximumTransactionPageSize(
+        maximumTransactionPageSize
+    ) {
+
+        if (
+            typeof maximumTransactionPageSize !== "number" ||
+            !Number.isSafeInteger(maximumTransactionPageSize) ||
+            maximumTransactionPageSize <= 0
+        ) {
+            throw new Error(
+                "Economy maximum transaction page size must " +
+                "be a positive safe integer."
+            );
+        }
+
+        if (
+            maximumTransactionPageSize <
+            this.defaultTransactionPageSize
+        ) {
+            throw new Error(
+                "Economy maximum transaction page size cannot " +
+                "be lower than the default transaction page size."
+            );
+        }
+
+        this.maximumTransactionPageSize =
+            maximumTransactionPageSize;
+
+        return this.maximumTransactionPageSize;
+
     }
 
     getLastDailyClaim(userId) {
@@ -665,6 +779,99 @@ class EconomyModule extends BaseModule {
                 transaction.fromUserId === userId ||
                 transaction.toUserId === userId
         );
+
+    }
+
+    getTransactionPage({
+        userId,
+        page = 1,
+        pageSize = this.defaultTransactionPageSize
+    } = {}) {
+
+        if (
+            typeof page !== "number" ||
+            !Number.isSafeInteger(page) ||
+            page <= 0
+        ) {
+            throw new Error(
+                "Economy transaction page must be a " +
+                "positive safe integer."
+            );
+        }
+
+        if (
+            typeof pageSize !== "number" ||
+            !Number.isSafeInteger(pageSize) ||
+            pageSize <= 0
+        ) {
+            throw new Error(
+                "Economy transaction page size must be a " +
+                "positive safe integer."
+            );
+        }
+
+        if (pageSize > this.maximumTransactionPageSize) {
+            throw new Error(
+                "Economy transaction page size cannot exceed " +
+                `${this.maximumTransactionPageSize}.`
+            );
+        }
+
+        let transactions = this.transactions.map(
+            (transaction, insertionIndex) => ({
+                transaction,
+                insertionIndex
+            })
+        );
+
+        if (userId !== undefined) {
+            transactions = transactions.filter(
+                ({ transaction }) =>
+                    transaction.userId === userId ||
+                    transaction.fromUserId === userId ||
+                    transaction.toUserId === userId
+            );
+        }
+
+        transactions.sort(
+            (firstEntry, secondEntry) => {
+
+                const dateDifference =
+                    secondEntry.transaction.createdAt.getTime() -
+                    firstEntry.transaction.createdAt.getTime();
+
+                if (dateDifference !== 0) {
+                    return dateDifference;
+                }
+
+                return (
+                    secondEntry.insertionIndex -
+                    firstEntry.insertionIndex
+                );
+
+            }
+        );
+
+        const totalItems = transactions.length;
+        const totalPages = Math.ceil(
+            totalItems / pageSize
+        );
+        const startIndex = (page - 1) * pageSize;
+        const items = transactions
+            .slice(startIndex, startIndex + pageSize)
+            .map(({ transaction }) => transaction);
+
+        return {
+            items,
+            page,
+            pageSize,
+            totalItems,
+            totalPages,
+            hasPreviousPage:
+                totalPages > 0 && page > 1,
+            hasNextPage:
+                totalPages > 0 && page < totalPages
+        };
 
     }
 
