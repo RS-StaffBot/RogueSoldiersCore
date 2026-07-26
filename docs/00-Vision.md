@@ -8,15 +8,17 @@ RSF coordinates Discord features, community Modules, game-server Providers, and 
 
 ## Current Verified Capabilities
 
-As of v0.4.0, RSF supports:
+As of v0.5.0, RSF supports:
 
 - Framework startup, configuration, lifecycle, and service registration
 - Discord connection and slash-command registration
 - One command registry, one registrar, and one runtime interaction path
-- `/ping`, `/help`, `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
+- `/ping`, `/help`, `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, `/purge`, `/balance`, `/daily`, and `/leaderboard`
 - Moderation permission identifiers and Discord permission enforcement
 - Discord hierarchy, owner, self-target, and manageability checks
 - In-memory moderation audit records
+- In-memory Economy accounts, balances, credits, debits, transfers, transaction history, daily rewards, and leaderboards
+- Atomic Economy writes, sequential successful transaction IDs, defensive public snapshots, and validated settings
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
 
@@ -28,6 +30,8 @@ The following are not complete production systems:
 - Persistent economy
 - Tickets
 - Database persistence
+- Multi-instance Economy atomicity
+- Economy shops and Discord transfer commands
 - Game-server control
 - Website integration
 - Cross-platform identity and permission administration

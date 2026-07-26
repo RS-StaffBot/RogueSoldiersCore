@@ -25,6 +25,29 @@ PURGE     -> PURGE_MESSAGES
 - Moderation Module owns action-to-permission requirements.
 - Discord Provider owns Discord permission translation and enforcement.
 
+## Implemented Economy Permission Identifiers
+
+Verified location:
+
+```text
+src/shared/permissions/EconomyPermission.js
+```
+
+Implemented identifiers:
+
+```text
+VIEW_OWN_BALANCE -> economy.view-own-balance
+TRANSFER         -> economy.transfer
+CREDIT           -> economy.credit
+DEBIT            -> economy.debit
+VIEW_HISTORY     -> economy.view-history
+ADMINISTRATE     -> economy.administrate
+```
+
+The Economy Module currently uses `TRANSFER` and `ADMINISTRATE` to authorize transfers under the `STAFF_ONLY` policy. The `DISABLED` policy rejects every transfer, and `EVERYONE` permits transfers without either identifier.
+
+These are Module-level permission identifiers. The current Discord command surface has no `/transfer` command, so Discord role translation and enforcement for Economy transfers are not implemented. The `/balance`, `/daily`, and `/leaderboard` commands use validated Economy Module operations but do not provide a complete cross-platform permission administration system.
+
 ## Not Yet Implemented
 
 - Role-to-RSF permission mapping
@@ -32,3 +55,4 @@ PURGE     -> PURGE_MESSAGES
 - Cross-platform identity
 - Permission administration commands
 - Database-backed authorization
+- Discord Economy transfer authorization

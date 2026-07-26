@@ -2,21 +2,21 @@
 
 ## Current Version
 
-v0.4.0
+v0.5.0
 
 ## Current Milestone
 
 v0.5.0 - Economy Module
 
-Status: Planned
+Status: Completed
 
-## Last Completed Milestone
+## Previous Completed Milestone
 
 v0.4.0 - Moderation Module
 
 Status: Completed
 
-## Completed Implementation
+## Verified v0.4.0 Implementation
 
 - Moderation Module lifecycle integration
 - Moderation action definitions
@@ -34,12 +34,37 @@ Status: Completed
 - Synchronized v0.4.0 documentation
 - Final milestone verification
 
-## v0.4.0 Completion
+## Verified v0.5.0 Implementation
 
-The Moderation Module milestone is complete, tested, documented, and versioned.
+- Economy accounts with configurable starting balances
+- Balance lookup, credits, debits, and authorized transfers
+- `DISABLED`, `STAFF_ONLY`, and `EVERYONE` transfer policies
+- Economy permission identifiers
+- Credit, debit, and transfer transaction records
+- Full and user-filtered transaction history
+- Newest-first transaction pagination with configurable limits
+- Configurable daily rewards and cooldowns
+- Leaderboards with deterministic tie ordering and configurable limits
+- Atomic in-memory writes and sequential successful transaction IDs
+- Defensive account, transaction, configuration, array, and `Date` snapshots
+- Consistent non-empty user-ID validation
+- `/balance`, `/daily`, and `/leaderboard`
+- Final Economy regression and startup verification
 
-The remaining release action is to create and push the `v0.4.0` Git tag.
+## v0.5.0 Boundaries
+
+- Economy state is in memory and is lost on restart.
+- Database persistence and multi-instance atomicity belong to v0.7.0.
+- Cross-platform identity mapping remains future work.
+- A shop, Discord `/transfer` command, and administrative interface are not implemented.
+- Economy settings are available through validated Module APIs but are not connected to a web interface.
+
+## v0.5.0 Completion
+
+The Economy Module milestone is complete, tested, documented, and versioned in the repository files.
+
+The remaining release actions are to commit the closure changes and create and push the `v0.5.0` Git tag.
 
 ## Next Planned Milestone
 
-v0.5.0 - Economy Module
+v0.6.0 - Ticket Module

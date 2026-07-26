@@ -18,7 +18,29 @@ Modules contain reusable business logic. Active Modules are Economy and Moderati
 
 ## Shared
 
-Shared contains reusable cross-layer objects. v0.4.0 implements moderation permission identifiers under `src/shared/permissions/`.
+Shared contains reusable cross-layer objects. Moderation and Economy permission identifiers are implemented under `src/shared/permissions/`.
+
+## Economy Flow
+
+```text
+Discord Economy command
+    |
+    v
+Core Registry and Module Manager
+    |
+    v
+EconomyModule validated operation
+    |
+    v
+In-memory accounts, transactions, and daily-claim state
+    |
+    v
+Calculated balances, history, rewards, and leaderboard results
+```
+
+Economy business logic remains platform-neutral and Module-owned. Discord commands translate interactions and format responses without constructing their own Economy Module.
+
+Economy persistence, multi-process atomicity, and cross-platform identity remain future work. A future framework-wide administration interface must use validated RSF settings and operations rather than directly mutating Module properties, configuration files, or database rows. Its technology is not yet selected, and it is not currently implemented.
 
 ## Moderation Flow
 
