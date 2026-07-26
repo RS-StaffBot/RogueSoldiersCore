@@ -194,10 +194,19 @@ class TicketCommand extends BaseCommand {
         const ownedTickets =
             tickets.listTicketsForCreator(
                 userId,
+                userId,
+                [],
+                {
+                    limit: MAX_LISTED_TICKETS
+                }
+            );
+        const totalTicketCount =
+            tickets.getTicketCountForCreator(
+                userId,
                 userId
             );
 
-        if (ownedTickets.length === 0) {
+        if (totalTicketCount === 0) {
             await interaction.reply({
                 content: "You do not have any tickets.",
                 flags: MessageFlags.Ephemeral
@@ -206,11 +215,7 @@ class TicketCommand extends BaseCommand {
             return;
         }
 
-        const displayedTickets = ownedTickets.slice(
-            0,
-            MAX_LISTED_TICKETS
-        );
-        const ticketLines = displayedTickets.map(
+        const ticketLines = ownedTickets.map(
             ticket => {
 
                 const assignment = ticket.assigneeId
@@ -225,8 +230,7 @@ class TicketCommand extends BaseCommand {
             }
         );
         const remainingCount =
-            ownedTickets.length -
-            displayedTickets.length;
+            totalTicketCount - ownedTickets.length;
 
         if (remainingCount > 0) {
             ticketLines.push(

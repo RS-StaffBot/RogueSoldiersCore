@@ -19,7 +19,7 @@ As of v0.6.0, RSF supports:
 - SQLite-backed moderation audit records with restart recovery
 - SQLite-backed Economy accounts, balances, transaction history, daily rewards, and leaderboards with restart recovery
 - Atomic Economy credits, debits, transfers, and daily claims with durable sequential successful transaction IDs, defensive public snapshots, and validated settings
-- In-memory Tickets with immutable records, messages, assignment, closing, creator ownership, and staff authorization
+- SQLite-backed Tickets with immutable records, messages, assignment, closing, creator ownership, staff authorization, and restart recovery
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
@@ -28,7 +28,6 @@ As of v0.6.0, RSF supports:
 
 The following are not complete production systems:
 
-- Ticket persistence and multi-instance Ticket atomicity
 - Economy shops and Discord transfer commands
 - Discord Ticket channels, threads, transcripts, configurable staff roles, and web administration
 - Game-server control

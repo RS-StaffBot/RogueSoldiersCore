@@ -38,7 +38,7 @@ An Economy operation that either commits all related balance, account, daily cla
 
 ## Ticket Module
 
-The platform-neutral Module that owns Ticket records, messages, assignment, status transitions, creator ownership, staff authorization, ID generation, and in-memory state integrity.
+The platform-neutral Module that owns Ticket validation, records, messages, assignment, status transitions, creator ownership, staff authorization, public ID formats, and public state integrity.
 
 ## Ticket Record
 
@@ -80,9 +80,9 @@ The per-Ticket, append-ordered collection of immutable messages. Closed Ticket h
 
 An immutable Ticket record or message copied from internal state. Public arrays containing snapshots are independent from Module storage.
 
-## Atomic In-Memory Ticket Write
+## Atomic Ticket Write
 
-A Ticket operation that either commits its complete in-memory record, history, and ID-sequence change or leaves all related state unchanged on failure. Multi-process atomicity requires future database support.
+A Ticket operation that either commits its complete record, history, and ID-sequence change or leaves all related state unchanged on failure. Production writes use one SQLite transaction; direct isolated use provides the same guarantee through the in-memory store.
 
 ## Discord Ticket Permission Translation
 
@@ -126,7 +126,7 @@ SQLite-authoritative production storage of Economy accounts, balances, claims, a
 
 ## Ticket Persistence
 
-Future storage of Tickets, messages, assignments, and ID sequences outside process memory. It belongs to the v0.7.0 Database milestone and is not implemented in v0.6.0.
+SQLite-authoritative production storage of Tickets, messages, assignments, status, ordering, and independent Ticket and message ID sequences. Direct Module construction retains an in-memory store for isolated use.
 
 ## Discord Ticket Infrastructure
 

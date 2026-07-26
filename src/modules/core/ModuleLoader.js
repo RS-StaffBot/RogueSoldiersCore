@@ -7,6 +7,9 @@ const SqliteModerationStore = require(
     "../moderation/persistence/SqliteModerationStore"
 );
 const TicketModule = require("../tickets/TicketModule");
+const SqliteTicketStore = require(
+    "../tickets/persistence/SqliteTicketStore"
+);
 
 class ModuleLoader {
 
@@ -24,6 +27,11 @@ class ModuleLoader {
                 SqliteModerationStore
             )
             : undefined;
+        const ticketStore = database
+            ? database.createStore(
+                SqliteTicketStore
+            )
+            : undefined;
 
         return [
             new EconomyModule({
@@ -32,7 +40,9 @@ class ModuleLoader {
             new ModerationModule({
                 store: moderationStore
             }),
-            new TicketModule()
+            new TicketModule({
+                store: ticketStore
+            })
         ];
 
     }

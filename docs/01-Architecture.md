@@ -12,7 +12,7 @@ SQLite is the selected local database engine. One Core-owned Database service ow
 
 Database migrations are ordered, tracked, and applied transactionally through Core. Migration SQL defines storage schema only; Module business validation remains in Modules. Providers and commands do not access the database directly.
 
-Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Moderation and Economy stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
+Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Moderation, Economy, and Ticket stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
 
 ## Providers
 
@@ -68,7 +68,10 @@ Core Registry and Module Manager
 TicketModule validation and authorization
     |
     v
-In-memory tickets and per-ticket message history
+Ticket store contract
+    |
+    v
+SQLite-authoritative Tickets and message history
     |
     v
 Frozen defensive Ticket and message snapshots
@@ -76,7 +79,7 @@ Frozen defensive Ticket and message snapshots
 
 Ticket business logic, creator ownership, staff authorization, assignment, messages, and status transitions remain platform-neutral and Module-owned. Discord commands use the framework-loaded Ticket Module and do not access its internal storage.
 
-Ticket persistence belongs to v0.7.0. Database-backed writes will be required for multi-process atomicity. Current Ticket and message ID sequences reset with in-memory state; a future database may use a different storage-safe strategy while preserving public identity semantics.
+Production Ticket state is SQLite-authoritative. Ticket creation, message append, assignment changes, and closing commit before success is returned. Independent durable sequences preserve the `ticket-N` and `ticket-message-N` public formats across restart. Direct Module construction uses an in-memory implementation of the same store contract for isolated use.
 
 The current Discord staff translation is a fixed, non-configurable permission mapping. Configurable roles require future validated administration. Discord Ticket channels, threads, transcripts, permission overwrites, external portals, and web administration remain future work. Future administration must invoke validated RSF operations rather than mutate Module properties, configuration files, or database rows directly.
 

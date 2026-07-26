@@ -192,7 +192,10 @@ class TicketStaffCommandHandler {
 
         try {
             allTickets = tickets.listTickets(
-                actorPermissions
+                actorPermissions,
+                {
+                    limit: MAX_LISTED_TICKETS
+                }
             );
         } catch (error) {
 
@@ -209,7 +212,11 @@ class TicketStaffCommandHandler {
 
         }
 
-        if (allTickets.length === 0) {
+        const totalTicketCount = tickets.getTicketCount(
+            actorPermissions
+        );
+
+        if (totalTicketCount === 0) {
             await interaction.reply({
                 content: "There are no tickets.",
                 flags: MessageFlags.Ephemeral
@@ -218,11 +225,7 @@ class TicketStaffCommandHandler {
             return;
         }
 
-        const displayedTickets = allTickets.slice(
-            0,
-            MAX_LISTED_TICKETS
-        );
-        const ticketLines = displayedTickets.map(
+        const ticketLines = allTickets.map(
             ticket => {
 
                 const assignment = ticket.assigneeId
@@ -239,8 +242,7 @@ class TicketStaffCommandHandler {
             }
         );
         const remainingCount =
-            allTickets.length -
-            displayedTickets.length;
+            totalTicketCount - allTickets.length;
 
         if (remainingCount > 0) {
             ticketLines.push(
@@ -303,13 +305,19 @@ class TicketStaffCommandHandler {
             return;
         }
 
-        const messages = tickets.listMessages(
+        const messageCount = tickets.getMessageCount(
             ticket.id,
             actorId,
             actorPermissions
         );
-        const displayedMessages = messages.slice(
-            -MAX_DISPLAYED_MESSAGES
+        const displayedMessages = tickets.listMessages(
+            ticket.id,
+            actorId,
+            actorPermissions,
+            {
+                limit: MAX_DISPLAYED_MESSAGES,
+                latest: true
+            }
         );
         const messageLines = displayedMessages.map(
             message =>
@@ -320,16 +328,16 @@ class TicketStaffCommandHandler {
                 )
         );
 
-        if (messages.length === 0) {
+        if (messageCount === 0) {
             messageLines.push("None");
         } else if (
-            messages.length >
+            messageCount >
             displayedMessages.length
         ) {
             messageLines.unshift(
                 "Showing the latest " +
                 `${displayedMessages.length} of ` +
-                `${messages.length}:`
+                `${messageCount}:`
             );
         }
 
@@ -348,7 +356,7 @@ class TicketStaffCommandHandler {
                 `Status: ${ticket.status}`,
                 `Assignee: ${assignment}`,
                 `Created: ${createdAt}`,
-                `Messages: ${messages.length}`,
+                `Messages: ${messageCount}`,
                 "Recent messages:",
                 ...messageLines
             ].join("\n"),

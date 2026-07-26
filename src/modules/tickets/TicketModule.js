@@ -1,14 +1,22 @@
 const BaseModule = require("../core/BaseModule");
+const ComponentState = require(
+    "../../core/ComponentState"
+);
 const TicketMessage = require("./TicketMessage");
 const TicketRecord = require("./TicketRecord");
 const TicketStatus = require("./TicketStatus");
 const TicketPermission = require(
     "../../shared/permissions/TicketPermission"
 );
+const InMemoryTicketStore = require(
+    "./persistence/InMemoryTicketStore"
+);
 
 class TicketModule extends BaseModule {
 
-    constructor() {
+    constructor({
+        store = new InMemoryTicketStore()
+    } = {}) {
 
         super("Tickets");
 
@@ -25,10 +33,149 @@ class TicketModule extends BaseModule {
                 new Set()
             ]
         ]);
-        this.tickets = new Map();
-        this.nextTicketId = 1;
-        this.messagesByTicket = new Map();
-        this.nextMessageId = 1;
+        this.validateStore(store);
+        this.store = store;
+
+    }
+
+    validateStore(store) {
+
+        const requiredMethods = [
+            "createTicket",
+            "getTicket",
+            "replaceTicket",
+            "appendMessage",
+            "countTickets",
+            "countTicketsForCreator",
+            "listTickets",
+            "listTicketsForCreator",
+            "listTicketsByStatus",
+            "listTicketsForAssignee",
+            "listUnassignedTickets",
+            "listMessages",
+            "listAllMessages",
+            "countMessages",
+            "getSequenceState"
+        ];
+
+        if (
+            !store ||
+            requiredMethods.some(
+                method =>
+                    typeof store[method] !== "function"
+            )
+        ) {
+            throw new Error(
+                "Ticket store does not implement the " +
+                "required persistence contract."
+            );
+        }
+
+    }
+
+    initialize() {
+
+        this.state = ComponentState.INITIALIZING;
+
+        try {
+            this.validateDurableState();
+        } catch (error) {
+            this.state = ComponentState.ERROR;
+
+            throw new Error(
+                "Ticket durable state is invalid."
+            );
+        }
+
+        this.state = ComponentState.READY;
+
+    }
+
+    validateDurableState() {
+
+        const storedTickets = this.store.listTickets();
+        const ticketById = new Map();
+
+        storedTickets.forEach(
+            (storedTicket, index) => {
+
+                const ticket = this.createTicketSnapshot(
+                    storedTicket
+                );
+                const expectedId = `ticket-${index + 1}`;
+
+                if (
+                    ticket.id !== expectedId ||
+                    ticketById.has(ticket.id)
+                ) {
+                    throw new Error(
+                        "Stored Ticket sequence is invalid."
+                    );
+                }
+
+                ticketById.set(ticket.id, ticket);
+
+            }
+        );
+
+        const storedMessages =
+            this.store.listAllMessages();
+        const messageIds = new Set();
+
+        storedMessages.forEach(
+            (storedMessage, index) => {
+
+                const message = this.createMessageSnapshot(
+                    storedMessage
+                );
+                const expectedId =
+                    `ticket-message-${index + 1}`;
+                const ticket = ticketById.get(
+                    message.ticketId
+                );
+
+                if (
+                    message.id !== expectedId ||
+                    messageIds.has(message.id)
+                ) {
+                    throw new Error(
+                        "Stored Ticket message sequence is invalid."
+                    );
+                }
+
+                if (!ticket) {
+                    throw new Error(
+                        "Stored Ticket message parent is missing."
+                    );
+                }
+
+                if (
+                    new Date(message.createdAt).getTime() <
+                    new Date(ticket.createdAt).getTime()
+                ) {
+                    throw new Error(
+                        "Stored Ticket message predates its Ticket."
+                    );
+                }
+
+                messageIds.add(message.id);
+
+            }
+        );
+
+        const sequenceState =
+            this.store.getSequenceState();
+
+        if (
+            sequenceState.nextTicketSequence !==
+                storedTickets.length + 1 ||
+            sequenceState.nextMessageSequence !==
+                storedMessages.length + 1
+        ) {
+            throw new Error(
+                "Stored Ticket sequence state is invalid."
+            );
+        }
 
     }
 
@@ -203,14 +350,66 @@ class TicketModule extends BaseModule {
 
     }
 
+    createStoredTicket(ticket) {
+        return {
+            id: ticket.id,
+            creatorId: ticket.creatorId,
+            assigneeId: ticket.assigneeId,
+            status: ticket.status,
+            createdAt: ticket.createdAt
+        };
+    }
+
+    validateReadOptions({
+        limit = null,
+        offset = 0,
+        latest = false
+    } = {}) {
+
+        if (
+            limit !== null &&
+            (
+                typeof limit !== "number" ||
+                !Number.isSafeInteger(limit) ||
+                limit <= 0
+            )
+        ) {
+            throw new Error(
+                "Ticket read limit must be a positive " +
+                "safe integer or null."
+            );
+        }
+
+        if (
+            typeof offset !== "number" ||
+            !Number.isSafeInteger(offset) ||
+            offset < 0
+        ) {
+            throw new Error(
+                "Ticket read offset must be a " +
+                "non-negative safe integer."
+            );
+        }
+
+        if (typeof latest !== "boolean") {
+            throw new Error(
+                "Ticket latest-read option must be a boolean."
+            );
+        }
+
+        return {
+            limit,
+            offset,
+            latest
+        };
+
+    }
+
     hasMessageId(messageId) {
 
-        return [...this.messagesByTicket.values()]
-            .some(messages =>
-                messages.some(message =>
-                    message.id === messageId
-                )
-            );
+        return this.store.listAllMessages().some(
+            message => message.id === messageId
+        );
 
     }
 
@@ -220,29 +419,19 @@ class TicketModule extends BaseModule {
         replacementTicket
     ) {
 
-        try {
-
-            this.tickets.set(
-                ticketId,
-                replacementTicket
+        if (
+            currentTicket.id !== ticketId ||
+            replacementTicket.id !== ticketId
+        ) {
+            throw new Error(
+                "Ticket replacement identity is invalid."
             );
-
-        } catch (error) {
-
-            if (
-                this.tickets.get(ticketId) !==
-                currentTicket
-            ) {
-                Map.prototype.set.call(
-                    this.tickets,
-                    ticketId,
-                    currentTicket
-                );
-            }
-
-            throw error;
-
         }
+
+        return this.store.replaceTicket(
+            this.createStoredTicket(currentTicket),
+            this.createStoredTicket(replacementTicket)
+        );
 
     }
 
@@ -289,11 +478,14 @@ class TicketModule extends BaseModule {
         this.validateActorId(actorId);
         this.validateActorPermissions(actorPermissions);
 
-        const ticket = this.tickets.get(ticketId);
+        const storedTicket = this.store.getTicket(ticketId);
 
-        if (!ticket) {
+        if (!storedTicket) {
             return false;
         }
+
+        const ticket =
+            this.createTicketSnapshot(storedTicket);
 
         this.requireCreatorOrPermission(
             ticket,
@@ -313,51 +505,20 @@ class TicketModule extends BaseModule {
         createdAt = new Date()
     ) {
 
-        if (
-            !Number.isSafeInteger(this.nextTicketId) ||
-            this.nextTicketId <= 0 ||
-            this.nextTicketId >= Number.MAX_SAFE_INTEGER
-        ) {
-            throw new Error(
-                "Ticket ID sequence has reached its safe limit."
-            );
-        }
-
-        const ticketId = `ticket-${this.nextTicketId}`;
-
-        if (this.tickets.has(ticketId)) {
-            throw new Error(
-                `Ticket ID already exists: ${ticketId}`
-            );
-        }
-
         const ticket = new TicketRecord({
-            id: ticketId,
+            id: "ticket-pending",
             creatorId,
             status: TicketStatus.OPEN,
             createdAt
         });
-        const snapshot =
-            this.createTicketSnapshot(ticket);
-        const previousNextTicketId =
-            this.nextTicketId;
+        const storedTicket = this.store.createTicket({
+            creatorId: ticket.creatorId,
+            assigneeId: ticket.assigneeId,
+            status: ticket.status,
+            createdAt: ticket.createdAt
+        });
 
-        try {
-
-            this.tickets.set(ticketId, ticket);
-            this.nextTicketId += 1;
-
-        } catch (error) {
-
-            this.tickets.delete(ticketId);
-            this.nextTicketId =
-                previousNextTicketId;
-
-            throw error;
-
-        }
-
-        return snapshot;
+        return this.createTicketSnapshot(storedTicket);
 
     }
 
@@ -371,11 +532,14 @@ class TicketModule extends BaseModule {
         this.validateActorId(actorId);
         this.validateActorPermissions(actorPermissions);
 
-        const ticket = this.tickets.get(ticketId);
+        const storedTicket = this.store.getTicket(ticketId);
 
-        if (!ticket) {
+        if (!storedTicket) {
             return null;
         }
+
+        const ticket =
+            this.createTicketSnapshot(storedTicket);
 
         this.requireCreatorOrPermission(
             ticket,
@@ -398,7 +562,7 @@ class TicketModule extends BaseModule {
             "Ticket view-all permission is required."
         );
 
-        return this.tickets.size;
+        return this.store.countTickets();
     }
 
     transitionTicket(
@@ -413,14 +577,18 @@ class TicketModule extends BaseModule {
         this.validateActorId(actorId);
         this.validateActorPermissions(actorPermissions);
 
-        const currentTicket =
-            this.tickets.get(ticketId);
+        const storedCurrentTicket =
+            this.store.getTicket(ticketId);
 
-        if (!currentTicket) {
+        if (!storedCurrentTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const currentTicket = this.createTicketSnapshot(
+            storedCurrentTicket
+        );
 
         this.requireCreatorOrPermission(
             currentTicket,
@@ -454,17 +622,13 @@ class TicketModule extends BaseModule {
                     currentTicket.createdAt
                 )
             });
-        const snapshot = this.createTicketSnapshot(
-            transitionedTicket
-        );
-
-        this.commitTicketReplacement(
+        const storedTicket = this.commitTicketReplacement(
             ticketId,
             currentTicket,
             transitionedTicket
         );
 
-        return snapshot;
+        return this.createTicketSnapshot(storedTicket);
 
     }
 
@@ -497,14 +661,18 @@ class TicketModule extends BaseModule {
             "Ticket assignment permission is required."
         );
 
-        const currentTicket =
-            this.tickets.get(ticketId);
+        const storedCurrentTicket =
+            this.store.getTicket(ticketId);
 
-        if (!currentTicket) {
+        if (!storedCurrentTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const currentTicket = this.createTicketSnapshot(
+            storedCurrentTicket
+        );
 
         if (currentTicket.status !== TicketStatus.OPEN) {
             throw new Error(
@@ -527,16 +695,13 @@ class TicketModule extends BaseModule {
                 currentTicket.createdAt
             )
         });
-        const snapshot =
-            this.createTicketSnapshot(assignedTicket);
-
-        this.commitTicketReplacement(
+        const storedTicket = this.commitTicketReplacement(
             ticketId,
             currentTicket,
             assignedTicket
         );
 
-        return snapshot;
+        return this.createTicketSnapshot(storedTicket);
 
     }
 
@@ -552,14 +717,18 @@ class TicketModule extends BaseModule {
             "Ticket assignment permission is required."
         );
 
-        const currentTicket =
-            this.tickets.get(ticketId);
+        const storedCurrentTicket =
+            this.store.getTicket(ticketId);
 
-        if (!currentTicket) {
+        if (!storedCurrentTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const currentTicket = this.createTicketSnapshot(
+            storedCurrentTicket
+        );
 
         if (currentTicket.status !== TicketStatus.OPEN) {
             throw new Error(
@@ -582,17 +751,13 @@ class TicketModule extends BaseModule {
                 currentTicket.createdAt
             )
         });
-        const snapshot = this.createTicketSnapshot(
-            unassignedTicket
-        );
-
-        this.commitTicketReplacement(
+        const storedTicket = this.commitTicketReplacement(
             ticketId,
             currentTicket,
             unassignedTicket
         );
 
-        return snapshot;
+        return this.createTicketSnapshot(storedTicket);
 
     }
 
@@ -608,13 +773,16 @@ class TicketModule extends BaseModule {
         this.validateActorId(authorId);
         this.validateActorPermissions(actorPermissions);
 
-        const ticket = this.tickets.get(ticketId);
+        const storedTicket = this.store.getTicket(ticketId);
 
-        if (!ticket) {
+        if (!storedTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const ticket =
+            this.createTicketSnapshot(storedTicket);
 
         this.requireCreatorOrPermission(
             ticket,
@@ -631,28 +799,8 @@ class TicketModule extends BaseModule {
             );
         }
 
-        if (
-            !Number.isSafeInteger(this.nextMessageId) ||
-            this.nextMessageId <= 0 ||
-            this.nextMessageId >= Number.MAX_SAFE_INTEGER
-        ) {
-            throw new Error(
-                "Ticket message ID sequence has " +
-                "reached its safe limit."
-            );
-        }
-
-        const messageId =
-            `ticket-message-${this.nextMessageId}`;
-
-        if (this.hasMessageId(messageId)) {
-            throw new Error(
-                `Ticket message ID already exists: ${messageId}`
-            );
-        }
-
         const message = new TicketMessage({
-            id: messageId,
+            id: "ticket-message-pending",
             ticketId,
             authorId,
             content,
@@ -669,68 +817,40 @@ class TicketModule extends BaseModule {
             );
         }
 
-        const snapshot =
-            this.createMessageSnapshot(message);
-        const previousMessages =
-            this.messagesByTicket.get(ticketId);
-        const updatedMessages = [
-            ...(previousMessages || []),
-            message
-        ];
-        const previousNextMessageId =
-            this.nextMessageId;
-
-        try {
-
-            this.messagesByTicket.set(
-                ticketId,
-                updatedMessages
-            );
-            this.nextMessageId += 1;
-
-        } catch (error) {
-
-            if (previousMessages) {
-                Map.prototype.set.call(
-                    this.messagesByTicket,
-                    ticketId,
-                    previousMessages
-                );
-            } else {
-                Map.prototype.delete.call(
-                    this.messagesByTicket,
-                    ticketId
-                );
+        const storedMessage = this.store.appendMessage(
+            this.createStoredTicket(ticket),
+            {
+                authorId: message.authorId,
+                content: message.content,
+                createdAt: message.createdAt
             }
+        );
 
-            this.nextMessageId =
-                previousNextMessageId;
-
-            throw error;
-
-        }
-
-        return snapshot;
+        return this.createMessageSnapshot(storedMessage);
 
     }
 
     listMessages(
         ticketId,
         actorId,
-        actorPermissions = []
+        actorPermissions = [],
+        options = {}
     ) {
 
         this.validateTicketId(ticketId);
         this.validateActorId(actorId);
         this.validateActorPermissions(actorPermissions);
 
-        const ticket = this.tickets.get(ticketId);
+        const storedTicket = this.store.getTicket(ticketId);
 
-        if (!ticket) {
+        if (!storedTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const ticket =
+            this.createTicketSnapshot(storedTicket);
 
         this.requireCreatorOrPermission(
             ticket,
@@ -741,8 +861,15 @@ class TicketModule extends BaseModule {
                 "or actors with view-all permission."
         );
 
-        return (
-            this.messagesByTicket.get(ticketId) || []
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store.listMessages(
+            ticketId,
+            {
+                limit: readOptions.limit,
+                latest: readOptions.latest
+            }
         ).map(message =>
             this.createMessageSnapshot(message)
         );
@@ -759,13 +886,16 @@ class TicketModule extends BaseModule {
         this.validateActorId(actorId);
         this.validateActorPermissions(actorPermissions);
 
-        const ticket = this.tickets.get(ticketId);
+        const storedTicket = this.store.getTicket(ticketId);
 
-        if (!ticket) {
+        if (!storedTicket) {
             throw new Error(
                 `Ticket not found: ${ticketId}`
             );
         }
+
+        const ticket =
+            this.createTicketSnapshot(storedTicket);
 
         this.requireCreatorOrPermission(
             ticket,
@@ -776,13 +906,14 @@ class TicketModule extends BaseModule {
                 "or actors with view-all permission."
         );
 
-        return (
-            this.messagesByTicket.get(ticketId) || []
-        ).length;
+        return this.store.countMessages(ticketId);
 
     }
 
-    listTickets(actorPermissions = []) {
+    listTickets(
+        actorPermissions = [],
+        options = {}
+    ) {
 
         this.requirePermission(
             actorPermissions,
@@ -790,13 +921,55 @@ class TicketModule extends BaseModule {
             "Ticket view-all permission is required."
         );
 
-        return [...this.tickets.values()].map(
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store.listTickets(readOptions).map(
             ticket => this.createTicketSnapshot(ticket)
         );
 
     }
 
     listTicketsForCreator(
+        creatorId,
+        actorId,
+        actorPermissions = [],
+        options = {}
+    ) {
+
+        this.validateCreatorId(creatorId);
+        this.validateActorId(actorId);
+        this.validateActorPermissions(actorPermissions);
+
+        if (
+            creatorId !== actorId &&
+            !this.hasPermission(
+                actorPermissions,
+                TicketPermission.VIEW_ALL
+            )
+        ) {
+            throw new Error(
+                "Ticket creator filtering is limited to " +
+                "that creator or actors with view-all " +
+                "permission."
+            );
+        }
+
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store
+            .listTicketsForCreator(
+                creatorId,
+                readOptions
+            )
+            .map(ticket =>
+                this.createTicketSnapshot(ticket)
+            );
+
+    }
+
+    getTicketCountForCreator(
         creatorId,
         actorId,
         actorPermissions = []
@@ -820,19 +993,14 @@ class TicketModule extends BaseModule {
             );
         }
 
-        return [...this.tickets.values()]
-            .filter(ticket =>
-                ticket.creatorId === creatorId
-            )
-            .map(ticket =>
-                this.createTicketSnapshot(ticket)
-            );
+        return this.store.countTicketsForCreator(creatorId);
 
     }
 
     listTicketsByStatus(
         status,
-        actorPermissions = []
+        actorPermissions = [],
+        options = {}
     ) {
 
         this.requireSupportedStatus(status);
@@ -842,10 +1010,11 @@ class TicketModule extends BaseModule {
             "Ticket view-all permission is required."
         );
 
-        return [...this.tickets.values()]
-            .filter(ticket =>
-                ticket.status === status
-            )
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store
+            .listTicketsByStatus(status, readOptions)
             .map(ticket =>
                 this.createTicketSnapshot(ticket)
             );
@@ -854,7 +1023,8 @@ class TicketModule extends BaseModule {
 
     listTicketsForAssignee(
         assigneeId,
-        actorPermissions = []
+        actorPermissions = [],
+        options = {}
     ) {
 
         this.validateAssigneeId(assigneeId);
@@ -864,9 +1034,13 @@ class TicketModule extends BaseModule {
             "Ticket view-all permission is required."
         );
 
-        return [...this.tickets.values()]
-            .filter(ticket =>
-                ticket.assigneeId === assigneeId
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store
+            .listTicketsForAssignee(
+                assigneeId,
+                readOptions
             )
             .map(ticket =>
                 this.createTicketSnapshot(ticket)
@@ -875,7 +1049,8 @@ class TicketModule extends BaseModule {
     }
 
     listUnassignedTickets(
-        actorPermissions = []
+        actorPermissions = [],
+        options = {}
     ) {
 
         this.requirePermission(
@@ -884,10 +1059,11 @@ class TicketModule extends BaseModule {
             "Ticket view-all permission is required."
         );
 
-        return [...this.tickets.values()]
-            .filter(ticket =>
-                ticket.assigneeId === null
-            )
+        const readOptions =
+            this.validateReadOptions(options);
+
+        return this.store
+            .listUnassignedTickets(readOptions)
             .map(ticket =>
                 this.createTicketSnapshot(ticket)
             );

@@ -4,6 +4,9 @@ const ModerationMigrations = require(
 const EconomyMigrations = require(
     "../../modules/economy/persistence/EconomyMigrations"
 );
+const TicketMigrations = require(
+    "../../modules/tickets/persistence/TicketMigrations"
+);
 
 class DatabaseMigrationLoader {
 
@@ -11,7 +14,8 @@ class DatabaseMigrationLoader {
 
         return [
             ...ModerationMigrations,
-            ...EconomyMigrations
+            ...EconomyMigrations,
+            ...TicketMigrations
         ];
 
     }

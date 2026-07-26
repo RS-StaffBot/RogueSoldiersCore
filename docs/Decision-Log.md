@@ -50,11 +50,11 @@ Production Economy persistence and database-backed atomicity are implemented thr
 
 Ticket business logic is platform-neutral and owned by `TicketModule`. Discord Ticket commands resolve the one framework-loaded Module through the Core Registry and Module Manager rather than constructing another instance.
 
-Ticket and message IDs are Module-generated. Ticket writes are atomic within the in-memory implementation, and public Ticket records and messages are frozen defensive snapshots.
+Ticket and message IDs retain Module-owned public formats and derive from independent successful store sequences. Ticket writes are atomic through the selected store implementation, and public Ticket records and messages are frozen defensive snapshots.
 
 Creator-owned operations and staff authorization remain Module-owned. The Discord Provider translates platform permissions into reusable Ticket permission identifiers. `ManageMessages` is the current fixed, non-configurable staff boundary, while `Administrator` supplies the administrative override and Discord's individual permission grants.
 
-Ticket persistence belongs to v0.7.0 and will be required for multi-process atomicity. Discord channel and thread Ticket architecture, transcripts, permission overwrites, configurable roles, external portals, and web administration remain future work.
+Production Ticket persistence and database-backed atomicity are implemented through the v0.7.0 SQLite store integration described below. Discord channel and thread Ticket architecture, transcripts, permission overwrites, configurable roles, external portals, and web administration remain future work.
 
 ## Future Administration Boundary
 
@@ -93,6 +93,16 @@ The Economy Module retains input validation, transfer policy and authorization, 
 Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction. Public transaction IDs retain the `economy-N` format and derive from committed SQLite transaction sequence values. A rolled-back operation does not consume the next successful public ID.
 
 Daily claims are included with the core ledger because leaving cooldown timestamps in memory would permit duplicate rewards after restart and create mixed persistence authority. Economy configuration remains validated Module configuration rather than durable user state.
+
+## Ticket Persistence Authority
+
+### Decision
+
+SQLite is authoritative for production Ticket records, status, assignment, messages, ordering, and public identity sequences. Direct `TicketModule` construction uses an in-memory store implementing the same Module-specific contract.
+
+`TicketModule` retains validation, creator ownership, staff authorization, administrative override, status transitions, open-Ticket restrictions, public errors, and frozen public records. The store owns durable rows, parameterized queries, transaction boundaries, explicit ordering, restart recovery, and independent Ticket and message sequence allocation.
+
+Public IDs retain the `ticket-N` and `ticket-message-N` formats and derive from separate committed SQLite sequences. Failed writes roll back their row and sequence change together. Discord list and recent-message presentation uses optional bounded Module reads while existing unbounded Module APIs remain compatible for non-interaction callers.
 
 ## Existing Decisions Retained
 
