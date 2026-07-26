@@ -6,6 +6,7 @@ const KickCommand = require("./KickCommand");
 const LeaderboardCommand = require("./LeaderboardCommand");
 const PingCommand = require("./PingCommand");
 const PurgeCommand = require("./PurgeCommand");
+const TicketCommand = require("./TicketCommand");
 const TimeoutCommand = require("./TimeoutCommand");
 const UntimeoutCommand = require("./UntimeoutCommand");
 const WarnCommand = require("./WarnCommand");
@@ -23,6 +24,7 @@ class CommandLoader {
             new LeaderboardCommand(),
             new PingCommand(),
             new PurgeCommand(),
+            new TicketCommand(),
             new TimeoutCommand(),
             new UntimeoutCommand(),
             new WarnCommand()
