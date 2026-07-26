@@ -251,8 +251,14 @@ test("does not resolve until authentication and readiness", async () => {
 test("rejects a socket error before readiness", async () => {
 
     const harness = createHarness();
+    let connectionLossCount = 0;
     const connection =
-        harness.client.connect(CONNECTION_OPTIONS);
+        harness.client.connect(
+            CONNECTION_OPTIONS,
+            () => {
+                connectionLossCount += 1;
+            }
+        );
 
     harness.socket.fail(
         new Error("test-password")
@@ -268,14 +274,21 @@ test("rejects a socket error before readiness", async () => {
         harness.socket.destroyCount,
         1
     );
+    assert.strictEqual(connectionLossCount, 0);
 
 });
 
 test("rejects premature close before readiness", async () => {
 
     const harness = createHarness();
+    let connectionLossCount = 0;
     const connection =
-        harness.client.connect(CONNECTION_OPTIONS);
+        harness.client.connect(
+            CONNECTION_OPTIONS,
+            () => {
+                connectionLossCount += 1;
+            }
+        );
 
     harness.socket.close();
 
@@ -286,14 +299,21 @@ test("rejects premature close before readiness", async () => {
                 "7 Days to Die connection closed before readiness."
         }
     );
+    assert.strictEqual(connectionLossCount, 0);
 
 });
 
 test("rejects the complete readiness timeout", async () => {
 
     const harness = createHarness();
+    let connectionLossCount = 0;
     const connection =
-        harness.client.connect(CONNECTION_OPTIONS);
+        harness.client.connect(
+            CONNECTION_OPTIONS,
+            () => {
+                connectionLossCount += 1;
+            }
+        );
     const [timer] = harness.activeTimers.values();
 
     assert.strictEqual(timer.delay, 10000);
@@ -311,6 +331,7 @@ test("rejects the complete readiness timeout", async () => {
         harness.activeTimers.size,
         0
     );
+    assert.strictEqual(connectionLossCount, 0);
 
 });
 
@@ -324,8 +345,14 @@ test("rejects identifiable authentication failure", async () => {
     for (const rejectionMessage of rejectionMessages) {
 
         const harness = createHarness();
+        let connectionLossCount = 0;
         const connection =
-            harness.client.connect(CONNECTION_OPTIONS);
+            harness.client.connect(
+                CONNECTION_OPTIONS,
+                () => {
+                    connectionLossCount += 1;
+                }
+            );
 
         harness.socket.data(
             "Please enter password:\r\n"
@@ -341,6 +368,7 @@ test("rejects identifiable authentication failure", async () => {
                     "7 Days to Die authentication was rejected."
             }
         );
+        assert.strictEqual(connectionLossCount, 0);
 
     }
 
@@ -365,6 +393,120 @@ test("clears timer and attempt listeners after success", async () => {
     );
     assert.strictEqual(
         harness.socket.listenerCount("data"),
+        0
+    );
+
+});
+
+test("reports one unexpected error after readiness", async () => {
+
+    const harness = createHarness();
+    const connectionLosses = [];
+    const connection = harness.client.connect(
+        CONNECTION_OPTIONS,
+        error => {
+            connectionLosses.push(error);
+        }
+    );
+
+    emitReadyHandshake(harness.socket);
+    await connection;
+
+    assert.strictEqual(
+        harness.socket.listenerCount("error"),
+        1
+    );
+    assert.strictEqual(
+        harness.socket.listenerCount("close"),
+        1
+    );
+
+    harness.socket.fail(
+        new Error(CONNECTION_OPTIONS.password)
+    );
+    harness.socket.close();
+
+    assert.strictEqual(connectionLosses.length, 1);
+    assert.strictEqual(
+        connectionLosses[0].message,
+        "7 Days to Die connection was lost."
+    );
+    assert.strictEqual(
+        connectionLosses[0].message.includes(
+            CONNECTION_OPTIONS.password
+        ),
+        false
+    );
+    assert.strictEqual(harness.client.ready, false);
+    assert.strictEqual(harness.client.socket, null);
+    assert.strictEqual(
+        harness.socket.listenerCount("error"),
+        0
+    );
+    assert.strictEqual(
+        harness.socket.listenerCount("close"),
+        0
+    );
+
+    await harness.client.disconnect();
+    await harness.client.disconnect();
+
+});
+
+test("reports one unexpected close after readiness", async () => {
+
+    const harness = createHarness();
+    const connectionLosses = [];
+    const connection = harness.client.connect(
+        CONNECTION_OPTIONS,
+        error => {
+            connectionLosses.push(error);
+        }
+    );
+
+    emitReadyHandshake(harness.socket);
+    await connection;
+
+    harness.socket.close();
+
+    assert.strictEqual(connectionLosses.length, 1);
+    assert.strictEqual(
+        connectionLosses[0].message,
+        "7 Days to Die connection closed unexpectedly."
+    );
+    assert.strictEqual(harness.client.ready, false);
+    assert.strictEqual(harness.client.socket, null);
+
+});
+
+test("cleans up when the connection-loss handler throws", async () => {
+
+    const harness = createHarness();
+    let connectionLossCount = 0;
+    const connection = harness.client.connect(
+        CONNECTION_OPTIONS,
+        () => {
+            connectionLossCount += 1;
+            throw new Error("Handler failed.");
+        }
+    );
+
+    emitReadyHandshake(harness.socket);
+    await connection;
+
+    assert.doesNotThrow(() => {
+        harness.socket.fail(new Error("Socket failed."));
+    });
+    harness.socket.close();
+
+    assert.strictEqual(connectionLossCount, 1);
+    assert.strictEqual(harness.client.socket, null);
+    assert.strictEqual(
+        harness.socket.listenerCount("error"),
+        0
+    );
+    assert.strictEqual(
+        harness.socket.listenerCount("close"),
         0
     );
 
@@ -447,8 +589,14 @@ test("disconnect after readiness awaits socket closure", async () => {
     const harness = createHarness({
         socket
     });
+    let connectionLossCount = 0;
     const connection =
-        harness.client.connect(CONNECTION_OPTIONS);
+        harness.client.connect(
+            CONNECTION_OPTIONS,
+            () => {
+                connectionLossCount += 1;
+            }
+        );
 
     emitReadyHandshake(socket);
     await connection;
@@ -468,6 +616,7 @@ test("disconnect after readiness awaits socket closure", async () => {
     await disconnection;
 
     assert.strictEqual(disconnected, true);
+    assert.strictEqual(connectionLossCount, 0);
 
     await harness.client.disconnect();
 

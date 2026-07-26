@@ -37,12 +37,20 @@ class SevenDaysToDieTelnetClient {
         this.cancelConnectionAttempt = null;
         this.liveSocketListeners = null;
         this.lastConnectionError = null;
+        this.unexpectedConnectionLossHandler = null;
+        this.connectionLossNotified = false;
 
     }
 
-    async connect(options) {
+    async connect(
+        options,
+        unexpectedConnectionLossHandler = null
+    ) {
 
         this.validateConnectionOptions(options);
+        this.validateUnexpectedConnectionLossHandler(
+            unexpectedConnectionLossHandler
+        );
 
         if (this.connecting || this.socket) {
             throw new Error(
@@ -58,6 +66,9 @@ class SevenDaysToDieTelnetClient {
         this.authenticationAccepted = false;
         this.consoleReady = false;
         this.lastConnectionError = null;
+        this.unexpectedConnectionLossHandler =
+            unexpectedConnectionLossHandler;
+        this.connectionLossNotified = false;
 
         return new Promise((resolve, reject) => {
 
@@ -112,6 +123,8 @@ class SevenDaysToDieTelnetClient {
                 this.ready = false;
                 this.inputBuffer = "";
                 this.cancelConnectionAttempt = null;
+                this.unexpectedConnectionLossHandler = null;
+                this.connectionLossNotified = false;
 
                 if (socket && !socket.destroyed) {
 
@@ -349,15 +362,40 @@ class SevenDaysToDieTelnetClient {
     attachLiveSocketListeners(socket) {
 
         const onError = () => {
-            this.lastConnectionError = new Error(
+
+            if (!this.ready) {
+                return;
+            }
+
+            const error = new Error(
                 "7 Days to Die connection was lost."
             );
+
+            this.lastConnectionError = error;
             this.ready = false;
+
+            this.notifyUnexpectedConnectionLoss(error);
+
         };
         const onClose = () => {
+
+            const wasReady = this.ready;
+
             this.removeLiveSocketListeners();
             this.socket = null;
             this.ready = false;
+
+            if (wasReady) {
+
+                const error = new Error(
+                    "7 Days to Die connection closed unexpectedly."
+                );
+
+                this.lastConnectionError = error;
+                this.notifyUnexpectedConnectionLoss(error);
+
+            }
+
         };
 
         socket.on("error", onError);
@@ -368,6 +406,31 @@ class SevenDaysToDieTelnetClient {
             onError,
             socket
         };
+
+    }
+
+    notifyUnexpectedConnectionLoss(error) {
+
+        if (this.connectionLossNotified) {
+            return;
+        }
+
+        this.connectionLossNotified = true;
+
+        const handler =
+            this.unexpectedConnectionLossHandler;
+
+        this.unexpectedConnectionLossHandler = null;
+
+        if (!handler) {
+            return;
+        }
+
+        try {
+            handler(error);
+        } catch {
+            // Socket cleanup remains authoritative if notification fails.
+        }
 
     }
 
@@ -407,6 +470,8 @@ class SevenDaysToDieTelnetClient {
         this.authenticationAccepted = false;
         this.consoleReady = false;
         this.cancelConnectionAttempt = null;
+        this.unexpectedConnectionLossHandler = null;
+        this.connectionLossNotified = false;
 
     }
 
@@ -428,6 +493,19 @@ class SevenDaysToDieTelnetClient {
         ) {
             throw new Error(
                 "7 Days to Die connection options are invalid."
+            );
+        }
+
+    }
+
+    validateUnexpectedConnectionLossHandler(handler) {
+
+        if (
+            handler !== null &&
+            typeof handler !== "function"
+        ) {
+            throw new Error(
+                "7 Days to Die connection-loss handler is invalid."
             );
         }
 

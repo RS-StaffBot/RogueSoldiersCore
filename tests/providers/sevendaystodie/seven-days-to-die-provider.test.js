@@ -145,6 +145,128 @@ test("reports RUNNING only after client readiness", async () => {
 
 });
 
+test("enters ERROR after an unexpected connection loss", async () => {
+
+    const harness = createHarness();
+    const connectionError = new Error(
+        "7 Days to Die connection was lost."
+    );
+
+    harness.provider.initialize();
+    await harness.provider.start();
+
+    harness.client.reportUnexpectedConnectionLoss(
+        connectionError
+    );
+
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.ERROR
+    );
+
+});
+
+test("does not overwrite a startup-time loss with RUNNING", async () => {
+
+    const connectionError = new Error(
+        "7 Days to Die connection was lost."
+    );
+    const client = new FakeSevenDaysToDieClient({
+        connect(options, unexpectedConnectionLossHandler) {
+            unexpectedConnectionLossHandler(
+                connectionError
+            );
+        }
+    });
+    const harness = createHarness({
+        client
+    });
+
+    harness.provider.initialize();
+
+    await assert.rejects(
+        harness.provider.start(),
+        error => error === connectionError
+    );
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.ERROR
+    );
+
+});
+
+test("ignores connection-loss notification during stop", async () => {
+
+    const client = new FakeSevenDaysToDieClient({
+        disconnect(unexpectedConnectionLossHandler) {
+            unexpectedConnectionLossHandler(
+                new Error("Connection closed.")
+            );
+        }
+    });
+    const harness = createHarness({
+        client
+    });
+
+    harness.provider.initialize();
+    await harness.provider.start();
+    await harness.provider.stop();
+
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.STOPPED
+    );
+
+});
+
+test("applies duplicate connection-loss signals once", async () => {
+
+    const harness = createHarness();
+    const originalSetError =
+        harness.provider.setError.bind(harness.provider);
+    let errorTransitionCount = 0;
+
+    harness.provider.setError = () => {
+        errorTransitionCount += 1;
+        originalSetError();
+    };
+
+    harness.provider.initialize();
+    await harness.provider.start();
+
+    harness.client.reportUnexpectedConnectionLoss();
+    harness.client.reportUnexpectedConnectionLoss();
+
+    assert.strictEqual(errorTransitionCount, 1);
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.ERROR
+    );
+
+});
+
+test("stops safely and repeatedly after connection loss", async () => {
+
+    const harness = createHarness();
+
+    harness.provider.initialize();
+    await harness.provider.start();
+    harness.client.reportUnexpectedConnectionLoss();
+
+    await harness.provider.stop();
+    await harness.provider.stop();
+
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.STOPPED
+    );
+    assert.strictEqual(
+        harness.client.disconnectCount,
+        1
+    );
+
+});
+
 test("rejects invalid configuration before client use", () => {
 
     const invalidConfigurations = [

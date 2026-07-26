@@ -51,11 +51,33 @@ class SevenDaysToDieProvider extends BaseProvider {
         this.state = ComponentState.STARTING;
         this.connectionAttempted = true;
 
+        let startupConnectionLossError = null;
+
         try {
 
             await this.client.connect(
-                this.connectionOptions
+                this.connectionOptions,
+                error => {
+
+                    const wasStarting =
+                        this.state ===
+                        ComponentState.STARTING;
+                    const connectionLossError =
+                        this.handleUnexpectedConnectionLoss(
+                            error
+                        );
+
+                    if (wasStarting) {
+                        startupConnectionLossError =
+                            connectionLossError;
+                    }
+
+                }
             );
+
+            if (startupConnectionLossError) {
+                throw startupConnectionLossError;
+            }
 
             super.start();
 
@@ -91,6 +113,29 @@ class SevenDaysToDieProvider extends BaseProvider {
             this.setError();
             throw error;
         }
+
+    }
+
+    handleUnexpectedConnectionLoss(error) {
+
+        if (
+            this.state === ComponentState.STOPPING ||
+            this.state === ComponentState.STOPPED ||
+            this.state === ComponentState.ERROR
+        ) {
+            return null;
+        }
+
+        const connectionLossError =
+            error instanceof Error
+                ? error
+                : new Error(
+                    "7 Days to Die connection was lost."
+                );
+
+        this.setError();
+
+        return connectionLossError;
 
     }
 
