@@ -166,16 +166,90 @@ class EconomyModule extends BaseModule {
 
     }
 
+    validateUserId(userId) {
+
+        if (
+            typeof userId !== "string" ||
+            userId.trim().length === 0
+        ) {
+            throw new Error(
+                "Economy user ID is required."
+            );
+        }
+
+    }
+
+    createAccountSnapshot(account) {
+
+        return new EconomyAccount({
+            userId: account.userId,
+            balance: account.balance,
+            createdAt: account.createdAt
+        });
+
+    }
+
+    createTransactionSnapshot(transaction) {
+
+        return new EconomyTransaction({
+            id: transaction.id,
+            type: transaction.type,
+            amount: transaction.amount,
+            userId: transaction.userId,
+            fromUserId: transaction.fromUserId,
+            toUserId: transaction.toUserId,
+            balanceAfter: transaction.balanceAfter,
+            fromBalanceAfter: transaction.fromBalanceAfter,
+            toBalanceAfter: transaction.toBalanceAfter,
+            reason: transaction.reason,
+            createdAt: transaction.createdAt
+        });
+
+    }
+
     hasAccount(userId) {
+
+        this.validateUserId(userId);
+
         return this.accounts.has(userId);
     }
 
     createAccount(userId) {
 
+        this.validateUserId(userId);
+
         if (this.hasAccount(userId)) {
             throw new Error(
                 `Economy account already exists: ${userId}`
             );
+        }
+
+        const account = new EconomyAccount({
+            userId,
+            balance: this.startingBalance
+        });
+
+        this.accounts.set(userId, account);
+
+        return this.createAccountSnapshot(account);
+
+    }
+
+    getInternalAccount(userId) {
+
+        this.validateUserId(userId);
+
+        return this.accounts.get(userId) || null;
+
+    }
+
+    ensureInternalAccount(userId) {
+
+        const existingAccount =
+            this.getInternalAccount(userId);
+
+        if (existingAccount) {
+            return existingAccount;
         }
 
         const account = new EconomyAccount({
@@ -191,29 +265,75 @@ class EconomyModule extends BaseModule {
 
     getAccount(userId) {
 
-        if (!this.hasAccount(userId)) {
-            return this.createAccount(userId);
-        }
-
-        return this.accounts.get(userId);
+        return this.createAccountSnapshot(
+            this.ensureInternalAccount(userId)
+        );
 
     }
 
     getBalance(userId) {
-        return this.getAccount(userId).balance;
+        return this.ensureInternalAccount(userId).balance;
     }
 
-    createTransaction(transactionData) {
+    prepareTransaction(transactionData) {
 
-        const transaction = new EconomyTransaction({
+        return new EconomyTransaction({
             id: `economy-${this.nextTransactionId}`,
             ...transactionData
         });
 
-        this.nextTransactionId += 1;
-        this.transactions.push(transaction);
+    }
 
-        return transaction;
+    createTransaction(transactionData) {
+
+        const transaction = this.prepareTransaction(
+            transactionData
+        );
+
+        this.transactions.push(transaction);
+        this.nextTransactionId += 1;
+
+        return this.createTransactionSnapshot(transaction);
+
+    }
+
+    commitBalanceTransaction({
+        userId,
+        account,
+        balanceAfter,
+        transaction
+    }) {
+
+        const accountExisted = this.accounts.has(userId);
+        const balanceBefore = account.balance;
+        const transactionCount = this.transactions.length;
+        const transactionId = this.nextTransactionId;
+
+        try {
+
+            account.balance = balanceAfter;
+
+            if (!accountExisted) {
+                this.accounts.set(userId, account);
+            }
+
+            this.transactions.push(transaction);
+            this.nextTransactionId += 1;
+
+        } catch (error) {
+
+            account.balance = balanceBefore;
+
+            if (!accountExisted) {
+                this.accounts.delete(userId);
+            }
+
+            this.transactions.length = transactionCount;
+            this.nextTransactionId = transactionId;
+
+            throw error;
+
+        }
 
     }
 
@@ -223,15 +343,34 @@ class EconomyModule extends BaseModule {
         reason = "Economy credit."
     ) {
 
-        const account = this.getAccount(userId);
-        const balanceAfter = account.credit(amount);
+        this.validateUserId(userId);
 
-        this.createTransaction({
+        const account =
+            this.getInternalAccount(userId) ||
+            new EconomyAccount({
+                userId,
+                balance: this.startingBalance
+            });
+
+        account.validateAmount(amount);
+
+        const balanceAfter = account.balance + amount;
+
+        account.validateBalance(balanceAfter);
+
+        const transaction = this.prepareTransaction({
             type: EconomyTransactionType.CREDIT,
             userId,
             amount,
             balanceAfter,
             reason
+        });
+
+        this.commitBalanceTransaction({
+            userId,
+            account,
+            balanceAfter,
+            transaction
         });
 
         return balanceAfter;
@@ -244,15 +383,38 @@ class EconomyModule extends BaseModule {
         reason = "Economy debit."
     ) {
 
-        const account = this.getAccount(userId);
-        const balanceAfter = account.debit(amount);
+        this.validateUserId(userId);
 
-        this.createTransaction({
+        const account =
+            this.getInternalAccount(userId) ||
+            new EconomyAccount({
+                userId,
+                balance: this.startingBalance
+            });
+
+        account.validateAmount(amount);
+
+        if (amount > account.balance) {
+            throw new Error(
+                `Insufficient economy balance for user: ${userId}`
+            );
+        }
+
+        const balanceAfter = account.balance - amount;
+
+        const transaction = this.prepareTransaction({
             type: EconomyTransactionType.DEBIT,
             userId,
             amount,
             balanceAfter,
             reason
+        });
+
+        this.commitBalanceTransaction({
+            userId,
+            account,
+            balanceAfter,
+            transaction
         });
 
         return balanceAfter;
@@ -470,11 +632,15 @@ class EconomyModule extends BaseModule {
 
     getLastDailyClaim(userId) {
 
+        this.validateUserId(userId);
+
         if (!this.lastDailyClaims.has(userId)) {
             return null;
         }
 
-        return this.lastDailyClaims.get(userId);
+        return new Date(
+            this.lastDailyClaims.get(userId).getTime()
+        );
 
     }
 
@@ -488,19 +654,24 @@ class EconomyModule extends BaseModule {
             "daily status"
         );
 
-        const lastClaimAt = this.getLastDailyClaim(userId);
+        this.validateUserId(userId);
 
-        if (!lastClaimAt) {
+        const internalLastClaimAt =
+            this.lastDailyClaims.get(userId) || null;
+
+        if (!internalLastClaimAt) {
             return {
                 available: true,
                 remainingMs: 0,
                 lastClaimAt: null,
-                nextClaimAt: currentDate
+                nextClaimAt: new Date(
+                    currentDate.getTime()
+                )
             };
         }
 
         const nextClaimAt = new Date(
-            lastClaimAt.getTime() +
+            internalLastClaimAt.getTime() +
             this.dailyCooldownMs
         );
 
@@ -513,7 +684,9 @@ class EconomyModule extends BaseModule {
         return {
             available: remainingMs === 0,
             remainingMs,
-            lastClaimAt,
+            lastClaimAt: new Date(
+                internalLastClaimAt.getTime()
+            ),
             nextClaimAt
         };
 
@@ -540,6 +713,7 @@ class EconomyModule extends BaseModule {
             claimedAt,
             "daily claim"
         );
+        this.validateUserId(userId);
 
         const status = this.getDailyStatus(
             userId,
@@ -552,22 +726,81 @@ class EconomyModule extends BaseModule {
             );
         }
 
-        const balanceAfter = this.credit(
-            userId,
-            this.dailyRewardAmount,
-            "Daily reward."
-        );
+        const account =
+            this.getInternalAccount(userId) ||
+            new EconomyAccount({
+                userId,
+                balance: this.startingBalance
+            });
 
-        this.lastDailyClaims.set(
+        account.validateAmount(this.dailyRewardAmount);
+
+        const balanceAfter =
+            account.balance + this.dailyRewardAmount;
+
+        account.validateBalance(balanceAfter);
+
+        const transaction = this.prepareTransaction({
+            type: EconomyTransactionType.CREDIT,
             userId,
-            claimedAt
-        );
+            amount: this.dailyRewardAmount,
+            balanceAfter,
+            reason: "Daily reward."
+        });
+
+        const accountExisted = this.accounts.has(userId);
+        const balanceBefore = account.balance;
+        const transactionCount = this.transactions.length;
+        const transactionId = this.nextTransactionId;
+        const hadLastClaim =
+            this.lastDailyClaims.has(userId);
+        const previousLastClaim =
+            this.lastDailyClaims.get(userId);
+
+        try {
+
+            this.lastDailyClaims.set(
+                userId,
+                new Date(claimedAt.getTime())
+            );
+            account.balance = balanceAfter;
+
+            if (!accountExisted) {
+                this.accounts.set(userId, account);
+            }
+
+            this.transactions.push(transaction);
+            this.nextTransactionId += 1;
+
+        } catch (error) {
+
+            account.balance = balanceBefore;
+
+            if (!accountExisted) {
+                this.accounts.delete(userId);
+            }
+
+            if (hadLastClaim) {
+                this.lastDailyClaims.set(
+                    userId,
+                    previousLastClaim
+                );
+            } else {
+                this.lastDailyClaims.delete(userId);
+            }
+
+            this.transactions.length = transactionCount;
+            this.nextTransactionId = transactionId;
+
+            throw error;
+
+        }
 
         return {
             userId,
             amount: this.dailyRewardAmount,
             balanceAfter,
-            claimedAt,
+            claimedAt: new Date(claimedAt.getTime()),
             nextClaimAt: new Date(
                 claimedAt.getTime() +
                 this.dailyCooldownMs
@@ -661,6 +894,8 @@ class EconomyModule extends BaseModule {
         } = {}
     ) {
 
+        this.validateUserId(fromUserId);
+        this.validateUserId(toUserId);
         this.requireTransferPermission(actorPermissions);
 
         if (fromUserId === toUserId) {
@@ -669,8 +904,18 @@ class EconomyModule extends BaseModule {
             );
         }
 
-        const fromAccount = this.getAccount(fromUserId);
-        const toAccount = this.getAccount(toUserId);
+        const fromAccount =
+            this.getInternalAccount(fromUserId) ||
+            new EconomyAccount({
+                userId: fromUserId,
+                balance: this.startingBalance
+            });
+        const toAccount =
+            this.getInternalAccount(toUserId) ||
+            new EconomyAccount({
+                userId: toUserId,
+                balance: this.startingBalance
+            });
 
         fromAccount.validateAmount(amount);
 
@@ -689,18 +934,18 @@ class EconomyModule extends BaseModule {
             );
         }
 
-        fromAccount.debit(amount);
-        toAccount.credit(amount);
+        const sourceBalance =
+            fromAccount.balance - amount;
 
         const result = {
             fromUserId,
             toUserId,
             amount,
-            fromBalance: fromAccount.balance,
-            toBalance: toAccount.balance
+            fromBalance: sourceBalance,
+            toBalance: recipientBalance
         };
 
-        this.createTransaction({
+        const transaction = this.prepareTransaction({
             type: EconomyTransactionType.TRANSFER,
             fromUserId,
             toUserId,
@@ -709,6 +954,51 @@ class EconomyModule extends BaseModule {
             toBalanceAfter: result.toBalance,
             reason
         });
+
+        const sourceExisted =
+            this.accounts.has(fromUserId);
+        const destinationExisted =
+            this.accounts.has(toUserId);
+        const sourceBalanceBefore = fromAccount.balance;
+        const destinationBalanceBefore = toAccount.balance;
+        const transactionCount = this.transactions.length;
+        const transactionId = this.nextTransactionId;
+
+        try {
+
+            fromAccount.balance = sourceBalance;
+            toAccount.balance = recipientBalance;
+
+            if (!sourceExisted) {
+                this.accounts.set(fromUserId, fromAccount);
+            }
+
+            if (!destinationExisted) {
+                this.accounts.set(toUserId, toAccount);
+            }
+
+            this.transactions.push(transaction);
+            this.nextTransactionId += 1;
+
+        } catch (error) {
+
+            fromAccount.balance = sourceBalanceBefore;
+            toAccount.balance = destinationBalanceBefore;
+
+            if (!sourceExisted) {
+                this.accounts.delete(fromUserId);
+            }
+
+            if (!destinationExisted) {
+                this.accounts.delete(toUserId);
+            }
+
+            this.transactions.length = transactionCount;
+            this.nextTransactionId = transactionId;
+
+            throw error;
+
+        }
 
         return result;
 
@@ -768,16 +1058,24 @@ class EconomyModule extends BaseModule {
     }
 
     listTransactions() {
-        return [...this.transactions];
+        return this.transactions.map(
+            transaction =>
+                this.createTransactionSnapshot(transaction)
+        );
     }
 
     listTransactionsForUser(userId) {
+
+        this.validateUserId(userId);
 
         return this.transactions.filter(
             (transaction) =>
                 transaction.userId === userId ||
                 transaction.fromUserId === userId ||
                 transaction.toUserId === userId
+        ).map(
+            transaction =>
+                this.createTransactionSnapshot(transaction)
         );
 
     }
@@ -825,6 +1123,8 @@ class EconomyModule extends BaseModule {
         );
 
         if (userId !== undefined) {
+            this.validateUserId(userId);
+
             transactions = transactions.filter(
                 ({ transaction }) =>
                     transaction.userId === userId ||
@@ -859,7 +1159,9 @@ class EconomyModule extends BaseModule {
         const startIndex = (page - 1) * pageSize;
         const items = transactions
             .slice(startIndex, startIndex + pageSize)
-            .map(({ transaction }) => transaction);
+            .map(({ transaction }) =>
+                this.createTransactionSnapshot(transaction)
+            );
 
         return {
             items,
@@ -880,7 +1182,9 @@ class EconomyModule extends BaseModule {
     }
 
     listAccounts() {
-        return [...this.accounts.values()];
+        return [...this.accounts.values()].map(
+            account => this.createAccountSnapshot(account)
+        );
     }
 
 }

@@ -28,7 +28,7 @@ class EconomyAccount {
 
         this.userId = userId;
         this.balance = balance;
-        this.createdAt = createdAt;
+        this.createdAt = new Date(createdAt.getTime());
 
     }
 

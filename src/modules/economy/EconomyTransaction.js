@@ -65,6 +65,55 @@ class EconomyTransaction {
             );
         }
 
+        this.validateUserId(userId, "user");
+        this.validateUserId(fromUserId, "source user");
+        this.validateUserId(toUserId, "destination user");
+
+        if (
+            type === EconomyTransactionType.CREDIT ||
+            type === EconomyTransactionType.DEBIT
+        ) {
+            if (userId === null) {
+                throw new Error(
+                    "Economy transaction user ID is required."
+                );
+            }
+
+            this.validateBalance(
+                balanceAfter,
+                "balance after"
+            );
+        }
+
+        if (type === EconomyTransactionType.TRANSFER) {
+            if (fromUserId === null) {
+                throw new Error(
+                    "Economy transaction source user ID is required."
+                );
+            }
+
+            if (toUserId === null) {
+                throw new Error(
+                    "Economy transaction destination user ID is required."
+                );
+            }
+
+            if (fromUserId === toUserId) {
+                throw new Error(
+                    "Economy transfers require different accounts."
+                );
+            }
+
+            this.validateBalance(
+                fromBalanceAfter,
+                "source balance after"
+            );
+            this.validateBalance(
+                toBalanceAfter,
+                "destination balance after"
+            );
+        }
+
         this.id = id;
         this.type = type;
         this.amount = amount;
@@ -75,7 +124,38 @@ class EconomyTransaction {
         this.fromBalanceAfter = fromBalanceAfter;
         this.toBalanceAfter = toBalanceAfter;
         this.reason = reason.trim();
-        this.createdAt = createdAt;
+        this.createdAt = new Date(createdAt.getTime());
+
+    }
+
+    validateUserId(userId, fieldName) {
+
+        if (
+            userId !== null &&
+            (
+                typeof userId !== "string" ||
+                userId.trim().length === 0
+            )
+        ) {
+            throw new Error(
+                `Economy transaction ${fieldName} ID is invalid.`
+            );
+        }
+
+    }
+
+    validateBalance(balance, fieldName) {
+
+        if (
+            typeof balance !== "number" ||
+            !Number.isSafeInteger(balance) ||
+            balance < 0
+        ) {
+            throw new Error(
+                `Economy transaction ${fieldName} must be a ` +
+                "non-negative safe integer."
+            );
+        }
 
     }
 
