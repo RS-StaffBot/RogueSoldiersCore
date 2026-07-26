@@ -29,6 +29,12 @@ Set `DISCORD_TOKEN` and `DISCORD_CLIENT_ID` in `.env` before connecting the Disc
 
 ## Verify and Start
 
+Run the automated tests:
+
+```powershell
+npm.cmd test
+```
+
 Run the configured lint check:
 
 ```powershell

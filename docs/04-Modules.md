@@ -111,6 +111,8 @@ PURGE
 
 Production Moderation audit records are durable in SQLite and ordered by their stored append sequence. The Module validates business input, constructs immutable public records, commits storage before reporting success or logging the audit, and reconstructs and validates stored records during initialization and reads.
 
+Moderation audit details must use a plain object as the root. They may contain JSON-compatible `null`, strings, booleans, finite numbers, plain objects, and dense arrays. Details are independently copied and recursively frozen under the same contract in the in-memory and SQLite stores. Cycles, unsupported values, non-finite numbers, sparse arrays, accessors, symbol keys, and custom instances are rejected.
+
 SQLite is authoritative for production Moderation audit state. Direct `ModerationModule` construction uses the same store contract with an in-memory implementation for isolated use and testing. Providers and commands do not access the store or database.
 
 An invalid durable record causes Moderation initialization to fail rather than being silently accepted. Storage failures do not report success or emit a successful moderation audit log.

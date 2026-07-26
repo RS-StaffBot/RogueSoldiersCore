@@ -26,6 +26,7 @@ As of v0.7.0, RSF supports:
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
+- Focused automated regression tests for critical framework, lifecycle, persistence, and integrity behavior
 
 ## Future Direction
 
@@ -52,6 +53,6 @@ The following are not complete production systems:
 - Game-server control
 - Website integration
 - Cross-platform identity and permission administration
-- Automated test coverage
+- Comprehensive automated coverage across every Module operation, Discord command, and external integration remains incomplete
 - Backup and restore tooling, remote databases, replication, clustering, and database administration
 - Multi-process persistence beyond the current SQLite deployment boundary

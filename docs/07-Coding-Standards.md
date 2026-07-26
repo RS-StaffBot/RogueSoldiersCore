@@ -25,6 +25,7 @@ Do not add ANSI escape sequences outside `src/core/Logger.js`.
 Before each phase commit, run:
 
 ```powershell
+npm.cmd test
 npm run lint
 git diff --check
 ```

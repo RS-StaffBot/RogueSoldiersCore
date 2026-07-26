@@ -17,26 +17,25 @@ Module-specific stores receive the private Core connection through a controlled 
 ## Database Startup Flow
 
 ```text
-Bootstrap
+Configuration and Core registration
     |
     v
-DatabaseService opens one connection
+Database initialization and migrations
     |
     v
-DatabaseMigrationLoader supplies ordered migrations
+Module loading, initialization, and startup
     |
     v
-DatabaseMigrationManager applies and tracks migrations
+Provider loading, initialization, and startup
     |
     v
-ModuleLoader creates one Module-specific store per Module
+Provider readiness
     |
     v
-Modules reconstruct and validate durable state
-    |
-    v
-Modules enter RUNNING
+Framework startup success
 ```
+
+Providers start only after Module dependencies are ready. Shutdown stops Providers before Modules and Modules before the Database. Partial-startup rollback follows Providers -> Modules -> Database, continues cleanup after individual failures, and preserves the original startup error as authoritative.
 
 Migrations run before Module loading. Stores own SQL and durable mapping but not business rules. Stored rows are reconstructed through Module-owned records before becoming public results. Invalid durable state fails Module initialization rather than bypassing validation.
 

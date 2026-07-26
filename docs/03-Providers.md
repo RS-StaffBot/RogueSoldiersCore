@@ -4,6 +4,8 @@
 
 The Discord Provider owns Discord clients, interactions, REST registration, Discord permission checks, hierarchy checks, manageability checks, API operations, and Discord responses.
 
+Initialization prepares the Discord client, commands, and interaction handling. The Provider may report `RUNNING` only after login readiness and slash-command registration succeed. Missing configuration, login failure, readiness failure, or registration failure propagates to framework startup and leaves the Provider in `ERROR`. Shutdown awaits client destruction.
+
 ## Verified Commands
 
 The Discord Provider loads exactly 12 unique commands:
