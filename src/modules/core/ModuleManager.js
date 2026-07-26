@@ -5,6 +5,13 @@ class ModuleManager {
     }
 
     register(module) {
+
+        if (this.modules.has(module.name)) {
+            throw new Error(
+                `Module '${module.name}' is already registered.`
+            );
+        }
+
         this.modules.set(module.name, module);
     }
 

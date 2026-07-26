@@ -122,25 +122,35 @@ test("attempts every Provider during reverse shutdown", async () => {
 
 });
 
-test("currently replaces a Provider registered with a duplicate name", () => {
+test("rejects a duplicate Provider without changing registration", () => {
 
+    const firstProvider = createProvider("First");
     const originalProvider = createProvider("Duplicate");
     const replacementProvider = createProvider("Duplicate");
+    const lastProvider = createProvider("Last");
 
+    ProviderManager.register(firstProvider);
     ProviderManager.register(originalProvider);
-    ProviderManager.register(replacementProvider);
+    ProviderManager.register(lastProvider);
 
-    assert.strictEqual(
-        ProviderManager.get("Duplicate"),
-        replacementProvider
+    assert.throws(
+        () => ProviderManager.register(replacementProvider),
+        {
+            message:
+                "Provider 'Duplicate' is already registered."
+        }
     );
-    assert.notStrictEqual(
+    assert.strictEqual(
         ProviderManager.get("Duplicate"),
         originalProvider
     );
     assert.deepStrictEqual(
         ProviderManager.list(),
-        ["Duplicate"]
+        ["First", "Duplicate", "Last"]
+    );
+    assert.strictEqual(
+        ProviderManager.providers.size,
+        3
     );
 
 });

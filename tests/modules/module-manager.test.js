@@ -122,25 +122,32 @@ test("attempts every Module during reverse shutdown", async () => {
 
 });
 
-test("currently replaces a Module registered with a duplicate name", () => {
+test("rejects a duplicate Module without changing registration", () => {
 
+    const firstModule = createModule("First");
     const originalModule = createModule("Duplicate");
     const replacementModule = createModule("Duplicate");
+    const lastModule = createModule("Last");
 
+    ModuleManager.register(firstModule);
     ModuleManager.register(originalModule);
-    ModuleManager.register(replacementModule);
+    ModuleManager.register(lastModule);
 
-    assert.strictEqual(
-        ModuleManager.get("Duplicate"),
-        replacementModule
+    assert.throws(
+        () => ModuleManager.register(replacementModule),
+        {
+            message:
+                "Module 'Duplicate' is already registered."
+        }
     );
-    assert.notStrictEqual(
+    assert.strictEqual(
         ModuleManager.get("Duplicate"),
         originalModule
     );
     assert.deepStrictEqual(
         ModuleManager.list(),
-        ["Duplicate"]
+        ["First", "Duplicate", "Last"]
     );
+    assert.strictEqual(ModuleManager.modules.size, 3);
 
 });

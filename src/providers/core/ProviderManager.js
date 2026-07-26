@@ -4,6 +4,13 @@ class ProviderManager {
     }
 
     register(provider) {
+
+        if (this.providers.has(provider.name)) {
+            throw new Error(
+                `Provider '${provider.name}' is already registered.`
+            );
+        }
+
         this.providers.set(provider.name, provider);
     }
 
