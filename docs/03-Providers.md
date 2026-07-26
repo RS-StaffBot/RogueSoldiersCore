@@ -117,20 +117,41 @@ Reusable moderation, Economy, authorization, transaction, and cross-platform bus
 
 `WebsiteServer` uses Node's built-in `node:http` API and reports readiness only after listening succeeds. It retains the tested Provider lifecycle behavior for startup failure, unexpected post-readiness server loss, bounded shutdown, forced connection cleanup, and repeated safe shutdown.
 
-The server currently exposes two fixed routes:
+`WebsiteAuthenticator` owns the Provider-local `authenticate(request)` boundary. It denies authentication while Website authentication is disabled. When enabled, it resolves opaque Website session cookies through the session store and returns an identity plus whether an invalid supplied session cookie must be cleared. The Website identity contains only `actorId`, `displayName`, and an empty `permissions` array.
 
-- `GET /health` is unauthenticated and reports Website transport readiness only.
-- `GET /api/me` invokes the Website authentication boundary.
+### Discord OAuth and Session Boundaries
 
-`WebsiteAuthenticator` defines the Provider-local `authenticate(request)` boundary. The production implementation intentionally denies every request by returning no authenticated identity. Automated tests may inject `FakeWebsiteAuthenticator` to prove deterministic authenticated responses without providing a production login mechanism.
+`DiscordOAuthClient` is the focused Discord OAuth protocol boundary. It builds the Discord authorization URL, exchanges authorization codes, fetches the current Discord user and configured guild member, and revokes OAuth authorization. It uses Node 22 built-in `fetch` and crypto behavior, normalizes failures without exposing secrets or Discord response bodies, and retains no OAuth token after callback completion.
 
-An injected authenticated identity must contain a non-empty actor ID, a non-empty display name, and an array of non-empty permission strings. `WebsiteServer` normalizes duplicate permissions, creates a frozen defensive snapshot, and returns only allowlisted identity fields. Invalid or missing identities return `401`, unsupported `/api/me` methods return `405`, and authenticator operational failures return a generic `503` without changing Website Provider transport state.
+`InMemoryWebsiteOAuthStateStore` holds bounded one-time OAuth attempts in memory. Each attempt uses separate state, PKCE verifier, and browser-binding values. Sensitive lookup values are stored as digests where implemented. The store enforces expiration, replay rejection, atomic consumption, and capacity, clears all attempts on shutdown, and does not persist attempts across restart.
+
+`InMemoryWebsiteSessionStore` holds opaque Website sessions in memory. It stores token digests, frozen Website identity snapshots, and timestamps; enforces idle and absolute expiration; supports activity refresh, revocation, capacity enforcement, and shutdown clearing. Sessions do not survive Provider or process restart. No JWT or database session persistence exists.
+
+`WebsiteCookieService` owns focused cookie parsing and serialization. The session cookie is `__Host-rsf_session`; the OAuth binding cookie is `__Secure-rsf_oauth_binding`. Both use `Secure`, `HttpOnly`, `SameSite=Lax`, an approved `Path`, integer `Max-Age`, and no `Domain`.
+
+`WebsiteOAuthFlow` coordinates login initiation and callback processing. It uses Discord authorization-code OAuth with PKCE S256, one-time state, and browser binding. It enforces configured guild membership and rejects bots, system users, pending members, guest members, and non-members. It maps identity as:
+
+```text
+actorId = Discord user ID
+displayName = guild nickname -> global name -> username
+permissions = []
+```
+
+The flow revokes Discord OAuth authorization before creating an RSF session. Guild membership grants login eligibility only; it creates no Module permission or staff role mapping.
+
+### Website Routes
+
+- `GET /health` remains unauthenticated, reports transport readiness only, and makes no Discord request.
+- `GET /auth/discord` exists only when authentication is enabled. It creates state, PKCE, and browser binding, sets the binding cookie, and returns a `303` Discord authorization redirect.
+- `GET /auth/discord/callback` validates and consumes state before Discord access, enforces browser binding, exchanges the code, verifies identity and membership, revokes the OAuth grant, creates an RSF session, and returns `303` to `/api/me`. It returns generic `400`, `401`, `403`, or `503` failures and clears the binding cookie on callback outcomes.
+- `POST /auth/logout` requires the exact configured `Origin`. Missing or mismatched origins return `403`; valid requests revoke the session, clear cookies, return an empty `204`, and remain idempotent.
+- `GET /api/me` uses the session-backed authenticator when enabled. Valid sessions receive the existing allowlisted `200` identity response. Missing or invalid sessions receive `401`; invalid supplied session cookies are cleared. Internal authentication failures return generic `503`.
 
 ### Authentication Configuration
 
 `WebsiteAuthenticationConfiguration` is a Provider-local validator invoked during `WebsiteProvider` initialization. It validates configuration without network, database, Module, or Registry access and returns a frozen non-secret snapshot.
 
-Authentication is disabled by default. While disabled, `publicOrigin` and `discordGuildId` may remain empty, and neither a Discord client ID nor a Discord client secret is required. The Website Provider can start, `GET /health` remains available, and production `GET /api/me` continues to deny authentication. Login and callback routes are not implemented.
+Authentication is disabled by default. While disabled, `publicOrigin` and `discordGuildId` may remain empty, and neither a Discord client ID nor a Discord client secret is required. The Website Provider can start, `GET /health` remains available, production `GET /api/me` remains deny-only, and authentication routes return `404`. No OAuth client, state store, session store, or OAuth flow is constructed.
 
 When authentication is enabled, initialization requires:
 
@@ -142,6 +163,13 @@ When authentication is enabled, initialization requires:
 
 The callback URI is derived exactly as `<publicOrigin>/auth/discord/callback`. It is not configured separately and is not inferred from `Host`, `Forwarded`, or `X-Forwarded-*` request headers.
 
-Invalid enabled configuration fails Provider initialization before the HTTP listener is started. Valid enabled configuration also fails closed with `Website authentication is configured but is not implemented.` until real Discord authentication exists.
+Invalid enabled configuration fails Provider initialization before the HTTP listener is started. Valid enabled configuration constructs the OAuth and session boundaries before listener startup.
 
-This authentication contract and configuration validation are not working end-user login. Discord OAuth authorization, OAuth state handling, callback handling, sessions, cookies, logout, production authenticated identities, CORS, Module and Registry access, stores, database access, frontend behavior, public network exposure, settings interfaces, and permission translation remain unimplemented.
+Request-level Discord failures do not move `WebsiteProvider` to `ERROR`; unexpected transport loss retains existing `ERROR` behavior. Shutdown marks the OAuth flow as stopping, stops transport, and clears pending attempts and sessions.
+
+### Current Boundaries
+
+- No Ticket route or other Module, Registry, store, or database access exists.
+- No persistent session storage, frontend, public binding, trusted-proxy behavior, or role-to-permission translation exists.
+- No public deployment has been completed.
+- Live use requires a configured HTTPS reverse proxy and registered Discord callback. The loopback listener must not be exposed directly.

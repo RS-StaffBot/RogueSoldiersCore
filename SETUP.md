@@ -29,19 +29,30 @@ Set `DISCORD_TOKEN` and `DISCORD_CLIENT_ID` in `.env` before connecting the Disc
 
 ## Website Authentication Configuration
 
-Website authentication is disabled by default in the tracked local configuration. While it remains disabled, no public domain, Discord guild ID, OAuth client secret, or other authentication deployment value is required. Leave `DISCORD_CLIENT_SECRET` empty until later authentication deployment instructions apply.
+Website authentication is disabled by default in the tracked local configuration. While it remains disabled, no public domain, Discord guild ID, OAuth client secret, or other authentication deployment value is required.
 
 Do not commit `.env`, and do not put secrets in tracked JSON. The tracked Website configuration is safe for local development in its disabled state. Do not invent placeholder domains, guild IDs, client IDs, secrets, or lifetime values merely to populate optional fields.
 
-Enabling Website authentication currently prevents framework startup by design. Enabled values are validated, but real Discord OAuth, callback handling, sessions, cookies, logout, and end-user login are not implemented.
+Enabling Website authentication activates real Discord OAuth behavior. Do not enable it with placeholder values.
 
-For a future enabled deployment, `publicOrigin` must be the exact canonical HTTPS origin visible to users, without a trailing slash. The future callback URI is derived as:
+An enabled deployment requires:
+
+- A canonical public HTTPS origin without a trailing slash
+- The Rogue Soldiers Discord guild ID
+- `DISCORD_CLIENT_ID`
+- `DISCORD_CLIENT_SECRET`
+
+The callback URI is derived exactly as:
 
 ```text
 <publicOrigin>/auth/discord/callback
 ```
 
-That callback will need to be registered exactly in the Discord developer portal after the authentication implementation and deployment instructions are complete. Its documented format does not imply that the login or callback route works today.
+Register that callback URI exactly in the Discord Developer Portal. The browser must access RSF through an HTTPS reverse proxy; `WebsiteServer` itself remains bound to `127.0.0.1`. Do not expose the loopback listener directly, trust or invent forwarded headers, or place the client secret in tracked JSON.
+
+Session cookies require HTTPS, so direct loopback browser login is intentionally unsupported. Reverse-proxy access logs should redact callback query strings. Sessions are intentionally lost on Provider shutdown or process restart. No Ticket access or staff permission mapping exists yet.
+
+No reverse-proxy configuration is supplied by RSF in this checkpoint, and production deployment is not complete.
 
 ## Optional 7 Days to Die Provider
 

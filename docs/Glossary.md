@@ -22,11 +22,11 @@ The optional, disabled-by-default Provider that coordinates validated loopback-o
 
 ## WebsiteServer
 
-The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health` and `GET /api/me`.
+The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health`, `GET /auth/discord`, `GET /auth/discord/callback`, `POST /auth/logout`, and `GET /api/me` when authentication is enabled.
 
 ## WebsiteAuthenticator
 
-The Website Provider-local `authenticate(request)` contract. Its production implementation intentionally denies all authentication. Tests may inject deterministic identities, but no working end-user login is implemented.
+The Website Provider-local `authenticate(request)` contract. It denies authentication while disabled and resolves Website sessions when enabled. It returns an identity plus whether an invalid supplied session cookie must be cleared.
 
 ## Website Authenticated Identity
 
@@ -34,19 +34,51 @@ A Provider-local identity containing an actor ID, display name, and permission-s
 
 ## Website Authentication Configuration
 
-The Provider-local, startup-time contract that validates whether Website authentication is disabled or has the complete non-secret deployment configuration required for a future implementation. It returns a frozen snapshot, excludes the Discord client secret, and performs no network, Module, Registry, store, or database access.
+The Provider-local, startup-time contract that validates whether Website authentication is disabled or has the complete non-secret deployment configuration required for Discord OAuth. It returns a frozen snapshot, excludes the Discord client secret, and performs no network, Module, Registry, store, or database access.
 
 ## Canonical Public Origin
 
-The exact externally visible HTTPS origin configured for future Website authentication, with no credentials, path, query, fragment, or trailing slash. The future Discord callback URI is derived from this value and is not inferred from request headers.
+The exact externally visible HTTPS origin configured for Website authentication, with no credentials, path, query, fragment, or trailing slash. The Discord callback URI is derived from this value and is not inferred from request headers.
 
 ## Authentication Disabled State
 
 The default Website authentication state represented by the frozen snapshot `{ enabled: false }`. It requires no public origin, guild ID, Discord client ID, or Discord client secret; Website transport and health may run while production identity requests remain denied.
 
-## Configured but Unimplemented Authentication
+## Discord OAuth Client
 
-The fail-closed Website state in which enabled authentication configuration is valid but real Discord authentication does not yet exist. Provider initialization stops before the HTTP listener starts and reports the explicit configured-but-unimplemented error.
+The focused Website Provider component that performs Discord OAuth protocol requests and validates required responses.
+
+## Website OAuth Flow
+
+The Website Provider component that coordinates login, callback validation, guild-membership checks, token revocation, and RSF session creation.
+
+## OAuth State Store
+
+The bounded in-memory store for one-time browser-bound Discord OAuth attempts.
+
+## Website Session Store
+
+The bounded in-memory store for opaque Website sessions, identity snapshots, idle expiration, absolute expiration, and revocation.
+
+## Opaque Website Session
+
+A random browser token whose digest identifies server-side session state. It contains no browser-readable identity, permission, or OAuth claims.
+
+## OAuth Binding Cookie
+
+The short-lived protected cookie that binds a pending OAuth attempt to the browser that initiated it.
+
+## Website Session Cookie
+
+The protected `__Host-rsf_session` cookie containing only the opaque session token.
+
+## Guild-Membership Login Eligibility
+
+The current policy requiring an accepted human Discord member of the configured guild. It is not an RSF business permission or staff-role grant.
+
+## In-Memory Session Limitation
+
+Website sessions and pending OAuth attempts are revoked on Provider shutdown or process restart and are not shared across processes.
 
 ## Website Health
 

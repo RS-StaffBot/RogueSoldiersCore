@@ -272,3 +272,26 @@ Moderation, Economy, and Tickets use separate Module-specific store contracts. S
 Public Module identities remain domain identities rather than exposed database row types. Database transactions protect multi-row Module writes and successful ID sequencing. They do not roll back external Discord actions.
 
 No ORM, query builder, native SQLite npm package, remote database, replication, clustering, backup system, or administration interface is selected. A future database replacement must preserve Module validation, authorization, public identities, store contracts, transactional guarantees, and Provider isolation.
+
+## Website Authentication Uses Discord OAuth and In-Memory Sessions
+
+### Decision
+
+Website authentication uses Discord OAuth with opaque, server-side in-memory sessions for the first production-shaped Website login checkpoint.
+
+### Reason
+
+- Discord is the established Rogue Soldiers identity source.
+- The authorization-code flow with PKCE and one-time state provides a secure login boundary.
+- Opaque server-side sessions support revocation and avoid browser-visible claims or tokens.
+- In-memory storage provides a complete checkpoint without introducing database ownership and migrations into the authentication phase.
+- Ticket and Module integration remain separate review boundaries.
+
+### Guardrails
+
+- Authentication remains disabled by default.
+- OAuth tokens are not retained.
+- Sessions are lost on Provider or process restart.
+- Guild membership grants login eligibility only, not RSF staff permission.
+- No role translation, Module access, or persistent session claim is implied.
+- Public use requires a configured HTTPS reverse proxy and registered Discord callback.

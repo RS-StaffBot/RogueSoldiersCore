@@ -149,33 +149,35 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Truthful listening readiness, startup failure propagation, and unexpected server-loss handling
 - Awaited, bounded, and idempotent shutdown
 - Unauthenticated `GET /health` transport-readiness route
-- Provider-local `WebsiteAuthenticator` contract
-- Production authentication that intentionally denies every request
-- Deterministic authenticated-identity injection through `FakeWebsiteAuthenticator`
-- `GET /api/me` with allowlisted identity responses
-- Validated actor IDs, display names, and permission strings
-- Normalized duplicate permissions and defensive frozen identity snapshots
-- `401` for missing or invalid identity
-- `405` for unsupported `/api/me` methods
-- Generic request-level `503` for authenticator operational failure
+- Provider-local `WebsiteAuthenticator` contract with disabled deny-only and enabled session-backed behavior
+- Discord OAuth authorization-code login with PKCE S256
+- Browser-bound one-time OAuth state with replay protection
+- Rogue Soldiers guild-membership enforcement
+- Bot, system, pending, guest, and non-member rejection
+- OAuth token revocation before RSF session creation
+- Opaque in-memory Website sessions with idle and absolute expiration
+- Secure session and OAuth binding cookies
+- Session-backed `GET /api/me` with allowlisted identity responses
+- Exact-Origin `POST /auth/logout`
 - Provider-local `WebsiteAuthenticationConfiguration` validation during initialization
 - Disabled-by-default authentication configuration that requires no deployment values
 - Conditional validation of canonical HTTPS origin, Discord guild and client IDs, environment-only client secret, and bounded OAuth and session lifetimes
 - Exact callback derivation as `<publicOrigin>/auth/discord/callback`
 - Frozen non-secret authentication configuration snapshots
 - Invalid enabled configuration rejected before the HTTP listener starts
-- Explicit configured-but-unimplemented failure after valid enabled configuration
-- 149 passing automated tests without OAuth, external identity services, or a public listener
+- Valid enabled authentication construction before listener startup
+- Shutdown clearing of pending OAuth attempts and active sessions
+- 200 passing automated tests without a live Discord service or public listener
 
 ## v0.9.0 Current Boundaries
 
-- The authentication contract is not working end-user login.
-- Discord OAuth, login and callback handling, tokens, and refresh behavior are not implemented.
-- Sessions, cookies, logout, and identity persistence are not implemented.
-- Production authenticated identity creation is not implemented.
+- Authentication remains disabled by default.
+- No public deployment exists, and RSF does not implement reverse-proxy or TLS configuration.
+- OAuth and session behavior require an HTTPS reverse proxy, registered Discord callback, and real deployment values before live use.
+- Sessions and pending OAuth attempts are lost on Provider shutdown or process restart; persistent sessions are not implemented.
 - Website Module, Registry, store, and database access are not implemented.
 - Ticket, Moderation, Economy, and administration routes are not implemented.
-- Permission translation and cross-platform identity are not implemented.
-- Frontend behavior, public network exposure, and settings interfaces are not implemented.
+- Staff permission translation and cross-platform identity are not implemented.
+- Frontend behavior, public network exposure, trusted-proxy behavior, and settings interfaces are not implemented.
 - `GET /health` reports Website transport readiness only and does not authenticate requests.
 - Repository version remains v0.8.0 while v0.9.0 is in progress.

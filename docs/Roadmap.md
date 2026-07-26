@@ -162,41 +162,43 @@ Implemented:
 - Awaited, bounded, and idempotent shutdown
 - Unauthenticated `GET /health` transport-readiness route
 - Provider-local `WebsiteAuthenticator` contract
-- Production authentication that intentionally denies all requests
-- Deterministic authenticated-identity injection for automated tests
-- `GET /api/me` with exact allowlisted identity responses
-- Identity validation, duplicate-permission normalization, and defensive frozen snapshots
-- `401`, `405`, and generic request-level `503` behavior
+- Authentication contract and configuration validation
+- Discord OAuth authorization-code flow
+- PKCE S256 and browser-bound one-time state
+- Rogue Soldiers guild-membership enforcement
+- Opaque in-memory sessions and secure cookies
+- Session-backed `GET /api/me` integration
+- Exact-Origin logout
+- Deterministic fake-based OAuth, session, cookie, flow, server, and lifecycle testing
 - Provider-local authentication configuration validation during initialization
 - Disabled-by-default authentication configuration with no required deployment values
 - Conditional canonical HTTPS origin, Discord guild and client ID, environment-only client-secret, and lifetime validation
 - Exact callback derivation as `<publicOrigin>/auth/discord/callback`
 - Frozen non-secret authentication configuration snapshots
-- Fail-closed rejection before listener startup for invalid or configured-but-unimplemented authentication
-- 149 passing automated tests without live authentication or a public listener
+- Fail-closed rejection before listener startup for invalid enabled authentication
+- 200 passing automated tests without live Discord authentication or a public listener
 
 Current boundaries:
 
-- The authentication contract is not working end-user login.
+- Authentication remains disabled by default.
 - Real deployment values are not required while authentication is disabled.
-- Discord OAuth, login and callback handling, state and PKCE, sessions, cookies, persistence, logout, and production identity are not implemented.
+- Persistent sessions are not required for v0.9.0; restart logout is an accepted current limitation.
 - Website Module, Registry, store, and database access are not implemented.
 - Ticket, Moderation, Economy, and administration routes are not implemented.
-- Permission translation and cross-platform identity remain future work.
+- Staff permission translation and cross-platform identity remain future work.
 - Frontend behavior, CORS, proxy trust, TLS termination, and public binding are not implemented.
 - `GET /health` remains unauthenticated and reports Website transport readiness only.
 - v0.9.0 is not closed, versioned, or tagged.
 
 Required before closure:
 
-- Real Discord OAuth authorization-code flow
-- OAuth state and PKCE validation with replay protection
-- Rogue Soldiers Discord guild-membership enforcement
-- Opaque session creation, storage, expiration, revocation, and logout
-- Defined HTTPS termination and reverse-proxy trust boundaries
 - Creator-owned Ticket listing through validated Module operations
-- Deployment documentation for the completed authentication flow
+- Production HTTPS reverse-proxy guidance
+- Discord callback registration and deployment instructions
+- Secret and restart behavior documentation
 - Final regression, documentation synchronization, and repository version update
+
+No frontend is required for v0.9.0 closure unless repository evidence changes. Public multi-community management remains beyond current production scope.
 
 ## Future Direction
 
