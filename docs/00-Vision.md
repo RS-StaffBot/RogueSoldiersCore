@@ -2,9 +2,11 @@
 
 ## Purpose
 
-Rogue Soldiers Framework (RSF) is the central software foundation for the Rogue Soldiers Clan ecosystem.
+Rogue Soldiers Framework (RSF) is the central coordinating software framework for the Rogue Soldiers Clan ecosystem, not merely a Discord bot.
 
-RSF coordinates Discord features, community Modules, game-server Providers, and future website integration without combining everything into one large bot implementation.
+Rogue Soldiers is the primary deployment and design target. Adaptability for another gaming community is a secondary design quality only when it does not weaken Rogue Soldiers requirements or cause premature abstraction.
+
+RSF coordinates community management, moderation, support, engagement, and connected services. Discord is the first active Provider and user interface. The long-term framework includes Discord, reusable community Modules, persistence, hosted game-server Providers, and future administrative or website interfaces.
 
 ## Current Verified Capabilities
 
@@ -24,6 +26,22 @@ As of v0.7.0, RSF supports:
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
+
+## Future Direction
+
+The following direction is future scope and is not implemented unless listed under Current Verified Capabilities:
+
+- Continued support-ticket workflows and moderation appeals
+- Broader staff controls and transcript or logging portals
+- Hosted game-server moderation and command control
+- Discord-to-game chat or other communication
+- Game-server events
+- Economy purchases that can later produce in-game rewards
+- 7 Days to Die as the first planned game Provider
+- Support for additional games where practical
+- Administrative and website interfaces that use validated framework operations
+
+These items describe intended scope, not implementation designs or commitments for a specific checkpoint.
 
 ## Current Boundaries
 

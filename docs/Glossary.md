@@ -1,5 +1,113 @@
 # Glossary
 
+## Rogue Soldiers Framework
+
+The central coordinating software framework for the Rogue Soldiers Clan ecosystem. RSF combines Core infrastructure, platform Providers, reusable Modules, Shared contracts, and persistence without treating any one interface as the framework itself.
+
+## Core
+
+The framework layer responsible for bootstrap, configuration, lifecycle coordination, registration, logging, database infrastructure, migrations, and loading Modules and Providers.
+
+## Provider
+
+A platform boundary that owns platform clients, protocols, input and output translation, and platform-specific operations. Providers invoke reusable Module behavior and do not directly access Module database tables.
+
+## Discord Provider
+
+The first active Provider and interface. It owns the Discord client, slash commands, interactions, Discord permission and hierarchy checks, Discord API operations, and response formatting.
+
+## Game Provider
+
+A future Provider for a hosted game server. It will own game clients, protocols, platform commands, and game events. No game Provider is currently implemented; 7 Days to Die is the first planned target.
+
+## Module
+
+A platform-neutral owner of cohesive business rules, validation, domain records, and Module-specific persistence contracts.
+
+## Shared
+
+The layer for small platform-neutral contracts and identifiers that are genuinely shared across architectural boundaries. It does not own platform integrations, Core lifecycle, or Module business state.
+
+## Business Logic
+
+Reusable rules, validation, authorization, state transitions, and domain behavior owned by Modules rather than platform Providers.
+
+## Platform-Specific Behavior
+
+Client APIs, protocol details, identity translation, permission translation, presentation, and other behavior tied to a Provider's platform.
+
+## Component
+
+A named framework part with a focused responsibility and, where applicable, lifecycle behavior.
+
+## Lifecycle
+
+The ordered initialization, readiness, operation, and shutdown of framework components.
+
+## Bootstrap
+
+The Core composition root that creates infrastructure, registers framework components, applies migrations, loads Modules and Providers, starts the framework, and coordinates shutdown.
+
+## Core Registry
+
+The Core-owned registry through which named framework services, Managers, Modules, and Providers are resolved.
+
+## Discord Command Registry
+
+The Discord Provider registry that owns the validated slash-command definitions used for both Discord registration and runtime dispatch.
+
+## CommandLoader
+
+The Discord Provider component that discovers command files, validates their definitions and execution contracts, and loads them into the Discord Command Registry.
+
+## CommandRegistrar
+
+The Discord Provider component that publishes the loaded slash-command definitions through Discord REST.
+
+## InteractionHandler
+
+The Discord Provider component that receives Discord interactions and dispatches commands through the Discord Command Registry.
+
+## EventBus
+
+The Core event service for framework-owned event subscription and publication. It does not make platform events or business state Shared by default.
+
+## Permission
+
+A reusable authorization identifier owned outside a platform. A Provider translates platform permissions into these identifiers, while the relevant Module makes the final business authorization decision.
+
+## Store
+
+A Module-specific persistence contract separating Module business rules and public domain records from storage operations and durable row mapping.
+
+## Migration
+
+An ordered, deterministic database schema change applied and tracked by Core before Modules reconstruct durable state.
+
+## Database Service
+
+The Core component that owns the single SQLite connection lifecycle, configuration validation, health checks, controlled store construction, and shutdown.
+
+## Milestone
+
+A versioned body of planned work that progresses through implementation checkpoints, verification, closure, and authorized release actions.
+
+## Phase
+
+A bounded correction or implementation stage that must complete its own scope and verification before the next approved stage begins.
+
+## Duplicate Ownership
+
+The architectural error in which more than one active component claims authority for the same registry, lifecycle, business rule, state, command path, or persistence responsibility.
+
+## Repository-First Rule
+
+The practice of verifying current repository code and source-of-truth documents before selecting or describing a change, rather than relying on historical assumptions.
+
+## Architecture Change Rule
+
+The rule that a major architecture change requires evidence from at least two accepted conditions: a second real implementation need, duplicated responsibility, a blocked verified requirement, or test or operational evidence of a lifecycle, integrity, or isolation problem.
+
 ## Economy Module
 
 The platform-neutral Module that owns Economy business rules, validation, transfers, transactions, daily rewards, leaderboards, validated settings, and public state integrity.
@@ -131,10 +239,6 @@ SQLite-authoritative production storage of Tickets, messages, assignments, statu
 ## Discord Ticket Infrastructure
 
 Future channel, thread, category, permission-overwrite, transcript, and configurable-role workflows. They are not implemented.
-
-## Database Service
-
-The Core component that owns the single SQLite connection lifecycle, configuration validation, health checks, controlled store construction, and shutdown.
 
 ## Migration Manager
 

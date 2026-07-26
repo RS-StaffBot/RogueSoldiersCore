@@ -1,5 +1,109 @@
 # Decision Log
 
+## Discord Is a Provider
+
+### Decision
+
+Discord is a platform Provider, not the framework itself. It translates Discord interactions, permissions, identities, API behavior, and responses at the platform boundary.
+
+### Reason
+
+Keeping Discord-specific behavior in a Provider allows Core to coordinate lifecycle and infrastructure while Modules retain reusable business rules. Future game or website Providers can use those rules without depending on Discord types or APIs.
+
+## Shared Layer Purpose
+
+### Decision
+
+Shared contains small, platform-neutral contracts and identifiers that are genuinely used across architectural boundaries.
+
+Shared does not own platform integrations, Module business state, Core lifecycle, or speculative generic abstractions. Code remains with its natural owner until reuse across boundaries is proven.
+
+## Stable Documentation Structure
+
+### Decision
+
+The numbered architecture documents remain stable source-of-truth locations:
+
+- `00-Vision.md` defines purpose, verified scope, and future direction.
+- `01-Architecture.md` defines system boundaries and dependency direction.
+- `02-Core.md` defines Core responsibilities.
+- `03-Providers.md` defines platform Provider responsibilities.
+- `04-Modules.md` defines business Module responsibilities.
+- `05-Events.md` defines event boundaries.
+- `06-Permissions.md` defines reusable permission ownership and translation.
+- `07-Coding-Standards.md` defines repository coding rules.
+
+Supporting status, roadmap, glossary, dependency, onboarding, and decision documents must remain cumulative and consistent with the repository.
+
+## Architecture Change Rule
+
+### Decision
+
+A major architecture change requires evidence from at least two of these conditions:
+
+- A second real implementation needs the boundary.
+- Current ownership produces duplicated responsibility.
+- The existing design blocks a verified requirement.
+- Tests or operational evidence expose a lifecycle, integrity, or isolation problem.
+
+Preference or hypothetical reuse alone is insufficient. Approved changes must update the affected source-of-truth documentation with the implementation.
+
+## Milestone Workflow
+
+### Decision
+
+Milestones move through an explicit sequence:
+
+```text
+Plan
+  |
+  v
+Implement cohesive checkpoints
+  |
+  v
+Verify behavior and boundaries
+  |
+  v
+Close documentation and version state
+  |
+  v
+Commit, push, and tag when authorized
+```
+
+The roadmap identifies the next planned milestone. Project status records verified completed implementation. A planned milestone is not implemented merely because it appears in future direction.
+
+## Single Discord Command Architecture
+
+### Decision
+
+RSF uses one active Discord slash-command architecture:
+
+- Discord command definitions live under `src/providers/discord/commands`.
+- `CommandLoader` discovers and validates command modules.
+- The Discord Command Registry owns loaded command definitions.
+- `CommandRegistrar` registers the same definitions with Discord.
+- `InteractionHandler` dispatches runtime interactions through that registry.
+
+Registration and runtime execution share one command source:
+
+```text
+Command files
+    |
+    v
+CommandLoader
+    |
+    v
+Discord Command Registry
+    |                         |
+    v                         v
+CommandRegistrar        InteractionHandler
+    |                         |
+    v                         v
+Discord REST            Command execution
+```
+
+Commands translate Discord input and output. They resolve framework-loaded Modules and do not construct replacement Modules or access persistence directly.
+
 ## Moderation Responsibility Split
 
 ### Decision
@@ -115,9 +219,3 @@ Moderation, Economy, and Tickets use separate Module-specific store contracts. S
 Public Module identities remain domain identities rather than exposed database row types. Database transactions protect multi-row Module writes and successful ID sequencing. They do not roll back external Discord actions.
 
 No ORM, query builder, native SQLite npm package, remote database, replication, clustering, backup system, or administration interface is selected. A future database replacement must preserve Module validation, authorization, public identities, store contracts, transactional guarantees, and Provider isolation.
-
-## Existing Decisions Retained
-
-- Discord is a Provider.
-- RSF uses one active Discord command architecture.
-- Major architecture changes require at least two Architecture Change Rule conditions.

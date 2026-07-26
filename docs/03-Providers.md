@@ -82,3 +82,9 @@ Checks include:
 Discord-specific behavior remains in the Provider. Reusable moderation actions, Economy and Ticket business operations, permission identifiers, authorization, and audit-record behavior remain outside the Provider.
 
 Providers and commands are persistence-blind. They resolve framework-loaded Modules and do not access Module stores, issue SQL, construct database connections, or depend on SQLite row formats.
+
+## Future Game Provider Boundary
+
+Game Providers are future and are not currently implemented. They will own game clients, protocols, platform commands, and game events. Reusable moderation and Economy policy will remain in Modules.
+
+Game Providers must invoke validated Module operations and must not directly access Module database tables. The first planned game Provider targets 7 Days to Die; support for additional games remains future scope where practical.

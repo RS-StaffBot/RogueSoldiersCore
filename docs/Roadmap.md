@@ -87,6 +87,7 @@ Boundaries:
 - At v0.6.0 completion, Ticket state and ID sequences reset on restart and persistence was deferred to v0.7.0; that persistence is now completed.
 - At v0.6.0 completion, multi-process atomicity required database-backed writes.
 - Discord channels, threads, categories, permission overwrites, transcripts, configurable staff roles, external portals, and web administration are not implemented.
+- Moderation appeals and broader staff-control workflows remain future scope.
 - Reopening, deletion, attachments, priorities, escalation, and SLA systems remain future work.
 - Future administration must use validated RSF operations rather than direct state, configuration-file, or database-row mutation.
 
@@ -118,6 +119,16 @@ Boundaries:
 - Backup and restore tooling, production storage deployment, remote databases, replication, clustering, and database administration remain future work.
 - Cross-platform identity remains future work.
 - v0.8.0 game-server integration is not implemented.
+
+## Future Direction
+
+The following items are future intent, not implemented features or detailed milestone commitments:
+
+- 7 Days to Die is the first planned game Provider and may support hosted server moderation and command control.
+- Discord-to-game communication and game-server events remain planned integration areas.
+- Economy integration may later allow validated purchases to produce in-game rewards.
+- Moderation appeals, broader staff controls, and transcript or logging portals remain future community workflows.
+- Additional game Providers may follow where practical without weakening Rogue Soldiers requirements.
 
 ## Future Milestones
 
