@@ -16,7 +16,7 @@ As of v0.6.0, RSF supports:
 - `/ping`, `/help`, `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, `/purge`, `/balance`, `/daily`, `/leaderboard`, and `/ticket`
 - Moderation permission identifiers and Discord permission enforcement
 - Discord hierarchy, owner, self-target, and manageability checks
-- In-memory moderation audit records
+- SQLite-backed moderation audit records with restart recovery
 - In-memory Economy accounts, balances, credits, debits, transfers, transaction history, daily rewards, and leaderboards
 - Atomic Economy writes, sequential successful transaction IDs, defensive public snapshots, and validated settings
 - In-memory Tickets with immutable records, messages, assignment, closing, creator ownership, and staff authorization
@@ -28,7 +28,6 @@ As of v0.6.0, RSF supports:
 
 The following are not complete production systems:
 
-- Persistent moderation storage
 - Persistent economy
 - Database persistence
 - Multi-instance Economy atomicity

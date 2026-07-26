@@ -43,6 +43,8 @@ Verified responsibilities:
 - Create and query migration history
 - Apply ordered migrations transactionally
 - Roll back a failed migration
+- Load globally ordered `NNN_lowercase_name` migrations from current Module integrations
+- Construct approved Module-specific stores without exposing the raw connection
 - Close the connection through controlled framework shutdown
 
 The Database service does not contain Module business rules. Modules, Providers, and commands do not access its connection directly.

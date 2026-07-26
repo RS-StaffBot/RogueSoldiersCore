@@ -341,6 +341,27 @@ class DatabaseService extends BaseComponent {
 
     }
 
+    createStore(StoreClass) {
+
+        if (
+            this.state !== ComponentState.READY &&
+            this.state !== ComponentState.RUNNING
+        ) {
+            throw new Error(
+                "Database must be ready before creating a store."
+            );
+        }
+
+        if (typeof StoreClass !== "function") {
+            throw new Error(
+                "Database store class is required."
+            );
+        }
+
+        return new StoreClass(this.#connection);
+
+    }
+
     getStatus() {
 
         const baseStatus = super.getStatus();

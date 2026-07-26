@@ -1,4 +1,7 @@
 const Logger = require("../../core/Logger");
+const ComponentState = require(
+    "../../core/ComponentState"
+);
 const BaseModule = require("../core/BaseModule");
 const ModerationAction = require("./ModerationAction");
 const ModerationAuditRecord = require(
@@ -7,10 +10,15 @@ const ModerationAuditRecord = require(
 const ModerationPermission = require(
     "../../shared/permissions/ModerationPermission"
 );
+const InMemoryModerationStore = require(
+    "./persistence/InMemoryModerationStore"
+);
 
 class ModerationModule extends BaseModule {
 
-    constructor() {
+    constructor({
+        store = new InMemoryModerationStore()
+    } = {}) {
 
         super("Moderation");
 
@@ -41,7 +49,42 @@ class ModerationModule extends BaseModule {
             ]
         ]);
 
-        this.auditRecords = [];
+        this.validateStore(store);
+        this.store = store;
+
+    }
+
+    validateStore(store) {
+
+        if (
+            !store ||
+            typeof store.append !== "function" ||
+            typeof store.list !== "function" ||
+            typeof store.count !== "function"
+        ) {
+            throw new Error(
+                "Moderation store must implement append(), " +
+                "list(), and count()."
+            );
+        }
+
+    }
+
+    initialize() {
+
+        this.state = ComponentState.INITIALIZING;
+
+        try {
+            this.listAuditRecords();
+        } catch (error) {
+            this.state = ComponentState.ERROR;
+
+            throw new Error(
+                "Moderation durable state is invalid."
+            );
+        }
+
+        this.state = ComponentState.READY;
 
     }
 
@@ -83,7 +126,7 @@ class ModerationModule extends BaseModule {
             recordData
         );
 
-        this.auditRecords.push(record);
+        this.store.append(record);
 
         Logger.moderationAudit(
             [
@@ -100,11 +143,31 @@ class ModerationModule extends BaseModule {
     }
 
     listAuditRecords() {
-        return [...this.auditRecords];
+
+        return this.store.list().map(record => {
+
+            if (!this.supports(record.action)) {
+                throw new Error(
+                    "Stored moderation action is unsupported."
+                );
+            }
+
+            return new ModerationAuditRecord({
+                action: record.action,
+                guildId: record.guildId,
+                moderatorId: record.moderatorId,
+                targetId: record.targetId,
+                reason: record.reason,
+                details: record.details,
+                createdAt: new Date(record.createdAt)
+            });
+
+        });
+
     }
 
     getAuditRecordCount() {
-        return this.auditRecords.length;
+        return this.store.count();
     }
 
 }

@@ -4,6 +4,9 @@ const EventBus = require("../core/EventBus");
 const DatabaseService = require(
     "../core/database/DatabaseService"
 );
+const DatabaseMigrationLoader = require(
+    "../core/database/DatabaseMigrationLoader"
+);
 
 const Configuration = require("../configuration/ConfigurationManager");
 
@@ -13,7 +16,9 @@ const ProviderLoader = require("../providers/core/ProviderLoader");
 const ModuleManager = require("../modules/core/ModuleManager");
 const ModuleLoader = require("../modules/core/ModuleLoader");
 
-const Database = new DatabaseService();
+const Database = new DatabaseService({
+    migrations: DatabaseMigrationLoader.load()
+});
 
 class Bootstrap {
 
@@ -44,7 +49,9 @@ class Bootstrap {
         ProviderManager.initializeAll();
         ProviderManager.startAll();
 
-        const modules = ModuleLoader.load();
+        const modules = ModuleLoader.load({
+            database: Database
+        });
 
         for (const module of modules) {
             ModuleManager.register(module);

@@ -6,7 +6,8 @@ class ModerationAuditRecord {
         moderatorId,
         targetId = null,
         reason,
-        details = {}
+        details = {},
+        createdAt = new Date()
     }) {
 
         if (
@@ -67,6 +68,15 @@ class ModerationAuditRecord {
             );
         }
 
+        if (
+            !(createdAt instanceof Date) ||
+            Number.isNaN(createdAt.getTime())
+        ) {
+            throw new Error(
+                "Moderation audit creation date is invalid."
+            );
+        }
+
         this.action = action;
         this.guildId = guildId;
         this.moderatorId = moderatorId;
@@ -75,7 +85,7 @@ class ModerationAuditRecord {
         this.details = Object.freeze({
             ...details
         });
-        this.createdAt = new Date().toISOString();
+        this.createdAt = createdAt.toISOString();
 
         Object.freeze(this);
 

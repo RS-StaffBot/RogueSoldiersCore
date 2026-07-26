@@ -72,6 +72,16 @@ Bootstrap creates and registers one Database service. The service owns connectio
 
 Module schemas and persistence integrations remain separate checkpoints. Providers and commands must not access database tables directly.
 
+## Moderation Persistence Authority
+
+### Decision
+
+Moderation is the first Module persistence integration because its single append-only audit stream provides useful restart recovery with the smallest schema and public-API risk.
+
+SQLite is authoritative for production Moderation audit state. `ModerationModule` retains action validation, immutable public record construction, and logging order. A Module-specific store owns parameterized SQL and row mapping. Bootstrap injects that store through `ModuleLoader`; Providers and commands do not access it. Module migrations join one globally ordered `NNN_lowercase_name` sequence through the Core migration loader.
+
+Audit storage must succeed before the Module logs or reports a successful action. Stored records are reconstructed through `ModerationAuditRecord`, so invalid durable data fails Module initialization instead of bypassing Module validation.
+
 ## Existing Decisions Retained
 
 - Discord is a Provider.

@@ -118,7 +118,7 @@ The Core class responsible for log categories, ANSI terminal colors, and plain-t
 
 ## Audit Persistence
 
-Future storage of audit records outside process memory. Not implemented in v0.4.0.
+Durable storage of Moderation audit records outside process memory. Production Moderation audit records are stored in SQLite and reconstructed through the Module-owned record contract.
 
 ## Economy Persistence
 

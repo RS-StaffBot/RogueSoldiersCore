@@ -12,6 +12,8 @@ SQLite is the selected local database engine. One Core-owned Database service ow
 
 Database migrations are ordered, tracked, and applied transactionally through Core. Migration SQL defines storage schema only; Module business validation remains in Modules. Providers and commands do not access the database directly.
 
+Module-specific stores receive the private Core connection through a controlled factory. The first production integration is a SQLite-backed Moderation store. The Moderation Module remains authoritative for record validation and public objects, while SQLite is authoritative for durable audit state.
+
 ## Providers
 
 Providers integrate external platforms. Discord-specific clients, interactions, validation, hierarchy checks, API operations, and responses belong in the Discord Provider.
@@ -92,6 +94,9 @@ ModerationModule.recordAction()
     |
     v
 ModerationAuditRecord
+    |
+    v
+SQLite-backed Moderation store
     |
     v
 Logger.moderationAudit()

@@ -75,7 +75,7 @@ Verified responsibilities:
 - Map actions to required permission identifiers
 - Validate supported actions
 - Create moderation audit records
-- Store audit records in memory
+- Commit audit records through an injected Module-specific store
 - Return audit-record copies and counts
 - Send formatted audit output through Core Logger
 
@@ -90,4 +90,8 @@ UNTIMEOUT
 PURGE
 ```
 
-Audit records are in-memory and are lost when the process stops.
+Production Moderation audit records are durable in SQLite and ordered by their stored append sequence. The Module validates business input, constructs immutable public records, commits storage before reporting success or logging the audit, and reconstructs and validates stored records during initialization and reads.
+
+SQLite is authoritative for production Moderation audit state. Direct `ModerationModule` construction uses the same store contract with an in-memory implementation for isolated use and testing. Providers and commands do not access the store or database.
+
+An invalid durable record causes Moderation initialization to fail rather than being silently accepted. Storage failures do not report success or emit a successful moderation audit log.
