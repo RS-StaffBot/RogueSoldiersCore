@@ -1,4 +1,5 @@
 const BaseModule = require("../core/BaseModule");
+const TicketRecord = require("./TicketRecord");
 const TicketStatus = require("./TicketStatus");
 
 class TicketModule extends BaseModule {
@@ -10,6 +11,32 @@ class TicketModule extends BaseModule {
         this.statuses = new Set(
             Object.values(TicketStatus)
         );
+        this.tickets = new Map();
+        this.nextTicketId = 1;
+
+    }
+
+    validateTicketId(ticketId) {
+
+        if (
+            typeof ticketId !== "string" ||
+            ticketId.trim().length === 0
+        ) {
+            throw new Error(
+                "Ticket ID is required."
+            );
+        }
+
+    }
+
+    createTicketSnapshot(ticket) {
+
+        return new TicketRecord({
+            id: ticket.id,
+            creatorId: ticket.creatorId,
+            status: ticket.status,
+            createdAt: new Date(ticket.createdAt)
+        });
 
     }
 
@@ -19,6 +46,85 @@ class TicketModule extends BaseModule {
 
     listStatuses() {
         return [...this.statuses];
+    }
+
+    hasTicket(ticketId) {
+
+        this.validateTicketId(ticketId);
+
+        return this.tickets.has(ticketId);
+
+    }
+
+    createTicket(
+        creatorId,
+        createdAt = new Date()
+    ) {
+
+        if (
+            !Number.isSafeInteger(this.nextTicketId) ||
+            this.nextTicketId <= 0 ||
+            this.nextTicketId >= Number.MAX_SAFE_INTEGER
+        ) {
+            throw new Error(
+                "Ticket ID sequence has reached its safe limit."
+            );
+        }
+
+        const ticketId = `ticket-${this.nextTicketId}`;
+
+        if (this.tickets.has(ticketId)) {
+            throw new Error(
+                `Ticket ID already exists: ${ticketId}`
+            );
+        }
+
+        const ticket = new TicketRecord({
+            id: ticketId,
+            creatorId,
+            status: TicketStatus.OPEN,
+            createdAt
+        });
+        const snapshot =
+            this.createTicketSnapshot(ticket);
+        const previousNextTicketId =
+            this.nextTicketId;
+
+        try {
+
+            this.tickets.set(ticketId, ticket);
+            this.nextTicketId += 1;
+
+        } catch (error) {
+
+            this.tickets.delete(ticketId);
+            this.nextTicketId =
+                previousNextTicketId;
+
+            throw error;
+
+        }
+
+        return snapshot;
+
+    }
+
+    getTicket(ticketId) {
+
+        this.validateTicketId(ticketId);
+
+        const ticket = this.tickets.get(ticketId);
+
+        if (!ticket) {
+            return null;
+        }
+
+        return this.createTicketSnapshot(ticket);
+
+    }
+
+    getTicketCount() {
+        return this.tickets.size;
     }
 
 }
