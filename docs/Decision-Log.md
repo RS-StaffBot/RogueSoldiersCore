@@ -44,6 +44,18 @@ Public Economy reads return defensive account, transaction, configuration, array
 
 Persistence and multi-process atomicity remain deferred to the v0.7.0 Database milestone.
 
+## Ticket Ownership, Authorization, and State Integrity
+
+### Decision
+
+Ticket business logic is platform-neutral and owned by `TicketModule`. Discord Ticket commands resolve the one framework-loaded Module through the Core Registry and Module Manager rather than constructing another instance.
+
+Ticket and message IDs are Module-generated. Ticket writes are atomic within the in-memory implementation, and public Ticket records and messages are frozen defensive snapshots.
+
+Creator-owned operations and staff authorization remain Module-owned. The Discord Provider translates platform permissions into reusable Ticket permission identifiers. `ManageMessages` is the current fixed, non-configurable staff boundary, while `Administrator` supplies the administrative override and Discord's individual permission grants.
+
+Ticket persistence belongs to v0.7.0 and will be required for multi-process atomicity. Discord channel and thread Ticket architecture, transcripts, permission overwrites, configurable roles, external portals, and web administration remain future work.
+
 ## Future Administration Boundary
 
 Future administrative interfaces must invoke validated RSF settings and operations. They must not directly mutate Module properties, configuration files, or database rows. Such an interface will require permissions, audit logging, and persistence; its technology is not fixed and it is not currently implemented.

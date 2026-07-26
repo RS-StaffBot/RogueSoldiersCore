@@ -36,6 +36,58 @@ An independently mutable account, transaction, configuration, array, or `Date` r
 
 An Economy operation that either commits all related in-memory balance, account, daily claim, transaction, and ID changes or leaves all of them unchanged on failure. Multi-process atomicity requires future database support.
 
+## Ticket Module
+
+The platform-neutral Module that owns Ticket records, messages, assignment, status transitions, creator ownership, staff authorization, ID generation, and in-memory state integrity.
+
+## Ticket Record
+
+An immutable record containing a Ticket ID, creator identity, optional assignee identity, `OPEN` or `CLOSED` status, and creation time.
+
+## Ticket Status
+
+The current Ticket state. v0.6.0 supports `OPEN` and `CLOSED`, with only the `OPEN` to `CLOSED` transition.
+
+## Ticket Message
+
+An immutable, append-only Ticket history entry containing a globally sequential message ID, Ticket ID, author identity, content, and creation time.
+
+## Ticket Creator
+
+The identity that creates a Ticket and owns its creator-authorized operations.
+
+## Ticket Assignee
+
+An optional identity recorded as responsible for an open Ticket. Assignment alone grants no Ticket authority.
+
+## Creator-Owned Ticket Operation
+
+A Ticket read, message, or closing operation that its creator may perform without a staff permission.
+
+## Ticket Permission
+
+A reusable `tickets.*` identifier used by `TicketModule` to authorize staff operations independently of Discord permissions.
+
+## Ticket Assignment
+
+The Module-owned operation that assigns, reassigns, or unassigns an open Ticket.
+
+## Ticket Message History
+
+The per-Ticket, append-ordered collection of immutable messages. Closed Ticket history remains readable.
+
+## Defensive Frozen Snapshot
+
+An immutable Ticket record or message copied from internal state. Public arrays containing snapshots are independent from Module storage.
+
+## Atomic In-Memory Ticket Write
+
+A Ticket operation that either commits its complete in-memory record, history, and ID-sequence change or leaves all related state unchanged on failure. Multi-process atomicity requires future database support.
+
+## Discord Ticket Permission Translation
+
+The Provider process that maps Discord permissions into reusable Ticket permission identifiers before `TicketModule` makes the final authorization decision. The v0.6.0 mapping is fixed and non-configurable.
+
 ## Moderation Module
 
 The Module that owns supported moderation actions, action-to-permission mapping, audit-record creation, and in-memory audit storage.
@@ -71,3 +123,11 @@ Future storage of audit records outside process memory. Not implemented in v0.4.
 ## Economy Persistence
 
 Future storage of Economy accounts, balances, claims, and transactions outside process memory. It belongs to the v0.7.0 Database milestone and is not implemented in v0.5.0.
+
+## Ticket Persistence
+
+Future storage of Tickets, messages, assignments, and ID sequences outside process memory. It belongs to the v0.7.0 Database milestone and is not implemented in v0.6.0.
+
+## Discord Ticket Infrastructure
+
+Future channel, thread, category, permission-overwrite, transcript, and configurable-role workflows. They are not implemented in v0.6.0.
