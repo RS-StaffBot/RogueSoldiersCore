@@ -7,6 +7,9 @@ const WebsiteServer = require(
 const FakeHttpServer = require(
     "./fakes/FakeHttpServer"
 );
+const FakeWebsiteAuthenticator = require(
+    "./fakes/FakeWebsiteAuthenticator"
+);
 
 const defaultOptions = Object.freeze({
     host: "127.0.0.1",
@@ -16,6 +19,7 @@ const defaultOptions = Object.freeze({
 });
 
 function createHarness({
+    authenticator = undefined,
     autoClose = true,
     autoListen = true,
     listenError = null,
@@ -31,6 +35,7 @@ function createHarness({
         }
     };
     const server = new WebsiteServer({
+        authenticator,
         clearTimer: timerHarness.clearTimer,
         createServer(options, requestListener) {
             factoryCount += 1;
@@ -141,7 +146,7 @@ test("GET health returns the exact safe response", async () => {
 
     await harness.server.start(defaultOptions);
 
-    const response = harness.httpServer.request();
+    const response = await harness.httpServer.request();
 
     assert.strictEqual(response.statusCode, 200);
     assert.deepStrictEqual(
@@ -176,7 +181,7 @@ test("POST health returns 405 without processing a body", async () => {
 
     await harness.server.start(defaultOptions);
 
-    const response = harness.httpServer.request({
+    const response = await harness.httpServer.request({
         method: "POST"
     });
 
@@ -199,7 +204,7 @@ test("unknown routes return a generic 404 response", async () => {
 
     await harness.server.start(defaultOptions);
 
-    const response = harness.httpServer.request({
+    const response = await harness.httpServer.request({
         url: "/private/configuration"
     });
 
@@ -217,6 +222,369 @@ test("unknown routes return a generic 404 response", async () => {
     assert.strictEqual(
         response.body.includes("configuration"),
         false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("rejects an invalid authenticator boundary", () => {
+
+    assert.throws(
+        () => new WebsiteServer({
+            authenticator: {}
+        }),
+        {
+            message:
+                "Website authenticator must provide an " +
+                "authenticate operation."
+        }
+    );
+
+});
+
+test("GET api me denies production authentication", async () => {
+
+    const harness = createHarness();
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        url: "/api/me"
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+    assert.deepStrictEqual(
+        response.headers,
+        {
+            "cache-control": "no-store",
+            "content-type":
+                "application/json; charset=utf-8",
+            "x-content-type-options": "nosniff"
+        }
+    );
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Authentication required."
+        }
+    );
+    assert.strictEqual(
+        Object.hasOwn(
+            response.headers,
+            "www-authenticate"
+        ),
+        false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("GET api me denies a fake unauthenticated result", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator();
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        headers: {
+            authorization: "untrusted"
+        },
+        url: "/api/me"
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+    assert.strictEqual(
+        authenticator.authenticateCalls.length,
+        1
+    );
+    assert.strictEqual(
+        authenticator.authenticateCalls[0].headers
+            .authorization,
+        "untrusted"
+    );
+
+    await harness.server.stop();
+
+});
+
+test("GET api me returns an exact allowlisted identity", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity: {
+                actorId: " actor-1 ",
+                displayName: " Example ",
+                permissions: [
+                    "tickets.view-all",
+                    "tickets.view-all",
+                    " tickets.respond "
+                ],
+                accessToken: "secret-token",
+                sessionId: "secret-session",
+                guild: {
+                    id: "internal-guild"
+                }
+            }
+        });
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        headers: {
+            authorization: "secret-header"
+        },
+        url: "/api/me"
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            authenticated: true,
+            actor: {
+                actorId: "actor-1",
+                displayName: "Example",
+                permissions: [
+                    "tickets.view-all",
+                    "tickets.respond"
+                ]
+            }
+        }
+    );
+    assert.strictEqual(
+        response.body.includes("secret"),
+        false
+    );
+    assert.strictEqual(
+        response.body.includes("guild"),
+        false
+    );
+    assert.strictEqual(
+        Object.hasOwn(
+            response.headers,
+            "set-cookie"
+        ),
+        false
+    );
+    assert.strictEqual(
+        Object.hasOwn(
+            response.headers,
+            "access-control-allow-origin"
+        ),
+        false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("authenticated actor permissions use a defensive snapshot", () => {
+
+    const harness = createHarness();
+    const identity = {
+        actorId: "actor-1",
+        displayName: "Example",
+        permissions: [
+            "tickets.view-all"
+        ]
+    };
+    const actor = harness.server.createActorSnapshot(
+        identity
+    );
+
+    identity.permissions.push("tickets.respond");
+
+    assert.deepStrictEqual(
+        actor.permissions,
+        ["tickets.view-all"]
+    );
+    assert.strictEqual(Object.isFrozen(actor), true);
+    assert.strictEqual(
+        Object.isFrozen(actor.permissions),
+        true
+    );
+    assert.throws(() => {
+        actor.permissions.push("tickets.assign");
+    });
+
+});
+
+test("invalid authenticated identities fail closed", async () => {
+
+    const invalidIdentities = [
+        {},
+        {
+            actorId: "",
+            displayName: "Example",
+            permissions: []
+        },
+        {
+            actorId: "actor-1",
+            displayName: " ",
+            permissions: []
+        },
+        {
+            actorId: "actor-1",
+            displayName: "Example",
+            permissions: null
+        },
+        {
+            actorId: "actor-1",
+            displayName: "Example",
+            permissions: [""]
+        },
+        {
+            actorId: "actor-1",
+            displayName: "Example",
+            permissions: [7]
+        }
+    ];
+
+    for (const identity of invalidIdentities) {
+
+        const authenticator =
+            new FakeWebsiteAuthenticator({
+                identity
+            });
+        const harness = createHarness({
+            authenticator
+        });
+
+        await harness.server.start(defaultOptions);
+
+        const response =
+            await harness.httpServer.request({
+                url: "/api/me"
+            });
+
+        assert.strictEqual(response.statusCode, 401);
+        assert.deepStrictEqual(
+            JSON.parse(response.body),
+            {
+                error: "Authentication required."
+            }
+        );
+
+        await harness.server.stop();
+
+    }
+
+});
+
+test("authenticator failures return a generic 503", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            async authenticate() {
+                throw new Error(
+                    "Discord token exchange exposed secret."
+                );
+            }
+        });
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        url: "/api/me"
+    });
+
+    assert.strictEqual(response.statusCode, 503);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Service unavailable."
+        }
+    );
+    assert.strictEqual(
+        response.body.includes("Discord"),
+        false
+    );
+    assert.strictEqual(
+        response.body.includes("secret"),
+        false
+    );
+
+    const healthResponse =
+        await harness.httpServer.request();
+
+    assert.strictEqual(healthResponse.statusCode, 200);
+
+    await harness.server.stop();
+
+});
+
+test("POST api me returns 405 without authentication", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity: {
+                actorId: "actor-1",
+                displayName: "Example",
+                permissions: []
+            }
+        });
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "POST",
+        url: "/api/me"
+    });
+
+    assert.strictEqual(response.statusCode, 405);
+    assert.strictEqual(response.headers.allow, "GET");
+    assert.strictEqual(
+        authenticator.authenticateCalls.length,
+        0
+    );
+
+    await harness.server.stop();
+
+});
+
+test("health and unknown routes do not authenticate", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity: {
+                actorId: "actor-1",
+                displayName: "Example",
+                permissions: []
+            }
+        });
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const healthResponse =
+        await harness.httpServer.request();
+    const unknownResponse =
+        await harness.httpServer.request({
+            url: "/unknown"
+        });
+
+    assert.strictEqual(healthResponse.statusCode, 200);
+    assert.strictEqual(unknownResponse.statusCode, 404);
+    assert.strictEqual(
+        authenticator.authenticateCalls.length,
+        0
     );
 
     await harness.server.stop();

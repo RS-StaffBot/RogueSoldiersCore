@@ -89,7 +89,8 @@ class FakeHttpServer extends EventEmitter {
         this.emit("close");
     }
 
-    request({
+    async request({
+        headers: requestHeaders = {},
         method = "GET",
         url = "/health"
     } = {}) {
@@ -113,8 +114,9 @@ class FakeHttpServer extends EventEmitter {
             }
         };
 
-        this.requestListener(
+        await this.requestListener(
             {
+                headers: requestHeaders,
                 method,
                 url
             },

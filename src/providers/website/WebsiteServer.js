@@ -1,8 +1,12 @@
 const http = require("node:http");
+const WebsiteAuthenticator = require(
+    "./WebsiteAuthenticator"
+);
 
 class WebsiteServer {
 
     constructor({
+        authenticator = new WebsiteAuthenticator(),
         clearTimer = clearTimeout,
         createServer = (options, requestListener) =>
             http.createServer(options, requestListener),
@@ -15,6 +19,16 @@ class WebsiteServer {
             );
         }
 
+        if (
+            !authenticator ||
+            typeof authenticator.authenticate !== "function"
+        ) {
+            throw new Error(
+                "Website authenticator must provide an authenticate operation."
+            );
+        }
+
+        this.authenticator = authenticator;
         this.clearTimer = clearTimer;
         this.createServer = createServer;
         this.setTimer = setTimer;
@@ -379,7 +393,7 @@ class WebsiteServer {
 
     }
 
-    handleRequest(request, response) {
+    async handleRequest(request, response) {
 
         if (request.url === "/health") {
 
@@ -410,6 +424,31 @@ class WebsiteServer {
             return;
         }
 
+        if (request.url === "/api/me") {
+
+            if (request.method !== "GET") {
+                this.writeJson(
+                    response,
+                    405,
+                    {
+                        error: "Method not allowed."
+                    },
+                    {
+                        Allow: "GET"
+                    }
+                );
+
+                return;
+            }
+
+            await this.handleIdentityRequest(
+                request,
+                response
+            );
+
+            return;
+        }
+
         this.writeJson(
             response,
             404,
@@ -417,6 +456,119 @@ class WebsiteServer {
                 error: "Not found."
             }
         );
+
+    }
+
+    async handleIdentityRequest(request, response) {
+
+        let identity;
+
+        try {
+            identity = await this.authenticator.authenticate(
+                request
+            );
+        } catch {
+            this.writeJson(
+                response,
+                503,
+                {
+                    error: "Service unavailable."
+                }
+            );
+
+            return;
+        }
+
+        let actor;
+
+        try {
+            actor = this.createActorSnapshot(identity);
+        } catch {
+            actor = null;
+        }
+
+        if (actor === null) {
+            this.writeJson(
+                response,
+                401,
+                {
+                    error: "Authentication required."
+                }
+            );
+
+            return;
+        }
+
+        this.writeJson(
+            response,
+            200,
+            {
+                authenticated: true,
+                actor: {
+                    actorId: actor.actorId,
+                    displayName: actor.displayName,
+                    permissions: [...actor.permissions]
+                }
+            }
+        );
+
+    }
+
+    createActorSnapshot(identity) {
+
+        if (
+            !identity ||
+            typeof identity !== "object" ||
+            Array.isArray(identity)
+        ) {
+            return null;
+        }
+
+        const actorId = identity.actorId;
+        const displayName = identity.displayName;
+        const permissions = identity.permissions;
+
+        if (
+            typeof actorId !== "string" ||
+            actorId.trim().length === 0 ||
+            typeof displayName !== "string" ||
+            displayName.trim().length === 0 ||
+            !Array.isArray(permissions)
+        ) {
+            return null;
+        }
+
+        const normalizedPermissions = [];
+        const knownPermissions = new Set();
+
+        for (const permission of permissions) {
+
+            if (
+                typeof permission !== "string" ||
+                permission.trim().length === 0
+            ) {
+                return null;
+            }
+
+            const normalizedPermission =
+                permission.trim();
+
+            if (!knownPermissions.has(normalizedPermission)) {
+                knownPermissions.add(normalizedPermission);
+                normalizedPermissions.push(
+                    normalizedPermission
+                );
+            }
+
+        }
+
+        return Object.freeze({
+            actorId: actorId.trim(),
+            displayName: displayName.trim(),
+            permissions: Object.freeze(
+                normalizedPermissions
+            )
+        });
 
     }
 
