@@ -17,7 +17,9 @@ class EconomyModule extends BaseModule {
 
     constructor({
         startingBalance = 0,
-        transferPolicy = EconomyTransferPolicy.STAFF_ONLY
+        transferPolicy = EconomyTransferPolicy.STAFF_ONLY,
+        dailyRewardAmount = 100,
+        dailyCooldownMs = 24 * 60 * 60 * 1000
     } = {}) {
 
         super("Economy");
@@ -42,11 +44,50 @@ class EconomyModule extends BaseModule {
             );
         }
 
+        if (
+            typeof dailyRewardAmount !== "number" ||
+            !Number.isSafeInteger(dailyRewardAmount) ||
+            dailyRewardAmount <= 0
+        ) {
+            throw new Error(
+                "Economy daily reward must be a " +
+                "positive safe integer."
+            );
+        }
+
+        if (
+            typeof dailyCooldownMs !== "number" ||
+            !Number.isSafeInteger(dailyCooldownMs) ||
+            dailyCooldownMs <= 0
+        ) {
+            throw new Error(
+                "Economy daily cooldown must be a " +
+                "positive safe integer."
+            );
+        }
+
         this.startingBalance = startingBalance;
         this.transferPolicy = transferPolicy;
+        this.dailyRewardAmount = dailyRewardAmount;
+        this.dailyCooldownMs = dailyCooldownMs;
+
         this.accounts = new Map();
         this.transactions = [];
         this.nextTransactionId = 1;
+        this.lastDailyClaims = new Map();
+
+    }
+
+    validateDate(date, fieldName) {
+
+        if (
+            !(date instanceof Date) ||
+            Number.isNaN(date.getTime())
+        ) {
+            throw new Error(
+                `Economy ${fieldName} date is invalid.`
+            );
+        }
 
     }
 
@@ -140,6 +181,122 @@ class EconomyModule extends BaseModule {
         });
 
         return balanceAfter;
+
+    }
+
+    getDailyRewardAmount() {
+        return this.dailyRewardAmount;
+    }
+
+    getDailyCooldownMs() {
+        return this.dailyCooldownMs;
+    }
+
+    getLastDailyClaim(userId) {
+
+        if (!this.lastDailyClaims.has(userId)) {
+            return null;
+        }
+
+        return this.lastDailyClaims.get(userId);
+
+    }
+
+    getDailyStatus(
+        userId,
+        currentDate = new Date()
+    ) {
+
+        this.validateDate(
+            currentDate,
+            "daily status"
+        );
+
+        const lastClaimAt = this.getLastDailyClaim(userId);
+
+        if (!lastClaimAt) {
+            return {
+                available: true,
+                remainingMs: 0,
+                lastClaimAt: null,
+                nextClaimAt: currentDate
+            };
+        }
+
+        const nextClaimAt = new Date(
+            lastClaimAt.getTime() +
+            this.dailyCooldownMs
+        );
+
+        const remainingMs = Math.max(
+            0,
+            nextClaimAt.getTime() -
+            currentDate.getTime()
+        );
+
+        return {
+            available: remainingMs === 0,
+            remainingMs,
+            lastClaimAt,
+            nextClaimAt
+        };
+
+    }
+
+    canClaimDaily(
+        userId,
+        currentDate = new Date()
+    ) {
+
+        return this.getDailyStatus(
+            userId,
+            currentDate
+        ).available;
+
+    }
+
+    claimDaily(
+        userId,
+        claimedAt = new Date()
+    ) {
+
+        this.validateDate(
+            claimedAt,
+            "daily claim"
+        );
+
+        const status = this.getDailyStatus(
+            userId,
+            claimedAt
+        );
+
+        if (!status.available) {
+            throw new Error(
+                "Economy daily reward is still on cooldown."
+            );
+        }
+
+        const balanceAfter = this.credit(
+            userId,
+            this.dailyRewardAmount,
+            "Daily reward."
+        );
+
+        this.lastDailyClaims.set(
+            userId,
+            claimedAt
+        );
+
+        return {
+            userId,
+            amount: this.dailyRewardAmount,
+            balanceAfter,
+            claimedAt,
+            nextClaimAt: new Date(
+                claimedAt.getTime() +
+                this.dailyCooldownMs
+            )
+        };
 
     }
 
@@ -247,7 +404,8 @@ class EconomyModule extends BaseModule {
             );
         }
 
-        const recipientBalance = toAccount.balance + amount;
+        const recipientBalance =
+            toAccount.balance + amount;
 
         if (!Number.isSafeInteger(recipientBalance)) {
             throw new Error(
