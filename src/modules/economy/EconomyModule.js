@@ -19,7 +19,9 @@ class EconomyModule extends BaseModule {
         startingBalance = 0,
         transferPolicy = EconomyTransferPolicy.STAFF_ONLY,
         dailyRewardAmount = 100,
-        dailyCooldownMs = 24 * 60 * 60 * 1000
+        dailyCooldownMs = 24 * 60 * 60 * 1000,
+        defaultLeaderboardLimit = 10,
+        maximumLeaderboardLimit = 100
     } = {}) {
 
         super("Economy");
@@ -66,11 +68,46 @@ class EconomyModule extends BaseModule {
             );
         }
 
+        if (
+            typeof defaultLeaderboardLimit !== "number" ||
+    !Number.isSafeInteger(defaultLeaderboardLimit) ||
+    defaultLeaderboardLimit <= 0
+        ) {
+            throw new Error(
+                "Economy default leaderboard limit must be a " +
+        "positive safe integer."
+            );
+        }
+
+        if (
+            typeof maximumLeaderboardLimit !== "number" ||
+    !Number.isSafeInteger(maximumLeaderboardLimit) ||
+    maximumLeaderboardLimit <= 0
+        ) {
+            throw new Error(
+                "Economy maximum leaderboard limit must be a " +
+        "positive safe integer."
+            );
+        }
+
+        if (
+            defaultLeaderboardLimit >
+    maximumLeaderboardLimit
+        ) {
+            throw new Error(
+                "Economy default leaderboard limit cannot " +
+        "exceed the maximum leaderboard limit."
+            );
+        }
+
         this.startingBalance = startingBalance;
         this.transferPolicy = transferPolicy;
         this.dailyRewardAmount = dailyRewardAmount;
         this.dailyCooldownMs = dailyCooldownMs;
-
+        this.defaultLeaderboardLimit =
+            defaultLeaderboardLimit;
+        this.maximumLeaderboardLimit =
+            maximumLeaderboardLimit;
         this.accounts = new Map();
         this.transactions = [];
         this.nextTransactionId = 1;
@@ -184,8 +221,137 @@ class EconomyModule extends BaseModule {
 
     }
 
+    getConfiguration() {
+
+        return {
+            startingBalance: this.startingBalance,
+            transferPolicy: this.transferPolicy,
+            dailyRewardAmount: this.dailyRewardAmount,
+            dailyCooldownMs: this.dailyCooldownMs,
+            defaultLeaderboardLimit:
+            this.defaultLeaderboardLimit,
+            maximumLeaderboardLimit:
+            this.maximumLeaderboardLimit
+        };
+
+    }
+
     getDailyRewardAmount() {
         return this.dailyRewardAmount;
+    }
+
+    setDailyRewardAmount(dailyRewardAmount) {
+
+        if (
+            typeof dailyRewardAmount !== "number" ||
+        !Number.isSafeInteger(dailyRewardAmount) ||
+        dailyRewardAmount <= 0
+        ) {
+            throw new Error(
+                "Economy daily reward must be a " +
+            "positive safe integer."
+            );
+        }
+
+        this.dailyRewardAmount = dailyRewardAmount;
+
+        return this.dailyRewardAmount;
+
+    }
+
+    getDailyCooldownMs() {
+        return this.dailyCooldownMs;
+    }
+
+    setDailyCooldownMs(dailyCooldownMs) {
+
+        if (
+            typeof dailyCooldownMs !== "number" ||
+        !Number.isSafeInteger(dailyCooldownMs) ||
+        dailyCooldownMs <= 0
+        ) {
+            throw new Error(
+                "Economy daily cooldown must be a " +
+            "positive safe integer."
+            );
+        }
+
+        this.dailyCooldownMs = dailyCooldownMs;
+
+        return this.dailyCooldownMs;
+
+    }
+
+    getDefaultLeaderboardLimit() {
+        return this.defaultLeaderboardLimit;
+    }
+
+    setDefaultLeaderboardLimit(
+        defaultLeaderboardLimit
+    ) {
+
+        if (
+            typeof defaultLeaderboardLimit !== "number" ||
+        !Number.isSafeInteger(defaultLeaderboardLimit) ||
+        defaultLeaderboardLimit <= 0
+        ) {
+            throw new Error(
+                "Economy default leaderboard limit must " +
+            "be a positive safe integer."
+            );
+        }
+
+        if (
+            defaultLeaderboardLimit >
+        this.maximumLeaderboardLimit
+        ) {
+            throw new Error(
+                "Economy default leaderboard limit cannot " +
+            "exceed the maximum leaderboard limit."
+            );
+        }
+
+        this.defaultLeaderboardLimit =
+        defaultLeaderboardLimit;
+
+        return this.defaultLeaderboardLimit;
+
+    }
+
+    getMaximumLeaderboardLimit() {
+        return this.maximumLeaderboardLimit;
+    }
+
+    setMaximumLeaderboardLimit(
+        maximumLeaderboardLimit
+    ) {
+
+        if (
+            typeof maximumLeaderboardLimit !== "number" ||
+        !Number.isSafeInteger(maximumLeaderboardLimit) ||
+        maximumLeaderboardLimit <= 0
+        ) {
+            throw new Error(
+                "Economy maximum leaderboard limit must " +
+            "be a positive safe integer."
+            );
+        }
+
+        if (
+            maximumLeaderboardLimit <
+        this.defaultLeaderboardLimit
+        ) {
+            throw new Error(
+                "Economy maximum leaderboard limit cannot " +
+            "be lower than the default leaderboard limit."
+            );
+        }
+
+        this.maximumLeaderboardLimit =
+        maximumLeaderboardLimit;
+
+        return this.maximumLeaderboardLimit;
+
     }
 
     getDailyCooldownMs() {
@@ -438,16 +604,25 @@ class EconomyModule extends BaseModule {
 
     }
 
-    getLeaderboard(limit = 10) {
+    getLeaderboard(
+        limit = this.defaultLeaderboardLimit
+    ) {
 
         if (
             typeof limit !== "number" ||
-            !Number.isSafeInteger(limit) ||
-            limit <= 0
+        !Number.isSafeInteger(limit) ||
+        limit <= 0
         ) {
             throw new Error(
                 "Economy leaderboard limit must be a " +
-                "positive safe integer."
+            "positive safe integer."
+            );
+        }
+
+        if (limit > this.maximumLeaderboardLimit) {
+            throw new Error(
+                "Economy leaderboard limit cannot exceed " +
+            `${this.maximumLeaderboardLimit}.`
             );
         }
 
@@ -456,11 +631,11 @@ class EconomyModule extends BaseModule {
 
                 if (
                     firstAccount.balance !==
-                    secondAccount.balance
+                secondAccount.balance
                 ) {
                     return (
                         secondAccount.balance -
-                        firstAccount.balance
+                    firstAccount.balance
                     );
                 }
 
