@@ -13,18 +13,23 @@ const FakeWebsiteServer = require(
 
 function createHarness({
     configuration = {
+        authentication: {
+            enabled: false
+        },
         enabled: true,
         host: "127.0.0.1",
         port: 8080,
         requestTimeoutMs: 10000,
         shutdownTimeoutMs: 5000
     },
+    environment = {},
     server = new FakeWebsiteServer()
 } = {}) {
 
     return {
         provider: new WebsiteProvider({
             configuration,
+            environment,
             server
         }),
         server
@@ -66,6 +71,149 @@ test("initializes with validated server options", () => {
             requestTimeoutMs: 10000,
             shutdownTimeoutMs: 5000
         }
+    );
+    assert.deepStrictEqual(
+        harness.provider.authenticationOptions,
+        {
+            enabled: false
+        }
+    );
+    assert.strictEqual(
+        Object.isFrozen(
+            harness.provider.authenticationOptions
+        ),
+        true
+    );
+
+});
+
+test("starts normally while authentication is disabled", async () => {
+
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: false,
+                publicOrigin: "",
+                discordGuildId: ""
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        }
+    });
+
+    harness.provider.initialize();
+    await harness.provider.start();
+
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.RUNNING
+    );
+    assert.strictEqual(
+        harness.server.startCalls.length,
+        1
+    );
+
+    await harness.provider.stop();
+
+});
+
+test("rejects invalid enabled authentication before listening", () => {
+
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: true
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        }
+    });
+
+    assert.throws(
+        () => harness.provider.initialize(),
+        {
+            message:
+                "Website authentication public origin is required."
+        }
+    );
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.ERROR
+    );
+    assert.deepStrictEqual(
+        harness.server.startCalls,
+        []
+    );
+
+});
+
+test("rejects configured authentication until implemented", () => {
+
+    const secret = "never-expose-this-secret";
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: true,
+                publicOrigin: "https://community.example",
+                discordGuildId: "123456789012345678",
+                discordRequestTimeoutMs: 10000,
+                oauthStateLifetimeMs: 600000,
+                sessionIdleLifetimeMs: 1800000,
+                sessionAbsoluteLifetimeMs: 28800000
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        },
+        environment: {
+            DISCORD_CLIENT_ID: "234567890123456789",
+            DISCORD_CLIENT_SECRET: secret
+        }
+    });
+
+    assert.throws(
+        () => harness.provider.initialize(),
+        error => {
+            assert.strictEqual(
+                error.message,
+                "Website authentication is configured but is " +
+                "not implemented."
+            );
+            assert.strictEqual(
+                error.message.includes(secret),
+                false
+            );
+
+            return true;
+        }
+    );
+    assert.strictEqual(
+        harness.provider.state,
+        ComponentState.ERROR
+    );
+    assert.strictEqual(
+        Object.isFrozen(
+            harness.provider.authenticationOptions
+        ),
+        true
+    );
+    assert.strictEqual(
+        JSON.stringify(
+            harness.provider.authenticationOptions
+        ).includes(secret),
+        false
+    );
+    assert.deepStrictEqual(
+        harness.server.startCalls,
+        []
     );
 
 });

@@ -1,17 +1,23 @@
 const BaseProvider = require("../core/BaseProvider");
 const ComponentState = require("../../core/ComponentState");
+const WebsiteAuthenticationConfiguration = require(
+    "./WebsiteAuthenticationConfiguration"
+);
 
 class WebsiteProvider extends BaseProvider {
 
     constructor({
         configuration,
+        environment = process.env,
         server
     } = {}) {
 
         super("Website");
 
         this.configuration = configuration;
+        this.environment = environment;
         this.server = server;
+        this.authenticationOptions = null;
         this.serverOptions = null;
         this.serverStartAttempted = false;
 
@@ -25,6 +31,19 @@ class WebsiteProvider extends BaseProvider {
 
             this.validateServer();
             this.serverOptions = this.createServerOptions();
+            this.authenticationOptions =
+                new WebsiteAuthenticationConfiguration({
+                    configuration:
+                        this.configuration.authentication,
+                    environment: this.environment
+                }).getSnapshot();
+
+            if (this.authenticationOptions.enabled) {
+                throw new Error(
+                    "Website authentication is configured but is " +
+                    "not implemented."
+                );
+            }
 
             super.initialize();
 

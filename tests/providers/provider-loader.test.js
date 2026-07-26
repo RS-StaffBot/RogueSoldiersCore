@@ -340,6 +340,21 @@ test("loads one Website Provider after existing Providers", () => {
 
     let serverCreationCount = 0;
     const server = new FakeWebsiteServer();
+    const websiteConfiguration = {
+        authentication: {
+            enabled: false
+        },
+        enabled: true,
+        host: "127.0.0.1",
+        port: 8080,
+        requestTimeoutMs: 10000,
+        shutdownTimeoutMs: 5000
+    };
+    const environment = {
+        DISCORD_CLIENT_ID: "application-1",
+        SEVEN_DAYS_TO_DIE_TELNET_PASSWORD:
+            "test-password"
+    };
     const providers = ProviderLoader.load({
         configuration: createConfiguration(
             {
@@ -348,13 +363,7 @@ test("loads one Website Provider after existing Providers", () => {
                 host: "game.internal",
                 port: 8081
             },
-            {
-                enabled: true,
-                host: "127.0.0.1",
-                port: 8080,
-                requestTimeoutMs: 10000,
-                shutdownTimeoutMs: 5000
-            }
+            websiteConfiguration
         ),
         createSevenDaysToDieClient() {
             return new FakeSevenDaysToDieClient();
@@ -364,10 +373,7 @@ test("loads one Website Provider after existing Providers", () => {
 
             return server;
         },
-        environment: {
-            SEVEN_DAYS_TO_DIE_TELNET_PASSWORD:
-                "test-password"
-        }
+        environment
     });
 
     assert.deepStrictEqual(
@@ -384,6 +390,49 @@ test("loads one Website Provider after existing Providers", () => {
         websiteProvider.server,
         server
     );
+    assert.strictEqual(
+        websiteProvider.configuration,
+        websiteConfiguration
+    );
+    assert.strictEqual(
+        websiteProvider.environment,
+        environment
+    );
+    assert.deepStrictEqual(
+        websiteProvider.authenticationOptions,
+        {
+            enabled: false
+        }
+    );
+
+});
+
+test("disabled Website ignores incomplete authentication values", () => {
+
+    let serverCreationCount = 0;
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            undefined,
+            {
+                authentication: {
+                    enabled: true
+                },
+                enabled: false
+            }
+        ),
+        createWebsiteServer() {
+            serverCreationCount += 1;
+
+            return new FakeWebsiteServer();
+        },
+        environment: {}
+    });
+
+    assert.deepStrictEqual(
+        providers.map(provider => provider.name),
+        ["Discord"]
+    );
+    assert.strictEqual(serverCreationCount, 0);
 
 });
 

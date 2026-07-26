@@ -120,6 +120,7 @@ class ProviderLoader {
         providers.push(
             new WebsiteProvider({
                 configuration: websiteSettings,
+                environment,
                 server: createWebsiteServer()
             })
         );
