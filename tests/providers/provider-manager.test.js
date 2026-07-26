@@ -57,7 +57,7 @@ test("registers, retrieves, and lists Providers", () => {
 
 });
 
-test("invokes Provider lifecycle methods in registration order", () => {
+test("invokes Provider lifecycle methods in dependency order", async () => {
 
     const lifecycleEvents = [];
 
@@ -68,9 +68,9 @@ test("invokes Provider lifecycle methods in registration order", () => {
         createProvider("Second", lifecycleEvents)
     );
 
-    ProviderManager.initializeAll();
-    ProviderManager.startAll();
-    ProviderManager.stopAll();
+    await ProviderManager.initializeAll();
+    await ProviderManager.startAll();
+    await ProviderManager.stopAll();
 
     assert.deepStrictEqual(
         lifecycleEvents,
@@ -79,8 +79,44 @@ test("invokes Provider lifecycle methods in registration order", () => {
             "Second:initialize",
             "First:start",
             "Second:start",
-            "First:stop",
-            "Second:stop"
+            "Second:stop",
+            "First:stop"
+        ]
+    );
+
+});
+
+test("attempts every Provider during reverse shutdown", async () => {
+
+    const lifecycleEvents = [];
+    const firstProvider = createProvider(
+        "First",
+        lifecycleEvents
+    );
+    const secondProvider = createProvider(
+        "Second",
+        lifecycleEvents
+    );
+
+    secondProvider.stop = async () => {
+        lifecycleEvents.push("Second:stop");
+        throw new Error("Second failed to stop.");
+    };
+
+    ProviderManager.register(firstProvider);
+    ProviderManager.register(secondProvider);
+
+    await assert.rejects(
+        ProviderManager.stopAll(),
+        {
+            message: "One or more Providers failed to stop."
+        }
+    );
+    assert.deepStrictEqual(
+        lifecycleEvents,
+        [
+            "Second:stop",
+            "First:stop"
         ]
     );
 

@@ -2,7 +2,7 @@ const Bootstrap = require("../bootstrap/Bootstrap");
 
 class Application {
 
-    start() {
+    async start() {
 
         console.clear();
 
@@ -11,13 +11,13 @@ class Application {
         console.log("========================================");
         console.log("");
 
-        Bootstrap.start();
+        await Bootstrap.start();
 
     }
 
-    stop() {
+    async stop() {
 
-        Bootstrap.stop();
+        await Bootstrap.stop();
 
     }
 

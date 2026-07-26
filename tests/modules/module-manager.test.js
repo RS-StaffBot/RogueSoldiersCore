@@ -57,7 +57,7 @@ test("registers, retrieves, and lists Modules", () => {
 
 });
 
-test("invokes Module lifecycle methods in registration order", () => {
+test("invokes Module lifecycle methods in dependency order", async () => {
 
     const lifecycleEvents = [];
 
@@ -68,9 +68,9 @@ test("invokes Module lifecycle methods in registration order", () => {
         createModule("Second", lifecycleEvents)
     );
 
-    ModuleManager.initializeAll();
-    ModuleManager.startAll();
-    ModuleManager.stopAll();
+    await ModuleManager.initializeAll();
+    await ModuleManager.startAll();
+    await ModuleManager.stopAll();
 
     assert.deepStrictEqual(
         lifecycleEvents,
@@ -79,8 +79,44 @@ test("invokes Module lifecycle methods in registration order", () => {
             "Second:initialize",
             "First:start",
             "Second:start",
-            "First:stop",
-            "Second:stop"
+            "Second:stop",
+            "First:stop"
+        ]
+    );
+
+});
+
+test("attempts every Module during reverse shutdown", async () => {
+
+    const lifecycleEvents = [];
+    const firstModule = createModule(
+        "First",
+        lifecycleEvents
+    );
+    const secondModule = createModule(
+        "Second",
+        lifecycleEvents
+    );
+
+    secondModule.stop = async () => {
+        lifecycleEvents.push("Second:stop");
+        throw new Error("Second failed to stop.");
+    };
+
+    ModuleManager.register(firstModule);
+    ModuleManager.register(secondModule);
+
+    await assert.rejects(
+        ModuleManager.stopAll(),
+        {
+            message: "One or more Modules failed to stop."
+        }
+    );
+    assert.deepStrictEqual(
+        lifecycleEvents,
+        [
+            "Second:stop",
+            "First:stop"
         ]
     );
 

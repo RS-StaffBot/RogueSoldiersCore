@@ -7,22 +7,42 @@ class ProviderManager {
         this.providers.set(provider.name, provider);
     }
 
-    initializeAll() {
+    async initializeAll() {
         for (const provider of this.providers.values()) {
-            provider.initialize();
+            await provider.initialize();
         }
     }
 
-    startAll() {
+    async startAll() {
         for (const provider of this.providers.values()) {
-            provider.start();
+            await provider.start();
         }
     }
 
-    stopAll() {
-        for (const provider of this.providers.values()) {
-            provider.stop();
+    async stopAll() {
+
+        const errors = [];
+        const providers = [
+            ...this.providers.values()
+        ].reverse();
+
+        for (const provider of providers) {
+
+            try {
+                await provider.stop();
+            } catch (error) {
+                errors.push(error);
+            }
+
         }
+
+        if (errors.length > 0) {
+            throw new AggregateError(
+                errors,
+                "One or more Providers failed to stop."
+            );
+        }
+
     }
 
     list() {

@@ -8,22 +8,42 @@ class ModuleManager {
         this.modules.set(module.name, module);
     }
 
-    initializeAll() {
+    async initializeAll() {
         for (const module of this.modules.values()) {
-            module.initialize();
+            await module.initialize();
         }
     }
 
-    startAll() {
+    async startAll() {
         for (const module of this.modules.values()) {
-            module.start();
+            await module.start();
         }
     }
 
-    stopAll() {
-        for (const module of this.modules.values()) {
-            module.stop();
+    async stopAll() {
+
+        const errors = [];
+        const modules = [
+            ...this.modules.values()
+        ].reverse();
+
+        for (const module of modules) {
+
+            try {
+                await module.stop();
+            } catch (error) {
+                errors.push(error);
+            }
+
         }
+
+        if (errors.length > 0) {
+            throw new AggregateError(
+                errors,
+                "One or more Modules failed to stop."
+            );
+        }
+
     }
 
     list() {
