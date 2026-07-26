@@ -11,7 +11,7 @@
         "start": "node src/index.js",
         "dev": "nodemon src/index.js",
         "lint": "eslint .",
-        "test": "echo \"No tests yet\""
+        "test": "node --test"
     },
     "engines": {
         "node": ">=22.13.0"
