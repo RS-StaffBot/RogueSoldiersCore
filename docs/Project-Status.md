@@ -2,13 +2,13 @@
 
 ## Current Version
 
-v0.7.0
+v0.8.0
 
 ## Current Milestone
 
 v0.8.0 - 7 Days to Die Provider
 
-Status: In Progress
+Status: Completed
 
 ## Last Completed Milestone
 
@@ -21,6 +21,12 @@ Status: Completed
 v0.6.0 - Ticket Module
 
 Status: Completed
+
+## Next Planned Milestone
+
+v0.9.0 - Website Provider
+
+Status: Next Planned
 
 ## Verified v0.4.0 Implementation
 
@@ -110,34 +116,32 @@ Status: Completed
 - Cross-platform identity remains future work.
 - Economy shops and Discord transfers remain future work.
 - Discord Ticket channels, threads, transcripts, configurable staff roles, and related infrastructure remain future work.
-- Game-server integration was outside v0.7.0; its initial v0.8.0 Provider boundary is now in progress.
+- Game-server integration was outside v0.7.0; its initial Provider boundary was completed in v0.8.0.
 
 ## v0.7.0 Completion
 
 The Database milestone is implementation-complete, tested, documented, and versioned in the repository files.
 
-## Verified v0.8.0 Work in Progress
-
-Status: In Progress
-
-Implemented:
+## Verified v0.8.0 Implementation
 
 - Optional `SevenDaysToDieProvider`, disabled by default
+- Conditional `ProviderLoader` integration after Discord
 - Raw TCP connectivity through Node's built-in `node:net` API
 - Telnet password submission and confirmed authentication and console readiness
-- Connection timeout and awaited, idempotent disconnection
-- `ProviderLoader` integration after Discord when enabled
-- Handwritten client and socket fakes with automated lifecycle, readiness, failure, and cleanup coverage
-- Safe omission when configuration is missing or disabled
+- Whole-handshake connection timeout and secret-safe failure messages
+- Unexpected post-readiness connection-loss propagation to Provider `ERROR`
+- Intentional shutdown that remains `STOPPED`
+- Awaited and idempotent client disconnection
+- Handwritten client and socket fakes covering lifecycle, readiness, failure, loss, and cleanup
+- Automated verification without a live game server
 
-Deferred:
+## v0.8.0 Boundaries
 
-- Administrative command execution and command-response delimiters
-- Player lookup, kick, ban, unban, and whitelist operations
-- Discord-to-game and game-to-Discord communication
-- Economy rewards and purchases that produce in-game effects
-- Game-event parsing and ingestion
-- Live deployment configuration
-- A future validated web configuration workflow
-
-Command execution remains deferred until deployment-specific evidence establishes response completion boundaries, unsolicited-log filtering behavior, server-version and hosting compatibility, and safe command-timeout behavior. v0.8.0 is not complete.
+- Administrative command execution is not implemented.
+- Player lookup, kick, ban, unban, whitelist, and other player administration are not implemented.
+- Discord-to-game and game-to-Discord communication are not implemented.
+- Economy rewards or purchases that produce in-game effects are not implemented.
+- Reconnect behavior and multiple-server management are not implemented.
+- Live web-based configuration is not implemented.
+- Raw TCP management must use loopback, a LAN, a VPN, or another protected private path.
+- Command response handling requires deployment-specific evidence for completion boundaries, unsolicited-log filtering, server-version and hosting compatibility, and safe timeouts.

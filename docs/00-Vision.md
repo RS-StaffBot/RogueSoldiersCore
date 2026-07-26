@@ -10,7 +10,7 @@ RSF coordinates community management, moderation, support, engagement, and conne
 
 ## Current Verified Capabilities
 
-As of v0.7.0, RSF supports:
+As of v0.8.0, RSF supports:
 
 - Framework startup, configuration, lifecycle, and service registration
 - Discord connection and slash-command registration
@@ -24,6 +24,7 @@ As of v0.7.0, RSF supports:
 - SQLite-backed Tickets with immutable records, messages, assignment, closing, creator ownership, staff authorization, and restart recovery
 - Ordered transactional migrations and controlled database health and shutdown
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
+- An optional 7 Days to Die Provider with raw TCP authentication, readiness, tested lifecycle integration, and unexpected connection-loss detection
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
 - Focused automated regression tests for critical framework, lifecycle, persistence, and integrity behavior
@@ -38,7 +39,7 @@ The following direction is future scope and is not implemented unless listed und
 - Discord-to-game chat or other communication
 - Game-server events
 - Economy purchases that can later produce in-game rewards
-- 7 Days to Die as the first planned game Provider
+- Further 7 Days to Die command, player, chat, event, and Economy integration
 - Support for additional games where practical
 - Administrative and website interfaces that use validated framework operations
 

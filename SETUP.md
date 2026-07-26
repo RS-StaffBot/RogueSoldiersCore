@@ -27,6 +27,16 @@ Copy-Item -LiteralPath .env.example -Destination .env
 
 Set `DISCORD_TOKEN` and `DISCORD_CLIENT_ID` in `.env` before connecting the Discord Provider. Do not commit `.env`.
 
+## Optional 7 Days to Die Provider
+
+The 7 Days to Die Provider is disabled by default. Its non-secret settings are in `config/providers/sevendaystodie.json`, and its Telnet password is supplied through `SEVEN_DAYS_TO_DIE_TELNET_PASSWORD` in `.env`.
+
+Missing game-server settings do not affect framework startup while the Provider is disabled. Enabling it requires a valid host, port, positive connection timeout, and non-empty password.
+
+The raw TCP management connection is unencrypted. Use loopback, a LAN, a VPN, or another protected private path; do not expose the Telnet service or password to the public internet.
+
+Automated tests use fake clients and sockets and do not require a live game server.
+
 ## Verify and Start
 
 Run the automated tests:

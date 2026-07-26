@@ -9,10 +9,11 @@ Rogue Soldiers Framework (RSF) is the central coordinating framework for the Rog
 - Platform-neutral Moderation, Economy, and Ticket Modules
 - Durable moderation audits, Economy state, and Ticket state
 - Transactional migrations and controlled database lifecycle
+- An optional 7 Days to Die Provider with raw TCP authentication and readiness over a protected private network path; server command execution is not implemented
 
 ## Future Direction
 
-Future, unimplemented direction includes hosted game-server Providers, moderation appeals, broader staff and transcript tooling, Discord-to-game communication, game events, Economy integration with in-game rewards, and administrative or website interfaces. 7 Days to Die is the first planned game Provider.
+Future, unimplemented direction includes expanded game-server operations, moderation appeals, broader staff and transcript tooling, Discord-to-game communication, game events, Economy integration with in-game rewards, and administrative or website interfaces.
 
 Rogue Soldiers remains the primary design target. Adaptability for other gaming communities is secondary and must not weaken Rogue Soldiers requirements or cause premature abstraction.
 

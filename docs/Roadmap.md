@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Repository Version:** v0.7.0
+**Repository Version:** v0.8.0
 
-**Current Milestone:** v0.8.0 - 7 Days to Die Provider
+**Current Milestone:** v0.9.0 - Website Provider
 
-**Status:** In Progress
+**Status:** Next Planned
 
 ## Completed Milestones
 
@@ -19,6 +19,7 @@
 - v0.5.0 - Economy Module
 - v0.6.0 - Tickets
 - v0.7.0 - Database
+- v0.8.0 - 7 Days to Die Provider
 
 ## v0.4.0 - Moderation Module
 
@@ -122,26 +123,27 @@ Boundaries:
 
 ## v0.8.0 - 7 Days to Die Provider
 
-Status: In Progress
+Status: Completed
 
 Implemented:
 
 - Optional `SevenDaysToDieProvider`, disabled by default
+- Conditional loading after Discord when enabled
 - Raw TCP connectivity through Node's built-in `node:net` API
 - Telnet password submission and confirmed authentication and console readiness
-- Connection timeout and awaited, idempotent disconnection
-- Conditional `ProviderLoader` integration after Discord
-- Deterministic automated coverage through handwritten client and socket fakes
+- Whole-handshake connection timeout
+- Lifecycle and rollback integration with awaited, idempotent disconnection
+- Unexpected post-readiness connection-loss propagation to Provider `ERROR`
+- Deterministic automated coverage through handwritten client and socket fakes without a live server
 
-Deferred:
+Boundaries:
 
-- Administrative command execution and command-response delimiters
-- Player lookup and player administration
-- Discord-to-game communication
-- Game-event ingestion
-- Economy rewards that produce in-game effects
-- Live deployment configuration
-- A future validated web configuration workflow
+- Administrative command execution and command-response delimiters remain deferred.
+- Player lookup and player administration remain deferred.
+- Discord-to-game communication, game events, and Economy integration remain deferred.
+- Reconnect behavior and multiple-server management remain deferred.
+- Future web configuration remains non-operational.
+- Raw TCP management must use loopback, a LAN, a VPN, or another protected private path.
 
 Command execution remains deferred because no deterministic response terminator or reliable isolation from unsolicited logs is currently established. Deployment-specific evidence must confirm response completion, log filtering, server-version and hosting compatibility, and safe command-timeout behavior before implementation.
 

@@ -89,7 +89,9 @@ Providers and commands are persistence-blind. They resolve framework-loaded Modu
 
 `SevenDaysToDieProvider` is an optional game-server Provider and is disabled by default. `ProviderLoader` omits it when its configuration is missing or disabled, so absent connection values are safe while it is disabled. Connection values are validated only when the Provider is enabled.
 
-The Provider coordinates configuration, lifecycle, and `SevenDaysToDieTelnetClient`. The client uses Node's built-in `node:net` API to open the game server's raw TCP management connection, submit the Telnet password after the verified prompt, and wait for confirmed authentication and console readiness. The Provider reports `RUNNING` only after that readiness completes. Shutdown awaits an idempotent client disconnection.
+The Provider coordinates configuration, lifecycle, and `SevenDaysToDieTelnetClient`. The client uses Node's built-in `node:net` API to open the game server's raw TCP management connection, submit the Telnet password after the verified prompt, and wait for confirmed authentication and console readiness within the configured connection timeout. The Provider reports `RUNNING` only after that readiness completes.
+
+An unexpected socket error or closure after readiness moves the Provider to `ERROR` through a one-time client notification. Intentional shutdown does not create an error state, removes live connection listeners, and awaits idempotent client disconnection.
 
 Raw TCP management traffic is unencrypted. It must use loopback, a LAN, a VPN, or another protected private path rather than exposing the Telnet service or password to the public internet.
 
