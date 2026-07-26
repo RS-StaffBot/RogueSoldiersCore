@@ -1,5 +1,6 @@
 const EconomyModule = require("../economy/EconomyModule");
 const ModerationModule = require("../moderation/ModerationModule");
+const TicketModule = require("../tickets/TicketModule");
 
 class ModuleLoader {
 
@@ -7,7 +8,8 @@ class ModuleLoader {
 
         return [
             new EconomyModule(),
-            new ModerationModule()
+            new ModerationModule(),
+            new TicketModule()
         ];
 
     }
