@@ -126,4 +126,22 @@ The server currently exposes two fixed routes:
 
 An injected authenticated identity must contain a non-empty actor ID, a non-empty display name, and an array of non-empty permission strings. `WebsiteServer` normalizes duplicate permissions, creates a frozen defensive snapshot, and returns only allowlisted identity fields. Invalid or missing identities return `401`, unsupported `/api/me` methods return `405`, and authenticator operational failures return a generic `503` without changing Website Provider transport state.
 
-This authentication contract is not working end-user login. Discord OAuth, sessions, cookies, CORS, Module and Registry access, stores, database access, frontend behavior, public network exposure, and permission translation remain unimplemented.
+### Authentication Configuration
+
+`WebsiteAuthenticationConfiguration` is a Provider-local validator invoked during `WebsiteProvider` initialization. It validates configuration without network, database, Module, or Registry access and returns a frozen non-secret snapshot.
+
+Authentication is disabled by default. While disabled, `publicOrigin` and `discordGuildId` may remain empty, and neither a Discord client ID nor a Discord client secret is required. The Website Provider can start, `GET /health` remains available, and production `GET /api/me` continues to deny authentication. Login and callback routes are not implemented.
+
+When authentication is enabled, initialization requires:
+
+- A canonical HTTPS public origin without credentials, a path, query, fragment, or trailing slash
+- Valid positive Discord guild and client snowflake strings
+- A non-empty `DISCORD_CLIENT_SECRET` from the environment
+- A Discord request timeout and OAuth state, session idle, and session absolute lifetimes within their validated bounds
+- A session absolute lifetime at least as long as the session idle lifetime
+
+The callback URI is derived exactly as `<publicOrigin>/auth/discord/callback`. It is not configured separately and is not inferred from `Host`, `Forwarded`, or `X-Forwarded-*` request headers.
+
+Invalid enabled configuration fails Provider initialization before the HTTP listener is started. Valid enabled configuration also fails closed with `Website authentication is configured but is not implemented.` until real Discord authentication exists.
+
+This authentication contract and configuration validation are not working end-user login. Discord OAuth authorization, OAuth state handling, callback handling, sessions, cookies, logout, production authenticated identities, CORS, Module and Registry access, stores, database access, frontend behavior, public network exposure, settings interfaces, and permission translation remain unimplemented.

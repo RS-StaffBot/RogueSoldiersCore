@@ -158,15 +158,24 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - `401` for missing or invalid identity
 - `405` for unsupported `/api/me` methods
 - Generic request-level `503` for authenticator operational failure
-- Automated verification without OAuth, external identity services, or a public listener
+- Provider-local `WebsiteAuthenticationConfiguration` validation during initialization
+- Disabled-by-default authentication configuration that requires no deployment values
+- Conditional validation of canonical HTTPS origin, Discord guild and client IDs, environment-only client secret, and bounded OAuth and session lifetimes
+- Exact callback derivation as `<publicOrigin>/auth/discord/callback`
+- Frozen non-secret authentication configuration snapshots
+- Invalid enabled configuration rejected before the HTTP listener starts
+- Explicit configured-but-unimplemented failure after valid enabled configuration
+- 149 passing automated tests without OAuth, external identity services, or a public listener
 
 ## v0.9.0 Current Boundaries
 
 - The authentication contract is not working end-user login.
-- Discord OAuth, OAuth callbacks, tokens, and refresh behavior are not implemented.
+- Discord OAuth, login and callback handling, tokens, and refresh behavior are not implemented.
 - Sessions, cookies, logout, and identity persistence are not implemented.
+- Production authenticated identity creation is not implemented.
 - Website Module, Registry, store, and database access are not implemented.
 - Ticket, Moderation, Economy, and administration routes are not implemented.
 - Permission translation and cross-platform identity are not implemented.
-- Frontend behavior and public network exposure are not implemented.
+- Frontend behavior, public network exposure, and settings interfaces are not implemented.
 - `GET /health` reports Website transport readiness only and does not authenticate requests.
+- Repository version remains v0.8.0 while v0.9.0 is in progress.

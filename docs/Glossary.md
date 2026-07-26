@@ -32,6 +32,22 @@ The Website Provider-local `authenticate(request)` contract. Its production impl
 
 A Provider-local identity containing an actor ID, display name, and permission-string array. Valid identities are normalized into defensive frozen snapshots and only allowlisted fields are returned by `GET /api/me`. This is not a Shared principal or cross-platform identity model.
 
+## Website Authentication Configuration
+
+The Provider-local, startup-time contract that validates whether Website authentication is disabled or has the complete non-secret deployment configuration required for a future implementation. It returns a frozen snapshot, excludes the Discord client secret, and performs no network, Module, Registry, store, or database access.
+
+## Canonical Public Origin
+
+The exact externally visible HTTPS origin configured for future Website authentication, with no credentials, path, query, fragment, or trailing slash. The future Discord callback URI is derived from this value and is not inferred from request headers.
+
+## Authentication Disabled State
+
+The default Website authentication state represented by the frozen snapshot `{ enabled: false }`. It requires no public origin, guild ID, Discord client ID, or Discord client secret; Website transport and health may run while production identity requests remain denied.
+
+## Configured but Unimplemented Authentication
+
+The fail-closed Website state in which enabled authentication configuration is valid but real Discord authentication does not yet exist. Provider initialization stops before the HTTP listener starts and reports the explicit configured-but-unimplemented error.
+
 ## Website Health
 
 The unauthenticated `GET /health` response that reports Website HTTP transport readiness only. It does not report authentication, Discord, Module, or database state.

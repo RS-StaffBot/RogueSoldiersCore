@@ -184,6 +184,29 @@ Production authentication denies access by default. Tests may inject determinist
 
 The contract proves separation between HTTP transport and future authentication without selecting or simulating a production login system. A Shared principal, session system, OAuth client, Module route, or generic routing abstraction would exceed the current verified requirement.
 
+## Website Authentication Configuration Validated Before Real Authentication Is Enabled
+
+### Decision
+
+Website authentication configuration is validated by the Provider-local `WebsiteAuthenticationConfiguration` boundary during `WebsiteProvider` initialization. Authentication remains disabled by default. Disabled configuration does not require deployment values and produces a frozen `{ enabled: false }` snapshot.
+
+When enabled, configuration requires a canonical HTTPS public origin, valid Discord guild and client IDs, an environment-supplied Discord client secret, and bounded OAuth and session lifetimes. The callback URI is derived exactly from the canonical public origin rather than configured independently or inferred from request headers. The returned snapshot excludes the client secret.
+
+Invalid enabled configuration fails before the Website listener starts. Valid enabled configuration also fails closed with an explicit configured-but-unimplemented error until real authentication is implemented.
+
+### Reason
+
+The final deployment values do not yet exist, so disabled configuration lets Rogue Soldiers continue local Website development safely. Validating the security-sensitive deployment contract before adding OAuth or sessions establishes one deterministic source for the future callback URI and prevents partially configured authentication from appearing operational. Keeping secrets environment-only and out of returned configuration snapshots reduces accidental exposure. Failing before transport startup ensures the framework cannot serve a misleading partially enabled authentication state. Real OAuth remains a separately reviewed security phase.
+
+### Guardrails
+
+- This decision does not implement OAuth authorization, callback processing, state or replay protection, sessions, cookies, logout, or production identities.
+- The callback URI must not be derived from untrusted request headers.
+- The disabled Website remains usable for transport health while production authentication continues to deny requests.
+- Authentication remains disabled by default, and complete configuration does not make it operational.
+- Secrets remain outside tracked JSON.
+- This decision does not introduce Module, Registry, store, database, Ticket, frontend, settings API, settings interface, or secret service access.
+
 ## 7 Days to Die Command Execution Deferral
 
 ### Decision

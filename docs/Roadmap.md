@@ -167,18 +167,36 @@ Implemented:
 - `GET /api/me` with exact allowlisted identity responses
 - Identity validation, duplicate-permission normalization, and defensive frozen snapshots
 - `401`, `405`, and generic request-level `503` behavior
-- Automated coverage without live authentication or a public listener
+- Provider-local authentication configuration validation during initialization
+- Disabled-by-default authentication configuration with no required deployment values
+- Conditional canonical HTTPS origin, Discord guild and client ID, environment-only client-secret, and lifetime validation
+- Exact callback derivation as `<publicOrigin>/auth/discord/callback`
+- Frozen non-secret authentication configuration snapshots
+- Fail-closed rejection before listener startup for invalid or configured-but-unimplemented authentication
+- 149 passing automated tests without live authentication or a public listener
 
 Current boundaries:
 
 - The authentication contract is not working end-user login.
-- Discord OAuth, sessions, cookies, persistence, logout, and production identity are not implemented.
+- Real deployment values are not required while authentication is disabled.
+- Discord OAuth, login and callback handling, state and PKCE, sessions, cookies, persistence, logout, and production identity are not implemented.
 - Website Module, Registry, store, and database access are not implemented.
 - Ticket, Moderation, Economy, and administration routes are not implemented.
 - Permission translation and cross-platform identity remain future work.
 - Frontend behavior, CORS, proxy trust, TLS termination, and public binding are not implemented.
 - `GET /health` remains unauthenticated and reports Website transport readiness only.
 - v0.9.0 is not closed, versioned, or tagged.
+
+Required before closure:
+
+- Real Discord OAuth authorization-code flow
+- OAuth state and PKCE validation with replay protection
+- Rogue Soldiers Discord guild-membership enforcement
+- Opaque session creation, storage, expiration, revocation, and logout
+- Defined HTTPS termination and reverse-proxy trust boundaries
+- Creator-owned Ticket listing through validated Module operations
+- Deployment documentation for the completed authentication flow
+- Final regression, documentation synchronization, and repository version update
 
 ## Future Direction
 
