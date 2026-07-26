@@ -1,4 +1,5 @@
 const BanCommand = require("./BanCommand");
+const BalanceCommand = require("./BalanceCommand");
 const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
 const PingCommand = require("./PingCommand");
@@ -13,6 +14,7 @@ class CommandLoader {
 
         return [
             new BanCommand(),
+            new BalanceCommand(),
             new HelpCommand(),
             new KickCommand(),
             new PingCommand(),
