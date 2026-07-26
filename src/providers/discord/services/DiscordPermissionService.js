@@ -5,6 +5,9 @@ const {
 const ModerationPermission = require(
     "../../../shared/permissions/ModerationPermission"
 );
+const TicketPermission = require(
+    "../../../shared/permissions/TicketPermission"
+);
 
 class DiscordPermissionService {
 
@@ -30,6 +33,26 @@ class DiscordPermissionService {
             [
                 ModerationPermission.PURGE_MESSAGES,
                 PermissionFlagsBits.ManageMessages
+            ],
+            [
+                TicketPermission.VIEW_ALL,
+                PermissionFlagsBits.ManageMessages
+            ],
+            [
+                TicketPermission.RESPOND,
+                PermissionFlagsBits.ManageMessages
+            ],
+            [
+                TicketPermission.ASSIGN,
+                PermissionFlagsBits.ManageMessages
+            ],
+            [
+                TicketPermission.CLOSE,
+                PermissionFlagsBits.ManageMessages
+            ],
+            [
+                TicketPermission.ADMINISTRATE,
+                PermissionFlagsBits.Administrator
             ]
         ]);
 
@@ -58,6 +81,30 @@ class DiscordPermissionService {
         );
 
         return memberPermissions.has(discordPermission);
+
+    }
+
+    listGrantedPermissions(
+        memberPermissions,
+        permissions
+    ) {
+
+        if (!Array.isArray(permissions)) {
+            throw new Error(
+                "Framework permissions must be an array."
+            );
+        }
+
+        if (!memberPermissions) {
+            return [];
+        }
+
+        return permissions.filter(permission =>
+            this.hasPermission(
+                memberPermissions,
+                permission
+            )
+        );
 
     }
 

@@ -7,6 +7,9 @@ const {
 
 const Registry = require("../../../core/Registry");
 const BaseCommand = require("./BaseCommand");
+const TicketStaffCommandHandler = require(
+    "./TicketStaffCommandHandler"
+);
 
 const MAX_LISTED_TICKETS = 20;
 
@@ -69,6 +72,11 @@ class TicketCommand extends BaseCommand {
                                 .setRequired(true)
                         )
                 )
+                .addSubcommandGroup(group =>
+                    TicketStaffCommandHandler.configure(
+                        group
+                    )
+                )
         );
 
     }
@@ -91,8 +99,32 @@ class TicketCommand extends BaseCommand {
     async execute(interaction) {
 
         const tickets = this.getTicketModule();
+        const subcommandGroup =
+            typeof interaction.options
+                .getSubcommandGroup === "function"
+                ? interaction.options.getSubcommandGroup(
+                    false
+                )
+                : null;
         const subcommand =
             interaction.options.getSubcommand();
+
+        if (subcommandGroup === "staff") {
+            await TicketStaffCommandHandler.execute(
+                interaction,
+                tickets,
+                subcommand
+            );
+
+            return;
+        }
+
+        if (subcommandGroup !== null) {
+            throw new Error(
+                "Unsupported ticket subcommand group: " +
+                subcommandGroup
+            );
+        }
 
         switch (subcommand) {
 
