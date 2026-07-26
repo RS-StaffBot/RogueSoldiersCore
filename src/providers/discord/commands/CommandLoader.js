@@ -3,6 +3,7 @@ const BalanceCommand = require("./BalanceCommand");
 const DailyCommand = require("./DailyCommand");
 const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
+const LeaderboardCommand = require("./LeaderboardCommand");
 const PingCommand = require("./PingCommand");
 const PurgeCommand = require("./PurgeCommand");
 const TimeoutCommand = require("./TimeoutCommand");
@@ -19,6 +20,7 @@ class CommandLoader {
             new DailyCommand(),
             new HelpCommand(),
             new KickCommand(),
+            new LeaderboardCommand(),
             new PingCommand(),
             new PurgeCommand(),
             new TimeoutCommand(),
