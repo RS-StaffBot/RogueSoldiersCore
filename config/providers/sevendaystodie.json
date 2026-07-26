@@ -1,0 +1,6 @@
+{
+    "enabled": false,
+    "host": "",
+    "port": 8081,
+    "connectionTimeoutMs": 10000
+}
