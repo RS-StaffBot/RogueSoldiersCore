@@ -6,7 +6,7 @@
 
 **Current Milestone:** v0.8.0 - 7 Days to Die Provider
 
-**Status:** Next Planned
+**Status:** In Progress
 
 ## Completed Milestones
 
@@ -118,20 +118,46 @@ Boundaries:
 - Database transactions cannot roll back external Discord actions.
 - Backup and restore tooling, production storage deployment, remote databases, replication, clustering, and database administration remain future work.
 - Cross-platform identity remains future work.
-- v0.8.0 game-server integration is not implemented.
+- Game-server integration was outside v0.7.0; its initial v0.8.0 Provider boundary is now in progress.
+
+## v0.8.0 - 7 Days to Die Provider
+
+Status: In Progress
+
+Implemented:
+
+- Optional `SevenDaysToDieProvider`, disabled by default
+- Raw TCP connectivity through Node's built-in `node:net` API
+- Telnet password submission and confirmed authentication and console readiness
+- Connection timeout and awaited, idempotent disconnection
+- Conditional `ProviderLoader` integration after Discord
+- Deterministic automated coverage through handwritten client and socket fakes
+
+Deferred:
+
+- Administrative command execution and command-response delimiters
+- Player lookup and player administration
+- Discord-to-game communication
+- Game-event ingestion
+- Economy rewards that produce in-game effects
+- Live deployment configuration
+- A future validated web configuration workflow
+
+Command execution remains deferred because no deterministic response terminator or reliable isolation from unsolicited logs is currently established. Deployment-specific evidence must confirm response completion, log filtering, server-version and hosting compatibility, and safe command-timeout behavior before implementation.
+
+A future web administration interface may collect and validate game-server configuration, but it must call validated RSF configuration operations rather than edit source files. Secrets must remain outside tracked JSON. This future interface is only a configuration surface; game-server behavior remains owned by the 7 Days to Die Provider. No web interface or configuration persistence implementation is selected.
 
 ## Future Direction
 
 The following items are future intent, not implemented features or detailed milestone commitments:
 
-- 7 Days to Die is the first planned game Provider and may support hosted server moderation and command control.
+- The 7 Days to Die Provider may later support hosted server moderation and command control after its command-response boundary is proven.
 - Discord-to-game communication and game-server events remain planned integration areas.
 - Economy integration may later allow validated purchases to produce in-game rewards.
 - Moderation appeals, broader staff controls, and transcript or logging portals remain future community workflows.
 - Additional game Providers may follow where practical without weakening Rogue Soldiers requirements.
 
-## Future Milestones
+## Remaining Future Milestones
 
-- v0.8.0 - 7 Days to Die Provider
 - v0.9.0 - Website Provider
 - v1.0.0 - Production Release

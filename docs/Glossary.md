@@ -18,7 +18,23 @@ The first active Provider and interface. It owns the Discord client, slash comma
 
 ## Game Provider
 
-A future Provider for a hosted game server. It will own game clients, protocols, platform commands, and game events. No game Provider is currently implemented; 7 Days to Die is the first planned target.
+A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first current game Provider boundary.
+
+## SevenDaysToDieProvider
+
+The optional Provider that coordinates validated configuration, lifecycle, and readiness for the 7 Days to Die raw TCP client. It is disabled by default and does not currently execute administrative commands.
+
+## SevenDaysToDieTelnetClient
+
+The Provider-owned client that uses Node's built-in `node:net` API for the 7 Days to Die raw TCP connection, Telnet password submission, authentication readiness, connection timeout, and disconnection.
+
+## Command-Response Boundary
+
+The evidence-backed rule that identifies when one remote command's output is complete and distinguishes it from unsolicited console logs. No 7 Days to Die command-response boundary is currently approved or implemented.
+
+## Deployment-Specific Configuration
+
+Future validated game-server connection settings and console-behavior evidence for the intended server version, hosting environment, and management interface. It is not an implemented configuration store or web interface, and secrets must remain outside tracked JSON.
 
 ## Module
 

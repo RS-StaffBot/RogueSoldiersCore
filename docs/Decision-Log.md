@@ -164,6 +164,16 @@ Production Ticket persistence and database-backed atomicity are implemented thro
 
 Future administrative interfaces must invoke validated RSF settings and operations. They must not directly mutate Module properties, configuration files, or database rows. Such an interface will require permissions, audit logging, and persistence; its technology is not fixed and it is not currently implemented.
 
+## 7 Days to Die Command Execution Deferral
+
+### Decision
+
+The optional `SevenDaysToDieProvider` currently owns configuration validation and lifecycle coordination for its raw TCP client. The client owns connection, authentication, readiness, timeout, and disconnection behavior. Administrative command execution is not implemented.
+
+A direct single-command client operation remains the preferred future command-execution shape. Its implementation is deferred until deployment-specific output evidence establishes deterministic response completion, unsolicited-log filtering, server-version and hosting compatibility, and safe command-timeout behavior. No command queue, separate command coordinator, generic command framework, response marker, or prompt delimiter is approved.
+
+Future game-server configuration may be entered through a validated web administration interface. That interface must call validated RSF configuration operations rather than edit source files, and secrets must remain outside tracked configuration files. No web interface or configuration persistence implementation is selected by this decision. Game-server behavior remains Provider-owned.
+
 ## Database Infrastructure Foundation
 
 ### Decision

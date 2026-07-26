@@ -6,19 +6,19 @@ v0.7.0
 
 ## Current Milestone
 
-v0.7.0 - Database
+v0.8.0 - 7 Days to Die Provider
 
-Status: Completed
+Status: In Progress
 
 ## Last Completed Milestone
 
-v0.6.0 - Ticket Module
+v0.7.0 - Database
 
 Status: Completed
 
 ## Previous Completed Milestone
 
-v0.5.0 - Economy Module
+v0.6.0 - Ticket Module
 
 Status: Completed
 
@@ -110,12 +110,34 @@ Status: Completed
 - Cross-platform identity remains future work.
 - Economy shops and Discord transfers remain future work.
 - Discord Ticket channels, threads, transcripts, configurable staff roles, and related infrastructure remain future work.
-- Game-server integration belongs to v0.8.0 and is not implemented.
+- Game-server integration was outside v0.7.0; its initial v0.8.0 Provider boundary is now in progress.
 
 ## v0.7.0 Completion
 
 The Database milestone is implementation-complete, tested, documented, and versioned in the repository files.
 
-## Next Planned Milestone
+## Verified v0.8.0 Work in Progress
 
-v0.8.0 - 7 Days to Die Provider
+Status: In Progress
+
+Implemented:
+
+- Optional `SevenDaysToDieProvider`, disabled by default
+- Raw TCP connectivity through Node's built-in `node:net` API
+- Telnet password submission and confirmed authentication and console readiness
+- Connection timeout and awaited, idempotent disconnection
+- `ProviderLoader` integration after Discord when enabled
+- Handwritten client and socket fakes with automated lifecycle, readiness, failure, and cleanup coverage
+- Safe omission when configuration is missing or disabled
+
+Deferred:
+
+- Administrative command execution and command-response delimiters
+- Player lookup, kick, ban, unban, and whitelist operations
+- Discord-to-game and game-to-Discord communication
+- Economy rewards and purchases that produce in-game effects
+- Game-event parsing and ingestion
+- Live deployment configuration
+- A future validated web configuration workflow
+
+Command execution remains deferred until deployment-specific evidence establishes response completion boundaries, unsolicited-log filtering behavior, server-version and hosting compatibility, and safe command-timeout behavior. v0.8.0 is not complete.

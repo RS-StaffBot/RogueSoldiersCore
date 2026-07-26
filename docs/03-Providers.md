@@ -85,8 +85,26 @@ Discord-specific behavior remains in the Provider. Reusable moderation actions, 
 
 Providers and commands are persistence-blind. They resolve framework-loaded Modules and do not access Module stores, issue SQL, construct database connections, or depend on SQLite row formats.
 
-## Future Game Provider Boundary
+## 7 Days to Die Provider
 
-Game Providers are future and are not currently implemented. They will own game clients, protocols, platform commands, and game events. Reusable moderation and Economy policy will remain in Modules.
+`SevenDaysToDieProvider` is an optional game-server Provider and is disabled by default. `ProviderLoader` omits it when its configuration is missing or disabled, so absent connection values are safe while it is disabled. Connection values are validated only when the Provider is enabled.
 
-Game Providers must invoke validated Module operations and must not directly access Module database tables. The first planned game Provider targets 7 Days to Die; support for additional games remains future scope where practical.
+The Provider coordinates configuration, lifecycle, and `SevenDaysToDieTelnetClient`. The client uses Node's built-in `node:net` API to open the game server's raw TCP management connection, submit the Telnet password after the verified prompt, and wait for confirmed authentication and console readiness. The Provider reports `RUNNING` only after that readiness completes. Shutdown awaits an idempotent client disconnection.
+
+Raw TCP management traffic is unencrypted. It must use loopback, a LAN, a VPN, or another protected private path rather than exposing the Telnet service or password to the public internet.
+
+The current Provider does not execute administrative commands, parse players or server events, perform player administration, connect Discord to the game, or invoke Economy behavior. Automated coverage uses handwritten client and socket fakes and does not require a live game server.
+
+### Command Execution Deferral
+
+Administrative command execution is deferred. Current official documentation does not define a deterministic command-response terminator or reliable isolation between command output and unsolicited server logs. Implementation must wait until deployment-specific evidence establishes response completion boundaries, unsolicited-log filtering behavior, server-version and hosting compatibility, and safe command-timeout behavior.
+
+A direct single-command client operation remains the preferred future shape. No response marker or prompt has been approved, and no command queue, command coordinator, generic command framework, or guessed delimiter is implemented.
+
+### Future Configuration Boundary
+
+A future validated web administration interface may collect game-server connection settings and deployment-specific console information. It must invoke validated RSF configuration operations rather than edit source files directly. Telnet passwords or secret references must remain outside tracked JSON.
+
+This is future architecture only. No web interface, Website Provider responsibility, configuration persistence design, or live deployment workflow is currently implemented. Game-server protocol and command behavior remain owned by the 7 Days to Die Provider, and command execution must remain unavailable until its connection and response-boundary requirements are satisfied.
+
+Reusable moderation, Economy, authorization, transaction, and cross-platform business policy remains Module-owned. Game Providers must invoke validated Module operations and must not directly access Module database tables.
