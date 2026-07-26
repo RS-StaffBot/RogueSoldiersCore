@@ -438,6 +438,46 @@ class EconomyModule extends BaseModule {
 
     }
 
+    getLeaderboard(limit = 10) {
+
+        if (
+            typeof limit !== "number" ||
+            !Number.isSafeInteger(limit) ||
+            limit <= 0
+        ) {
+            throw new Error(
+                "Economy leaderboard limit must be a " +
+                "positive safe integer."
+            );
+        }
+
+        return [...this.accounts.values()]
+            .sort((firstAccount, secondAccount) => {
+
+                if (
+                    firstAccount.balance !==
+                    secondAccount.balance
+                ) {
+                    return (
+                        secondAccount.balance -
+                        firstAccount.balance
+                    );
+                }
+
+                return firstAccount.userId.localeCompare(
+                    secondAccount.userId
+                );
+
+            })
+            .slice(0, limit)
+            .map((account, index) => ({
+                rank: index + 1,
+                userId: account.userId,
+                balance: account.balance
+            }));
+
+    }
+
     getTransactionCount() {
         return this.transactions.length;
     }
