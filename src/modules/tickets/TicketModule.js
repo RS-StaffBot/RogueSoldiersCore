@@ -11,6 +11,16 @@ class TicketModule extends BaseModule {
         this.statuses = new Set(
             Object.values(TicketStatus)
         );
+        this.statusTransitions = new Map([
+            [
+                TicketStatus.OPEN,
+                new Set([TicketStatus.CLOSED])
+            ],
+            [
+                TicketStatus.CLOSED,
+                new Set()
+            ]
+        ]);
         this.tickets = new Map();
         this.nextTicketId = 1;
 
@@ -70,6 +80,31 @@ class TicketModule extends BaseModule {
 
     listStatuses() {
         return [...this.statuses];
+    }
+
+    canTransition(fromStatus, toStatus) {
+
+        if (
+            !this.supportsStatus(fromStatus) ||
+            !this.supportsStatus(toStatus)
+        ) {
+            return false;
+        }
+
+        return this.statusTransitions
+            .get(fromStatus)
+            .has(toStatus);
+
+    }
+
+    listAllowedTransitions(status) {
+
+        this.requireSupportedStatus(status);
+
+        return [
+            ...this.statusTransitions.get(status)
+        ];
+
     }
 
     hasTicket(ticketId) {
@@ -149,6 +184,83 @@ class TicketModule extends BaseModule {
 
     getTicketCount() {
         return this.tickets.size;
+    }
+
+    transitionTicket(ticketId, status) {
+
+        this.validateTicketId(ticketId);
+        this.requireSupportedStatus(status);
+
+        const currentTicket =
+            this.tickets.get(ticketId);
+
+        if (!currentTicket) {
+            throw new Error(
+                `Ticket not found: ${ticketId}`
+            );
+        }
+
+        if (
+            !this.canTransition(
+                currentTicket.status,
+                status
+            )
+        ) {
+            throw new Error(
+                "Ticket transition from " +
+                `${currentTicket.status} to ${status} ` +
+                "is not allowed."
+            );
+        }
+
+        const transitionedTicket =
+            new TicketRecord({
+                id: currentTicket.id,
+                creatorId: currentTicket.creatorId,
+                status,
+                createdAt: new Date(
+                    currentTicket.createdAt
+                )
+            });
+        const snapshot = this.createTicketSnapshot(
+            transitionedTicket
+        );
+
+        try {
+
+            this.tickets.set(
+                ticketId,
+                transitionedTicket
+            );
+
+        } catch (error) {
+
+            if (
+                this.tickets.get(ticketId) !==
+                currentTicket
+            ) {
+                Map.prototype.set.call(
+                    this.tickets,
+                    ticketId,
+                    currentTicket
+                );
+            }
+
+            throw error;
+
+        }
+
+        return snapshot;
+
+    }
+
+    closeTicket(ticketId) {
+
+        return this.transitionTicket(
+            ticketId,
+            TicketStatus.CLOSED
+        );
+
     }
 
     listTickets() {
