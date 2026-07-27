@@ -13,20 +13,20 @@ class EconomySettingsReader {
     get(settingKey) {
 
         switch (settingKey) {
-        case "economy.startingBalance":
-            return this.economyModule.startingBalance;
-        case "economy.dailyReward":
-            return this.economyModule.dailyRewardAmount;
-        case "economy.dailyCooldownMilliseconds":
-            return this.economyModule.dailyCooldownMs;
-        case "economy.leaderboardLimit":
-            return this.economyModule.defaultLeaderboardLimit;
-        case "economy.transactionPageLimit":
-            return this.economyModule.defaultTransactionPageSize;
-        case "economy.transferPolicy":
-            return this.economyModule.transferPolicy;
-        default:
-            throw new Error(`Unsupported Economy setting: ${settingKey}`);
+            case "economy.startingBalance":
+                return this.economyModule.startingBalance;
+            case "economy.dailyReward":
+                return this.economyModule.dailyRewardAmount;
+            case "economy.dailyCooldownMilliseconds":
+                return this.economyModule.dailyCooldownMs;
+            case "economy.leaderboardLimit":
+                return this.economyModule.defaultLeaderboardLimit;
+            case "economy.transactionPageLimit":
+                return this.economyModule.defaultTransactionPageSize;
+            case "economy.transferPolicy":
+                return this.economyModule.transferPolicy;
+            default:
+                throw new Error(`Unsupported Economy setting: ${settingKey}`);
         }
 
     }
