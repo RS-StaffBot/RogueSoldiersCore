@@ -96,6 +96,12 @@ Before accepting a deployment as production-ready, complete `docs/Production-Smo
 
 The checklist covers release and host preconditions, configuration and secret checks, database safety, startup, Discord commands, durable restart recovery, optional 7 Days to Die and Website checks, logging, graceful shutdown, rollback readiness, and final operator acceptance.
 
+## Regression and Security Review
+
+Before tagging v1.0.0, read `docs/Production-Regression-Security-Review.md`.
+
+The review records the automated regression gate, production dependency audit, reviewed security controls, accepted current boundaries, and final release acceptance requirements.
+
 ## Verify and Start
 
 Run the automated tests:
@@ -108,6 +114,12 @@ Run the configured lint check:
 
 ```powershell
 npm.cmd run lint
+```
+
+Audit production dependencies for high- or critical-severity advisories:
+
+```powershell
+npm.cmd audit --omit=dev --audit-level=high
 ```
 
 Start the framework:
