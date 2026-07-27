@@ -87,6 +87,13 @@ class SettingsStore {
             throw new Error("Settings STRING value must be a string.");
         }
 
+        if (
+            valueType === SettingValueType.BOOLEAN &&
+            typeof value !== "boolean"
+        ) {
+            throw new Error("Settings BOOLEAN value must be boolean.");
+        }
+
     }
 
     serialize(valueType, value) {
