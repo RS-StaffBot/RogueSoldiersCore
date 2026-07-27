@@ -50,7 +50,7 @@ The callback URI is derived exactly as:
 
 Register that callback URI exactly in the Discord Developer Portal. The browser must access RSF through an HTTPS reverse proxy; `WebsiteServer` itself remains bound to `127.0.0.1`. Do not expose the loopback listener directly, trust or invent forwarded headers, or place the client secret in tracked JSON.
 
-Session cookies require HTTPS, so direct loopback browser login is intentionally unsupported. Reverse-proxy access logs should redact callback query strings. Sessions are intentionally lost on Provider shutdown or process restart. No Ticket access or staff permission mapping exists yet.
+Session cookies require HTTPS, so direct loopback browser login is intentionally unsupported. Reverse-proxy access logs should redact callback query strings. Sessions are intentionally lost on Provider shutdown or process restart. Authenticated creator-owned Ticket listing is available through `GET /api/tickets`; staff Ticket access and Website permission mapping are not implemented.
 
 No reverse-proxy configuration is supplied by RSF in this checkpoint, and production deployment is not complete.
 
