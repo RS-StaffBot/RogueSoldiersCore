@@ -1,6 +1,9 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 
+const SettingsStore = require(
+    "../../src/core/settings/persistence/SettingsStore"
+);
 const ModuleLoader = require(
     "../../src/modules/core/ModuleLoader"
 );
@@ -66,9 +69,9 @@ test("ModuleLoader injects the requested SQLite store types", () => {
     const database = {
         createStore(StoreClass) {
 
-            const store = Object.create(
-                StoreClass.prototype
-            );
+            const store = StoreClass === SettingsStore
+                ? { list: () => [] }
+                : Object.create(StoreClass.prototype);
 
             createdStores.push({
                 StoreClass,
@@ -87,6 +90,7 @@ test("ModuleLoader injects the requested SQLite store types", () => {
     assert.deepStrictEqual(
         createdStores.map(entry => entry.StoreClass),
         [
+            SettingsStore,
             SqliteEconomyStore,
             SqliteModerationStore,
             SqliteTicketStore
@@ -94,7 +98,7 @@ test("ModuleLoader injects the requested SQLite store types", () => {
     );
     assert.deepStrictEqual(
         modules.map(module => module.store),
-        createdStores.map(entry => entry.store)
+        createdStores.slice(1).map(entry => entry.store)
     );
     assert.strictEqual(
         modules[0].store instanceof SqliteEconomyStore,
