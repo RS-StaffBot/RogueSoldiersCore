@@ -2,23 +2,23 @@
 
 ## Current Version
 
-v0.8.0
+v0.9.0
 
 ## Current Milestone
 
 v0.9.0 - Website Provider
 
-Status: In Progress
+Status: Completed
 
 ## Last Completed Milestone
 
-v0.8.0 - 7 Days to Die Provider
+v0.9.0 - Website Provider
 
 Status: Completed
 
 ## Previous Completed Milestone
 
-v0.7.0 - Database
+v0.8.0 - 7 Days to Die Provider
 
 Status: Completed
 
@@ -140,7 +140,7 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Raw TCP management must use loopback, a LAN, a VPN, or another protected private path.
 - Command response handling requires deployment-specific evidence for completion boundaries, unsolicited-log filtering, server-version and hosting compatibility, and safe timeouts.
 
-## Verified v0.9.0 Implementation In Progress
+## Verified v0.9.0 Implementation
 
 - Optional `WebsiteProvider`, disabled by default
 - Conditional `ProviderLoader` integration after Discord and the optional 7 Days to Die Provider
@@ -166,7 +166,6 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Frozen non-secret authentication configuration snapshots
 - Invalid enabled configuration rejected before the HTTP listener starts
 - Valid enabled authentication construction before listener startup
-
 - Shutdown clearing of pending OAuth attempts and active sessions
 - Provider-local `WebsiteTicketService` boundary
 - Narrow Module Manager-backed resolution of the framework-loaded `Tickets` Module
@@ -192,4 +191,12 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Staff permission translation and cross-platform identity are not implemented.
 - Frontend behavior, public network exposure, trusted-proxy behavior, and settings interfaces are not implemented.
 - `GET /health` reports Website transport readiness only and does not authenticate requests or resolve Modules.
-- Repository version remains v0.8.0 while v0.9.0 is in progress.
+- Repository version is synchronized to v0.9.0.
+
+## v0.9.0 Completion
+
+The Website Provider milestone is implementation-complete, tested with 227 passing automated tests, documented, and versioned in the repository files.
+
+The milestone provides optional loopback-only HTTP transport, Discord OAuth authentication, opaque in-memory Website sessions, secure cookies, authenticated identity lookup, logout, and creator-owned Ticket listing through the framework-loaded Ticket Module.
+
+Production deployment still requires an external HTTPS reverse proxy, registered Discord callback, deployment secrets, and deliberate acceptance of restart-based session loss.

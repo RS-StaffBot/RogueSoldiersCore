@@ -10,7 +10,7 @@ RSF coordinates community management, moderation, support, engagement, and conne
 
 ## Current Verified Capabilities
 
-As of v0.8.0, RSF supports:
+As of v0.9.0, RSF supports:
 
 - Framework startup, configuration, lifecycle, and service registration
 - Discord connection and slash-command registration
@@ -25,9 +25,14 @@ As of v0.8.0, RSF supports:
 - Ordered transactional migrations and controlled database health and shutdown
 - Discord Ticket creator and staff workflows with reusable Ticket permission translation
 - An optional 7 Days to Die Provider with raw TCP authentication, readiness, tested lifecycle integration, and unexpected connection-loss detection
+- An optional loopback-only Website Provider with tested HTTP readiness, lifecycle, bounded shutdown, and transport-loss handling
+- Discord OAuth login with PKCE S256, browser-bound one-time state, Rogue Soldiers guild-membership enforcement, and OAuth-token revocation
+- Opaque in-memory Website sessions with secure cookies, idle and absolute expiration, authenticated identity lookup, and logout
+- Authenticated creator-owned Website Ticket listing through the framework-loaded Ticket Module
+- Website responses that remain allowlisted and isolated from Module stores, SQL, database connections, and SQLite rows
 - Colored terminal logging with plain-text fallback
 - ESLint code-quality checks
-- Focused automated regression tests for critical framework, lifecycle, persistence, and integrity behavior
+- 227 focused automated regression tests for critical framework, lifecycle, persistence, authentication, and integrity behavior
 
 ## Future Direction
 

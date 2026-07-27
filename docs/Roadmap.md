@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Repository Version:** v0.8.0
+**Repository Version:** v0.9.0
 
 **Current Milestone:** v0.9.0 - Website Provider
 
-**Status:** In Progress
+**Status:** Completed
 
 ## Completed Milestones
 
@@ -20,6 +20,7 @@
 - v0.6.0 - Tickets
 - v0.7.0 - Database
 - v0.8.0 - 7 Days to Die Provider
+- v0.9.0 - Website Provider
 
 ## v0.4.0 - Moderation Module
 
@@ -151,7 +152,7 @@ A future web administration interface may collect and validate game-server confi
 
 ## v0.9.0 - Website Provider
 
-Status: In Progress
+Status: Completed
 
 Implemented:
 
@@ -197,14 +198,20 @@ Current boundaries:
 - Staff permission translation and cross-platform identity remain future work.
 - Frontend behavior, CORS, proxy trust, TLS termination, and public binding are not implemented.
 - `GET /health` remains unauthenticated and reports Website transport readiness only.
-- v0.9.0 is not closed, versioned, or tagged.
+- Production deployment has not yet been performed.
+- HTTPS reverse-proxy configuration remains external to RSF.
+- Discord callback registration and deployment secrets remain deployment responsibilities.
+- Sessions and pending OAuth attempts are intentionally lost on restart.
 
-Required before closure:
+Closure verification:
 
-- Production HTTPS reverse-proxy guidance
-- Discord callback registration and deployment instructions
-- Secret and restart behavior documentation
-- Final regression, documentation synchronization, and repository version update
+- Creator-owned Ticket listing completed through validated Module operations
+- Production HTTPS reverse-proxy requirements documented
+- Discord callback registration requirements documented
+- Secret and restart behavior documented
+- Final regression completed with 227 passing tests
+- Documentation synchronized
+- Repository version updated to v0.9.0
 
 No frontend is required for v0.9.0 closure unless repository evidence changes. Public multi-community management remains beyond current production scope.
 
