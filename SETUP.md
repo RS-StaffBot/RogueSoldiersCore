@@ -72,6 +72,12 @@ The default SQLite database is stored at `data/rogue-soldiers.sqlite3` and is ex
 
 Before production use, read `docs/Database-Backup-Restore.md`. It defines the supported offline backup, checksum verification, restore, rollback, and smoke-test procedure.
 
+## Logging and Troubleshooting
+
+RSF currently writes human-readable logs to standard output and standard error. The production process manager or service wrapper must provide durable capture, rotation, retention, and access control.
+
+Before production use, read `docs/Production-Logging-Troubleshooting.md`. It defines the current logging contract, secret-redaction rules, normal startup and shutdown evidence, restart-loop handling, and Provider-specific troubleshooting steps.
+
 ## Verify and Start
 
 Run the automated tests:
