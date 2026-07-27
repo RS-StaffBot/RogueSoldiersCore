@@ -18,7 +18,8 @@ test("loads migrations in the verified global order", () => {
             "001_create_moderation_audit_records",
             "002_create_economy_ledger",
             "003_create_ticket_aggregate",
-            "004_create_settings_overrides"
+            "004_create_settings_overrides",
+            "005_create_settings_audit_history"
         ]
     );
 
