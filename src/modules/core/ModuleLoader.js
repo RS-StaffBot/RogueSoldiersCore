@@ -1,4 +1,10 @@
+const SettingsStore = require(
+    "../../core/settings/persistence/SettingsStore"
+);
 const EconomyModule = require("../economy/EconomyModule");
+const EconomySettingsResolver = require(
+    "../economy/EconomySettingsResolver"
+);
 const SqliteEconomyStore = require(
     "../economy/persistence/SqliteEconomyStore"
 );
@@ -17,6 +23,9 @@ class ModuleLoader {
         database = null
     } = {}) {
 
+        const settingsStore = database
+            ? database.createStore(SettingsStore)
+            : null;
         const economyStore = database
             ? database.createStore(
                 SqliteEconomyStore
@@ -32,9 +41,15 @@ class ModuleLoader {
                 SqliteTicketStore
             )
             : undefined;
+        const economyOptions = settingsStore
+            ? new EconomySettingsResolver({
+                store: settingsStore
+            }).resolve()
+            : {};
 
         return [
             new EconomyModule({
+                ...economyOptions,
                 store: economyStore
             }),
             new ModerationModule({
