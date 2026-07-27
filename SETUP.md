@@ -90,6 +90,12 @@ Before enabling the Website Provider in production, read `docs/Website-Productio
 
 It defines the loopback-only listener contract, HTTPS reverse-proxy requirements, Discord OAuth callback setup, guild membership checks, secure cookie and in-memory session behavior, health and authentication smoke tests, secret rotation, and rollback procedure.
 
+## Production Smoke Test
+
+Before accepting a deployment as production-ready, complete `docs/Production-Smoke-Test-Checklist.md`.
+
+The checklist covers release and host preconditions, configuration and secret checks, database safety, startup, Discord commands, durable restart recovery, optional 7 Days to Die and Website checks, logging, graceful shutdown, rollback readiness, and final operator acceptance.
+
 ## Verify and Start
 
 Run the automated tests:
