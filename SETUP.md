@@ -27,6 +27,8 @@ Copy-Item -LiteralPath .env.example -Destination .env
 
 Set `DISCORD_TOKEN` and `DISCORD_CLIENT_ID` in `.env` before connecting the Discord Provider. Do not commit `.env`.
 
+For the complete production configuration and secret-handling contract, read `docs/Production-Configuration.md`.
+
 ## Website Authentication Configuration
 
 Website authentication is disabled by default in the tracked local configuration. While it remains disabled, no public domain, Discord guild ID, OAuth client secret, or other authentication deployment value is required.
@@ -63,6 +65,12 @@ Missing game-server settings do not affect framework startup while the Provider 
 The raw TCP management connection is unencrypted. Use loopback, a LAN, a VPN, or another protected private path; do not expose the Telnet service or password to the public internet.
 
 Automated tests use fake clients and sockets and do not require a live game server.
+
+## Database Operations
+
+The default SQLite database is stored at `data/rogue-soldiers.sqlite3` and is excluded from Git.
+
+Before production use, read `docs/Database-Backup-Restore.md`. It defines the supported offline backup, checksum verification, restore, rollback, and smoke-test procedure.
 
 ## Verify and Start
 
