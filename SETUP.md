@@ -102,6 +102,12 @@ Before tagging v1.0.0, read `docs/Production-Regression-Security-Review.md`.
 
 The review records the automated regression gate, production dependency audit, reviewed security controls, accepted current boundaries, and final release acceptance requirements.
 
+## v1.0.0 Release Notes
+
+Read `docs/Release-Notes-v1.0.0.md` before closing and tagging the release.
+
+The release notes summarize the included capabilities, verified release gates, accepted boundaries, and final release procedure.
+
 ## Verify and Start
 
 Run the automated tests:
