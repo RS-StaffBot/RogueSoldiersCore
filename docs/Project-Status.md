@@ -2,13 +2,13 @@
 
 ## Current Version
 
-v0.9.0
+v1.0.0
 
 ## Current Milestone
 
-v0.9.0 - Website Provider
+v1.0.0 - Production Release
 
-Status: Completed
+Status: Release closure in progress
 
 ## Last Completed Milestone
 
@@ -16,187 +16,67 @@ v0.9.0 - Website Provider
 
 Status: Completed
 
-## Previous Completed Milestone
+## Completed Foundation
 
-v0.8.0 - 7 Days to Die Provider
+- Project Foundation and framework lifecycle
+- Stable Core, Provider, Module, and Shared architecture
+- Reusable Discord command framework
+- Moderation Module and Discord moderation commands
+- Economy Module and Discord economy commands
+- Ticket Module with creator and staff Discord workflows
+- Core-owned SQLite persistence and migrations
+- Optional 7 Days to Die Provider connectivity
+- Optional Website Provider with Discord OAuth and creator-owned Ticket listing
 
-Status: Completed
+## Verified v1.0.0 Production Work
 
-## Verified v0.4.0 Implementation
+- GitHub Actions validation on pull requests and `main`
+- Production process lifecycle, signal handling, rollback, and graceful shutdown
+- Production configuration and secret-handling contract
+- SQLite backup, checksum verification, restore, rollback, and recovery procedures
+- Production logging and troubleshooting runbook
+- Discord production deployment guide
+- Website production deployment guide
+- Production smoke-test checklist
+- Production regression and security review
+- Blocking high/critical production dependency audit in CI
+- v1.0.0 release notes and version synchronization
 
-- Moderation Module lifecycle integration
-- Moderation action definitions
-- Moderation permission identifiers
-- Discord permission enforcement
-- Discord moderation guard
-- Self-target, owner, hierarchy, and manageability checks
-- `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
-- In-memory moderation audit records
-- Audit logging for all implemented moderation actions
-- Centralized multiline audit output
-- Colored terminal logging and plain-text fallback
-- ESLint configuration
-- Version synchronization to `0.4.0`
-- Synchronized v0.4.0 documentation
-- Final milestone verification
+## Automated Verification
 
-## Verified v0.5.0 Implementation
+The release branch is required to pass:
 
-- Economy accounts with configurable starting balances
-- Balance lookup, credits, debits, and authorized transfers
-- `DISABLED`, `STAFF_ONLY`, and `EVERYONE` transfer policies
-- Economy permission identifiers
-- Credit, debit, and transfer transaction records
-- Full and user-filtered transaction history
-- Newest-first transaction pagination with configurable limits
-- Configurable daily rewards and cooldowns
-- Leaderboards with deterministic tie ordering and configurable limits
-- Atomic in-memory writes and sequential successful transaction IDs
-- Defensive account, transaction, configuration, array, and `Date` snapshots
-- Consistent non-empty user-ID validation
-- `/balance`, `/daily`, and `/leaderboard`
-- Final Economy regression and startup verification
+```powershell
+npm.cmd ci
+npm.cmd audit --omit=dev --audit-level=high
+npm.cmd test
+npm.cmd run lint
+```
 
-## Verified v0.6.0 Implementation
+The latest completed regression before release closure contained 227 passing automated tests. The release-closure pull request must preserve or increase that passing count.
 
-- Framework-loaded Ticket Module lifecycle
-- `OPEN` and `CLOSED` statuses with the `OPEN` to `CLOSED` transition
-- Immutable Ticket records, optional assignee identity, and immutable Ticket messages
-- In-memory Ticket storage and per-Ticket append-only message history
-- Module-generated sequential Ticket and globally sequential message IDs
-- Ticket creation, lookup, count, listing, and creator, status, assignee, and unassigned filtering
-- Ticket closing, assignment, reassignment, and unassignment
-- Creator-owned Ticket reads, messages, and closing
-- Reusable Ticket permission identifiers, staff authorization, and administrative override
-- Atomic in-memory writes with failed-operation state and ID-sequence preservation
-- Deterministic creation and append ordering
-- Defensive frozen record and message snapshots with independent public arrays
-- `/ticket create`, `/ticket list`, `/ticket view`, `/ticket message`, and `/ticket close`
-- `/ticket staff list`, `/ticket staff view`, `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
-- Fixed Discord `ManageMessages` staff translation and `Administrator` override translation
-- Twelve total Discord commands
-- Final Ticket, command, permission-translation, lifecycle, and startup verification
+## Current Production Boundaries
 
-## Verified v0.7.0 Implementation
+- RSF supports a single-process SQLite deployment.
+- The Discord Provider requires valid production credentials and network access.
+- The optional 7 Days to Die Provider requires a protected private path and does not yet execute administrative commands.
+- The Website Provider and Website authentication remain disabled by default.
+- Public Website deployment requires an external HTTPS reverse proxy and exact Discord callback registration.
+- Website sessions and pending OAuth attempts are intentionally lost on restart.
+- Website functionality remains limited to implemented health, authentication, identity, logout, and creator-owned Ticket-listing routes.
+- Cross-platform identity, game-server command control, Discord/game chat bridging, in-game Economy purchases, persistent Website sessions, clustering, and multi-community administration remain future work.
 
-- Core-owned `DatabaseService`, `DatabaseMigrationManager`, and `DatabaseMigrationLoader`
-- SQLite through Node's built-in `node:sqlite` API
-- One private Core-owned connection with health checks and controlled shutdown
-- Foreign keys and file-backed write-ahead logging
-- Ordered transactional migrations tracked in `rsf_schema_migrations`
-- `001_create_moderation_audit_records`
-- `002_create_economy_ledger`
-- `003_create_ticket_aggregate`
-- Controlled Module-specific store construction without exposing the raw connection
-- SQLite-authoritative production state with in-memory stores for direct isolated Module construction
-- Durable Moderation audit records with deterministic ordering and restart recovery
-- Durable Economy accounts, balances, transactions, transfers, daily claims, pagination, leaderboards, and transaction IDs
-- Durable Tickets, messages, status, assignment, ordering, and independent Ticket and message IDs
-- Transactional multi-row writes and failed-operation sequence preservation
-- Validated durable reconstruction and initialization failure for unsafe durable state
-- Bounded Discord-facing Ticket lists and latest-message reads
-- Providers, commands, and Shared remain persistence-blind
-- Twelve total Discord commands preserved
-- Final Database, Moderation, Economy, Ticket, Discord, startup, and shutdown verification
+## Release Closure Requirements
 
-## v0.7.0 Boundaries
+Before v1.0.0 is tagged:
 
-- SQLite supports the current single-process deployment boundary.
-- `node:sqlite` is synchronous and remains an active-development API on Node 22.
-- Startup validation reads complete durable Module state where required.
-- Very large datasets may require optimized validation and additional bounded queries.
-- Database transactions cannot roll back external Discord actions.
-- Backup and restore tooling, remote hosting, replication, clustering, operational maintenance, and database administration remain future work.
-- Cross-platform identity remains future work.
-- Economy shops and Discord transfers remain future work.
-- Discord Ticket channels, threads, transcripts, configurable staff roles, and related infrastructure remain future work.
-- Game-server integration was outside v0.7.0; its initial Provider boundary was completed in v0.8.0.
+- All version locations must report `1.0.0`.
+- The release-closure pull request must pass CI.
+- The dependency audit, full automated tests, and lint must pass locally after merge.
+- Documentation must match the merged repository.
+- The working tree must be clean.
+- The annotated `v1.0.0` tag must be created from the verified `main` commit and pushed to GitHub.
 
-## v0.7.0 Completion
+## Release Notes
 
-The Database milestone is implementation-complete, tested, documented, and versioned in the repository files.
-
-## Verified v0.8.0 Implementation
-
-- Optional `SevenDaysToDieProvider`, disabled by default
-- Conditional `ProviderLoader` integration after Discord
-- Raw TCP connectivity through Node's built-in `node:net` API
-- Telnet password submission and confirmed authentication and console readiness
-- Whole-handshake connection timeout and secret-safe failure messages
-- Unexpected post-readiness connection-loss propagation to Provider `ERROR`
-- Intentional shutdown that remains `STOPPED`
-- Awaited and idempotent client disconnection
-- Handwritten client and socket fakes covering lifecycle, readiness, failure, loss, and cleanup
-- Automated verification without a live game server
-
-## v0.8.0 Boundaries
-
-- Administrative command execution is not implemented.
-- Player lookup, kick, ban, unban, whitelist, and other player administration are not implemented.
-- Discord-to-game and game-to-Discord communication are not implemented.
-- Economy rewards or purchases that produce in-game effects are not implemented.
-- Reconnect behavior and multiple-server management are not implemented.
-- Live web-based configuration is not implemented.
-- Raw TCP management must use loopback, a LAN, a VPN, or another protected private path.
-- Command response handling requires deployment-specific evidence for completion boundaries, unsolicited-log filtering, server-version and hosting compatibility, and safe timeouts.
-
-## Verified v0.9.0 Implementation
-
-- Optional `WebsiteProvider`, disabled by default
-- Conditional `ProviderLoader` integration after Discord and the optional 7 Days to Die Provider
-- Exact production binding to `127.0.0.1`
-- HTTP lifecycle through Node's built-in `node:http` API
-- Truthful listening readiness, startup failure propagation, and unexpected server-loss handling
-- Awaited, bounded, and idempotent shutdown
-- Unauthenticated `GET /health` transport-readiness route
-- Provider-local `WebsiteAuthenticator` contract with disabled deny-only and enabled session-backed behavior
-- Discord OAuth authorization-code login with PKCE S256
-- Browser-bound one-time OAuth state with replay protection
-- Rogue Soldiers guild-membership enforcement
-- Bot, system, pending, guest, and non-member rejection
-- OAuth token revocation before RSF session creation
-- Opaque in-memory Website sessions with idle and absolute expiration
-- Secure session and OAuth binding cookies
-- Session-backed `GET /api/me` with allowlisted identity responses
-- Exact-Origin `POST /auth/logout`
-- Provider-local `WebsiteAuthenticationConfiguration` validation during initialization
-- Disabled-by-default authentication configuration that requires no deployment values
-- Conditional validation of canonical HTTPS origin, Discord guild and client IDs, environment-only client secret, and bounded OAuth and session lifetimes
-- Exact callback derivation as `<publicOrigin>/auth/discord/callback`
-- Frozen non-secret authentication configuration snapshots
-- Invalid enabled configuration rejected before the HTTP listener starts
-- Valid enabled authentication construction before listener startup
-- Shutdown clearing of pending OAuth attempts and active sessions
-- Provider-local `WebsiteTicketService` boundary
-- Narrow Module Manager-backed resolution of the framework-loaded `Tickets` Module
-- Authenticated creator-owned `GET /api/tickets`
-- Authenticated identity bound as both Ticket creator and actor
-- Fixed newest-first Ticket listing with a maximum of 20 results
-- Allowlisted Ticket responses containing only `ticketId`, `status`, and `createdAt`
-- Disabled authentication constructs no Ticket service and leaves the route hidden
-- Missing and invalid sessions rejected with `401`
-- Ticket availability and operation failures normalized to generic request-level `503`
-- No direct Website store, SQL, database, or SQLite-row access
-- 227 passing automated tests without a live Discord service or public listener
-
-## v0.9.0 Current Boundaries
-
-- Authentication remains disabled by default.
-- No public deployment exists, and RSF does not implement reverse-proxy or TLS configuration.
-- OAuth and session behavior require an HTTPS reverse proxy, registered Discord callback, and real deployment values before live use.
-- Sessions and pending OAuth attempts are lost on Provider shutdown or process restart; persistent sessions are not implemented.
-- Creator-owned Ticket listing is the only implemented Website-to-Module operation.
-- Ticket creation, detail views, messages, closing, staff workflows, Moderation, Economy, configuration, and administration routes are not implemented.
-- The Website Provider does not access Module stores, SQL, database connections, or SQLite rows.
-- Staff permission translation and cross-platform identity are not implemented.
-- Frontend behavior, public network exposure, trusted-proxy behavior, and settings interfaces are not implemented.
-- `GET /health` reports Website transport readiness only and does not authenticate requests or resolve Modules.
-- Repository version is synchronized to v0.9.0.
-
-## v0.9.0 Completion
-
-The Website Provider milestone is implementation-complete, tested with 227 passing automated tests, documented, and versioned in the repository files.
-
-The milestone provides optional loopback-only HTTP transport, Discord OAuth authentication, opaque in-memory Website sessions, secure cookies, authenticated identity lookup, logout, and creator-owned Ticket listing through the framework-loaded Ticket Module.
-
-Production deployment still requires an external HTTPS reverse proxy, registered Discord callback, deployment secrets, and deliberate acceptance of restart-based session loss.
+See `docs/Release-Notes-v1.0.0.md` for the release summary, included capabilities, accepted boundaries, and final release procedure.
