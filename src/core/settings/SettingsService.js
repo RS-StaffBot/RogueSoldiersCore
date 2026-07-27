@@ -56,19 +56,13 @@ class SettingsService {
 
     }
 
-    assertReadable(definition) {
+    createSnapshot(definition, value) {
 
         if (definition.secret) {
             throw new Error(
                 `Secret setting values cannot be read: ${definition.key}`
             );
         }
-
-    }
-
-    createSnapshot(definition, value) {
-
-        this.assertReadable(definition);
 
         return Object.freeze({
             key: definition.key,
@@ -103,8 +97,6 @@ class SettingsService {
         if (!this.canRead(definition, permissions)) {
             throw new Error(`Setting read is not authorized: ${settingKey}`);
         }
-
-        this.assertReadable(definition);
 
         return this.createSnapshot(
             definition,
