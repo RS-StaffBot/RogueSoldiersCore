@@ -1,3 +1,6 @@
+const SettingsMigrations = require(
+    "../settings/persistence/SettingsMigrations"
+);
 const ModerationMigrations = require(
     "../../modules/moderation/persistence/ModerationMigrations"
 );
@@ -15,7 +18,8 @@ class DatabaseMigrationLoader {
         return [
             ...ModerationMigrations,
             ...EconomyMigrations,
-            ...TicketMigrations
+            ...TicketMigrations,
+            ...SettingsMigrations
         ];
 
     }
