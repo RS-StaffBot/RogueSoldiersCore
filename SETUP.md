@@ -84,6 +84,12 @@ Before deploying the Discord Provider into Rogue Soldiers production, read `docs
 
 It defines the Discord application and bot setup, required OAuth2 scopes, least-privilege permissions, role hierarchy, production secret handling, command registration behavior, smoke testing, token rotation, and rollback procedure.
 
+## Website Production Deployment
+
+Before enabling the Website Provider in production, read `docs/Website-Production-Deployment.md`.
+
+It defines the loopback-only listener contract, HTTPS reverse-proxy requirements, Discord OAuth callback setup, guild membership checks, secure cookie and in-memory session behavior, health and authentication smoke tests, secret rotation, and rollback procedure.
+
 ## Verify and Start
 
 Run the automated tests:
