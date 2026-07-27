@@ -1,10 +1,17 @@
+const SettingValueType = require("./SettingValueType");
 const SettingsPermission = require(
     "../../shared/permissions/SettingsPermission"
 );
 
 class SettingsService {
 
-    constructor({ registry, ownerReaders } = {}) {
+    constructor({
+        registry,
+        ownerReaders,
+        ownerValidators = {},
+        store = null,
+        now = () => new Date()
+    } = {}) {
 
         if (
             !registry ||
@@ -22,8 +29,33 @@ class SettingsService {
             throw new Error("Settings service requires owner readers.");
         }
 
+        if (
+            !ownerValidators ||
+            typeof ownerValidators !== "object" ||
+            Array.isArray(ownerValidators)
+        ) {
+            throw new Error("Settings service owner validators are invalid.");
+        }
+
+        if (
+            store !== null &&
+            (
+                typeof store.save !== "function" ||
+                typeof store.delete !== "function"
+            )
+        ) {
+            throw new Error("Settings service store is invalid.");
+        }
+
+        if (typeof now !== "function") {
+            throw new Error("Settings service clock is invalid.");
+        }
+
         this.registry = registry;
         this.ownerReaders = Object.freeze({ ...ownerReaders });
+        this.ownerValidators = Object.freeze({ ...ownerValidators });
+        this.store = store;
+        this.now = now;
 
     }
 
@@ -53,6 +85,13 @@ class SettingsService {
 
         return permissions.has(SettingsPermission.ADMINISTRATE) ||
             permissions.has(definition.readPermission);
+
+    }
+
+    canUpdate(definition, permissions) {
+
+        return permissions.has(SettingsPermission.ADMINISTRATE) ||
+            permissions.has(definition.updatePermission);
 
     }
 
@@ -86,6 +125,63 @@ class SettingsService {
         }
 
         return reader.get(definition.key);
+
+    }
+
+    validateValueType(definition, value) {
+
+        switch (definition.valueType) {
+            case SettingValueType.INTEGER:
+                if (
+                    typeof value !== "number" ||
+                    !Number.isSafeInteger(value)
+                ) {
+                    throw new Error(
+                        `Setting ${definition.key} must be a safe integer.`
+                    );
+                }
+                break;
+            case SettingValueType.STRING:
+                if (typeof value !== "string") {
+                    throw new Error(
+                        `Setting ${definition.key} must be a string.`
+                    );
+                }
+                break;
+            case SettingValueType.BOOLEAN:
+                if (typeof value !== "boolean") {
+                    throw new Error(
+                        `Setting ${definition.key} must be boolean.`
+                    );
+                }
+                break;
+            default:
+                throw new Error(
+                    `Unsupported setting value type: ${definition.valueType}`
+                );
+        }
+
+    }
+
+    validateOwnerValue(definition, value) {
+
+        const validator = this.ownerValidators[definition.owner];
+
+        if (!validator || typeof validator.validate !== "function") {
+            throw new Error(
+                `Unsupported setting validator: ${definition.owner}`
+            );
+        }
+
+        validator.validate(definition.key, value);
+
+    }
+
+    requireMutationDependencies() {
+
+        if (!this.store) {
+            throw new Error("Settings mutation store is not configured.");
+        }
 
     }
 
@@ -128,6 +224,68 @@ class SettingsService {
         }
 
         return Object.freeze(snapshots);
+
+    }
+
+    updateSetting(actor, settingKey, value) {
+
+        this.requireMutationDependencies();
+        const permissions = this.validateActor(actor);
+        const definition = this.registry.get(settingKey);
+
+        if (!this.canUpdate(definition, permissions)) {
+            throw new Error(
+                `Setting update is not authorized: ${settingKey}`
+            );
+        }
+
+        if (definition.secret) {
+            throw new Error(
+                `Secret settings cannot be updated here: ${settingKey}`
+            );
+        }
+
+        this.validateValueType(definition, value);
+        this.validateOwnerValue(definition, value);
+
+        const timestamp = this.now();
+
+        if (!(timestamp instanceof Date) || Number.isNaN(timestamp.getTime())) {
+            throw new Error("Settings service clock returned an invalid date.");
+        }
+
+        return this.store.save({
+            settingKey: definition.key,
+            valueType: definition.valueType,
+            value,
+            updatedAt: timestamp.toISOString(),
+            updatedBy: actor.actorId
+        });
+
+    }
+
+    resetSetting(actor, settingKey) {
+
+        this.requireMutationDependencies();
+        const permissions = this.validateActor(actor);
+        const definition = this.registry.get(settingKey);
+
+        if (!this.canUpdate(definition, permissions)) {
+            throw new Error(
+                `Setting reset is not authorized: ${settingKey}`
+            );
+        }
+
+        if (definition.secret) {
+            throw new Error(
+                `Secret settings cannot be reset here: ${settingKey}`
+            );
+        }
+
+        return Object.freeze({
+            key: definition.key,
+            reset: this.store.delete(definition.key)
+        });
 
     }
 
