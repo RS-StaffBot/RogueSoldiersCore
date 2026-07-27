@@ -22,7 +22,19 @@ The optional, disabled-by-default Provider that coordinates validated loopback-o
 
 ## WebsiteServer
 
-The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health`, `GET /auth/discord`, `GET /auth/discord/callback`, `POST /auth/logout`, and `GET /api/me` when authentication is enabled.
+The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health`, `GET /auth/discord`, `GET /auth/discord/callback`, `POST /auth/logout`, `GET /api/me`, and authenticated creator-owned `GET /api/tickets` when the required boundaries are enabled.
+
+## WebsiteTicketService
+
+The focused Website Provider service that translates an authenticated Website identity into a creator-owned Ticket Module listing. It resolves the framework-loaded `Tickets` Module through an injected resolver and returns only allowlisted Website Ticket fields.
+
+## Website Ticket Listing
+
+The authenticated `GET /api/tickets` capability that lists at most 20 newest-first Tickets belonging to the authenticated actor. The request cannot supply a different creator, actor, permission set, filter, limit, or offset.
+
+## Website Ticket Response
+
+The allowlisted creator-facing Ticket representation containing only `ticketId`, `status`, and `createdAt`. It is newly constructed from Module snapshots and does not expose creator identity, assignee identity, messages, stores, database rows, or persistence details.
 
 ## WebsiteAuthenticator
 

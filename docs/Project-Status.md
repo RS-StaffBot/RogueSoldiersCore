@@ -166,8 +166,19 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - Frozen non-secret authentication configuration snapshots
 - Invalid enabled configuration rejected before the HTTP listener starts
 - Valid enabled authentication construction before listener startup
+
 - Shutdown clearing of pending OAuth attempts and active sessions
-- 200 passing automated tests without a live Discord service or public listener
+- Provider-local `WebsiteTicketService` boundary
+- Narrow Module Manager-backed resolution of the framework-loaded `Tickets` Module
+- Authenticated creator-owned `GET /api/tickets`
+- Authenticated identity bound as both Ticket creator and actor
+- Fixed newest-first Ticket listing with a maximum of 20 results
+- Allowlisted Ticket responses containing only `ticketId`, `status`, and `createdAt`
+- Disabled authentication constructs no Ticket service and leaves the route hidden
+- Missing and invalid sessions rejected with `401`
+- Ticket availability and operation failures normalized to generic request-level `503`
+- No direct Website store, SQL, database, or SQLite-row access
+- 227 passing automated tests without a live Discord service or public listener
 
 ## v0.9.0 Current Boundaries
 
@@ -175,9 +186,10 @@ The Database milestone is implementation-complete, tested, documented, and versi
 - No public deployment exists, and RSF does not implement reverse-proxy or TLS configuration.
 - OAuth and session behavior require an HTTPS reverse proxy, registered Discord callback, and real deployment values before live use.
 - Sessions and pending OAuth attempts are lost on Provider shutdown or process restart; persistent sessions are not implemented.
-- Website Module, Registry, store, and database access are not implemented.
-- Ticket, Moderation, Economy, and administration routes are not implemented.
+- Creator-owned Ticket listing is the only implemented Website-to-Module operation.
+- Ticket creation, detail views, messages, closing, staff workflows, Moderation, Economy, configuration, and administration routes are not implemented.
+- The Website Provider does not access Module stores, SQL, database connections, or SQLite rows.
 - Staff permission translation and cross-platform identity are not implemented.
 - Frontend behavior, public network exposure, trusted-proxy behavior, and settings interfaces are not implemented.
-- `GET /health` reports Website transport readiness only and does not authenticate requests.
+- `GET /health` reports Website transport readiness only and does not authenticate requests or resolve Modules.
 - Repository version remains v0.8.0 while v0.9.0 is in progress.

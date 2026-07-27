@@ -176,15 +176,24 @@ Implemented:
 - Exact callback derivation as `<publicOrigin>/auth/discord/callback`
 - Frozen non-secret authentication configuration snapshots
 - Fail-closed rejection before listener startup for invalid enabled authentication
-- 200 passing automated tests without live Discord authentication or a public listener
+- Focused `WebsiteTicketService` translation boundary
+- Injected Module Manager-backed resolution of the framework-loaded `Tickets` Module
+- Authenticated creator-owned `GET /api/tickets`
+- Fixed newest-first listing of at most 20 Tickets
+- Allowlisted responses containing only `ticketId`, `status`, and `createdAt`
+- No request-controlled Ticket creator, actor, permissions, filters, or pagination
+- Generic request-level failure handling without internal detail exposure
+- Provider and Website transport isolation from Ticket persistence
+- 227 passing automated tests without live Discord authentication or a public listener
 
 Current boundaries:
 
 - Authentication remains disabled by default.
 - Real deployment values are not required while authentication is disabled.
 - Persistent sessions are not required for v0.9.0; restart logout is an accepted current limitation.
-- Website Module, Registry, store, and database access are not implemented.
-- Ticket, Moderation, Economy, and administration routes are not implemented.
+- Creator-owned Ticket listing is the only implemented Website-to-Module operation.
+- Ticket creation, detail views, messages, closing, staff workflows, Moderation, Economy, configuration, and administration routes are not implemented.
+- Website transport and services remain isolated from Ticket stores, SQL, database connections, and SQLite rows.
 - Staff permission translation and cross-platform identity remain future work.
 - Frontend behavior, CORS, proxy trust, TLS termination, and public binding are not implemented.
 - `GET /health` remains unauthenticated and reports Website transport readiness only.
@@ -192,7 +201,6 @@ Current boundaries:
 
 Required before closure:
 
-- Creator-owned Ticket listing through validated Module operations
 - Production HTTPS reverse-proxy guidance
 - Discord callback registration and deployment instructions
 - Secret and restart behavior documentation

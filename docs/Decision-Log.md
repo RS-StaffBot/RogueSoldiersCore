@@ -295,3 +295,55 @@ Website authentication uses Discord OAuth with opaque, server-side in-memory ses
 - Guild membership grants login eligibility only, not RSF staff permission.
 - No role translation, Module access, or persistent session claim is implied.
 - Public use requires a configured HTTPS reverse proxy and registered Discord callback.
+
+## Website Creator-Owned Ticket Listing Boundary
+
+### Decision
+
+The Website Provider exposes one authenticated read-only Ticket capability through `GET /api/tickets`.
+
+`WebsiteServer` owns HTTP routing, method enforcement, authentication invocation, cookie clearing, security headers, and generic HTTP responses.
+
+`WebsiteTicketService` owns the narrow translation from a validated Website identity to the existing Ticket Module operation. It resolves the framework-loaded `Tickets` Module through an injected Module Manager-backed resolver and invokes:
+
+```text
+listTicketsForCreator(
+    authenticated actorId,
+    authenticated actorId,
+    authenticated permissions,
+    {
+        limit: 20,
+        offset: 0,
+        latest: true
+    }
+)
+```
+
+`TicketModule` remains the owner of creator authorization, Ticket validation, ordering, persistence-independent public records, and business behavior.
+
+### Response Boundary
+
+The Website response contains only:
+
+- `ticketId`
+- `status`
+- `createdAt`
+
+Creator IDs, assignee IDs, messages, raw Ticket records, store details, database identities, and SQLite rows are not exposed.
+
+### Guardrails
+
+- Authentication must be enabled before the Ticket service or route is constructed.
+- Creator and actor identities come only from the authenticated Website session.
+- Request-controlled creator IDs, actor IDs, permissions, limits, offsets, filters, and status values are not accepted.
+- The Website Provider does not instantiate `TicketModule`.
+- The Website Provider does not access Ticket stores, database services, SQL, or SQLite rows.
+- Non-`GET` requests return `405` before authentication or Module access.
+- Invalid or missing sessions return `401`.
+- Authentication, Module availability, malformed Module responses, and Ticket operation failures return generic request-level `503`.
+- Ticket failures do not move `WebsiteProvider` to `ERROR`.
+- No staff Ticket route or Website permission translation is introduced.
+
+### Reason
+
+This is the smallest production-shaped Website-to-Module checkpoint. It proves authenticated Module access while preserving Module ownership, persistence isolation, creator identity binding, minimal data exposure, and the existing Provider lifecycle.

@@ -139,13 +139,47 @@ permissions = []
 
 The flow revokes Discord OAuth authorization before creating an RSF session. Guild membership grants login eligibility only; it creates no Module permission or staff role mapping.
 
+### Website Ticket Boundary
+
+`WebsiteTicketService` is a focused Website Provider service that translates an authenticated Website identity into a creator-owned Ticket Module read.
+
+The service resolves the framework-loaded `Tickets` Module through an injected Module Manager-backed resolver. It does not construct `TicketModule`, access Ticket stores, issue SQL, or depend on SQLite row formats.
+
+The service supplies the authenticated `actorId` as both the Ticket creator and actor identity:
+
+```text
+creatorId = authenticated actorId
+actorId = authenticated actorId
+actorPermissions = authenticated permissions
+```
+
+It invokes `TicketModule.listTicketsForCreator` with fixed read options:
+
+```text
+limit = 20
+offset = 0
+latest = true
+```
+
+Request-controlled creator IDs, actor IDs, limits, offsets, status filters, and permission values are not accepted.
+
+Successful responses contain only allowlisted creator-facing fields:
+
+- `ticketId`
+- `status`
+- `createdAt`
+
+Creator identity, assignee identity, messages, persistence details, and raw Ticket records are not exposed.
+
 ### Website Routes
 
-- `GET /health` remains unauthenticated, reports transport readiness only, and makes no Discord request.
+- `GET /health` remains unauthenticated, reports transport readiness only, and makes no Discord or Module request.
 - `GET /auth/discord` exists only when authentication is enabled. It creates state, PKCE, and browser binding, sets the binding cookie, and returns a `303` Discord authorization redirect.
 - `GET /auth/discord/callback` validates and consumes state before Discord access, enforces browser binding, exchanges the code, verifies identity and membership, revokes the OAuth grant, creates an RSF session, and returns `303` to `/api/me`. It returns generic `400`, `401`, `403`, or `503` failures and clears the binding cookie on callback outcomes.
 - `POST /auth/logout` requires the exact configured `Origin`. Missing or mismatched origins return `403`; valid requests revoke the session, clear cookies, return an empty `204`, and remain idempotent.
 - `GET /api/me` uses the session-backed authenticator when enabled. Valid sessions receive the existing allowlisted `200` identity response. Missing or invalid sessions receive `401`; invalid supplied session cookies are cleared. Internal authentication failures return generic `503`.
+- `GET /api/tickets` exists only when authentication and the Website Ticket service are enabled. It authenticates the session, binds the Ticket creator and actor to the authenticated identity, and returns an allowlisted creator-owned Ticket list. Missing or invalid sessions return `401`; invalid supplied session cookies are cleared. Authentication, Ticket Module availability, and Ticket operation failures return generic `503`.
+- Non-`GET` requests to `/api/tickets` return `405` with `Allow: GET` without authenticating or invoking the Ticket Module.
 
 ### Authentication Configuration
 
@@ -169,7 +203,10 @@ Request-level Discord failures do not move `WebsiteProvider` to `ERROR`; unexpec
 
 ### Current Boundaries
 
-- No Ticket route or other Module, Registry, store, or database access exists.
+- Creator-owned Ticket listing is the only implemented Website-to-Module capability.
+- Ticket creation, Ticket detail views, Ticket messages, closing, staff workflows, Moderation, Economy, configuration, and administration routes are not implemented.
+- The Website Provider resolves only the framework-loaded Ticket Module through the narrow `WebsiteTicketService` boundary.
+- The Website Provider does not access Module stores, database connections, SQL, or SQLite rows.
 - No persistent session storage, frontend, public binding, trusted-proxy behavior, or role-to-permission translation exists.
 - No public deployment has been completed.
 - Live use requires a configured HTTPS reverse proxy and registered Discord callback. The loopback listener must not be exposed directly.
