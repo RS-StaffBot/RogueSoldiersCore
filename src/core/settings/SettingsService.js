@@ -42,7 +42,6 @@ class SettingsService {
             store !== null &&
             (
                 typeof store.save !== "function" ||
-                typeof store.get !== "function" ||
                 typeof store.delete !== "function"
             )
         ) {
@@ -52,6 +51,8 @@ class SettingsService {
         if (
             auditStore !== null &&
             (
+                !store ||
+                typeof store.get !== "function" ||
                 typeof auditStore.runTransaction !== "function" ||
                 typeof auditStore.record !== "function"
             )
@@ -285,7 +286,9 @@ class SettingsService {
         const occurredAt = this.getTimestamp();
 
         return this.executeMutation(() => {
-            const previousRecord = this.store.get(definition.key);
+            const previousRecord = this.auditStore
+                ? this.store.get(definition.key)
+                : null;
             const newRecord = this.store.save({
                 settingKey: definition.key,
                 valueType: definition.valueType,
@@ -331,7 +334,9 @@ class SettingsService {
         const occurredAt = this.getTimestamp();
 
         return this.executeMutation(() => {
-            const previousRecord = this.store.get(definition.key);
+            const previousRecord = this.auditStore
+                ? this.store.get(definition.key)
+                : null;
             const reset = this.store.delete(definition.key);
 
             if (reset && this.auditStore) {
