@@ -228,15 +228,7 @@ test("does not rewrite existing balances when starting balance changes", () => {
     const context = createContext();
 
     context.economy.createAccount("member-1");
-    context.economy.adjustBalance(
-        {
-            actorId: "staff-1",
-            permissions: ["economy.balance.adjust"]
-        },
-        "member-1",
-        75,
-        "test"
-    );
+    context.economy.credit("member-1", 75, "test");
 
     context.service.updateSetting(
         context.actor,
