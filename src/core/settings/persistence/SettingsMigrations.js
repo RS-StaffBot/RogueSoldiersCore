@@ -7,7 +7,7 @@ const SettingsMigrations = Object.freeze([
                     length(trim(setting_key)) > 0
                 ),
                 value_type TEXT NOT NULL CHECK (
-                    value_type IN ('INTEGER', 'STRING')
+                    value_type IN ('INTEGER', 'STRING', 'BOOLEAN')
                 ),
                 serialized_value TEXT NOT NULL,
                 updated_at TEXT NOT NULL CHECK (
