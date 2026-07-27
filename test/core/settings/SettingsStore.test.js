@@ -56,12 +56,20 @@ test("stores, updates, lists, and deletes setting overrides", () => {
         updatedAt: "2026-07-27T13:30:00.000Z",
         updatedBy: "actor-2"
     });
+    store.save({
+        settingKey: "example.enabled",
+        valueType: SettingValueType.BOOLEAN,
+        value: true,
+        updatedAt: "2026-07-27T13:45:00.000Z",
+        updatedBy: "actor-2"
+    });
 
     const settings = store.list();
-    assert.equal(settings.length, 2);
+    assert.equal(settings.length, 3);
     assert.equal(Object.isFrozen(settings), true);
     assert.equal(settings[0].value, 250);
     assert.equal(settings[1].value, "EVERYONE");
+    assert.equal(settings[2].value, true);
 
     assert.equal(store.delete("economy.dailyReward"), true);
     assert.equal(store.delete("economy.dailyReward"), false);
@@ -115,7 +123,7 @@ test("rejects invalid input and corrupt stored values", () => {
     assert.throws(
         () => store.save({
             settingKey: "economy.dailyReward",
-            valueType: "BOOLEAN",
+            valueType: "NUMBER",
             value: true,
             updatedAt: "2026-07-27T14:00:00.000Z",
             updatedBy: "actor-1"
