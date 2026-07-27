@@ -14,8 +14,8 @@ class WebsiteServer {
         cookieService = null,
         oauthFlow = null,
         publicOrigin = null,
-        setTimer = setTimeout
-    } = {}) {
+        setTimer = setTimeout,
+        ticketService = null    } = {}) {
 
         if (typeof createServer !== "function") {
             throw new Error(
@@ -29,6 +29,19 @@ class WebsiteServer {
         ) {
             throw new Error(
                 "Website authenticator must provide an authenticate operation."
+            );
+        }
+
+        if (
+            ticketService !== null &&
+            (
+                !ticketService ||
+                typeof ticketService.listCreatorTickets !==
+                    "function"
+            )
+        ) {
+            throw new Error(
+                "Website Ticket service boundary is invalid."
             );
         }
 
@@ -70,6 +83,7 @@ class WebsiteServer {
         this.oauthFlow = oauthFlow;
         this.publicOrigin = publicOrigin;
         this.setTimer = setTimer;
+        this.ticketService = ticketService;
         this.server = null;
         this.starting = false;
         this.ready = false;
@@ -486,6 +500,34 @@ class WebsiteServer {
             return;
         }
 
+        if (
+            this.ticketService !== null &&
+            exactPath === "/api/tickets"
+        ) {
+
+            if (request.method !== "GET") {
+                this.writeJson(
+                    response,
+                    405,
+                    {
+                        error: "Method not allowed."
+                    },
+                    {
+                        Allow: "GET"
+                    }
+                );
+
+                return;
+            }
+
+            await this.handleTicketListRequest(
+                request,
+                response
+            );
+
+            return;
+        }
+
         if (exactPath === "/api/me") {
 
             if (request.method !== "GET") {
@@ -555,6 +597,89 @@ class WebsiteServer {
             {
                 error: "Not found."
             }
+        );
+
+    }
+
+    async handleTicketListRequest(request, response) {
+
+        let authentication;
+
+        try {
+            authentication =
+                await this.authenticator.authenticate(
+                    request
+                );
+        } catch {
+            this.writeJson(
+                response,
+                503,
+                {
+                    error: "Service unavailable."
+                }
+            );
+
+            return;
+        }
+
+        let actor;
+
+        try {
+            actor = this.createActorSnapshot(
+                authentication?.identity
+            );
+        } catch {
+            actor = null;
+        }
+
+        const headers = {};
+
+        if (
+            authentication?.clearSessionCookie === true &&
+            this.cookieService !== null
+        ) {
+            headers["Set-Cookie"] =
+                this.cookieService.clearSessionCookie();
+        }
+
+        if (actor === null) {
+            this.writeJson(
+                response,
+                401,
+                {
+                    error: "Authentication required."
+                },
+                headers
+            );
+
+            return;
+        }
+
+        let result;
+
+        try {
+            result =
+                this.ticketService.listCreatorTickets(
+                    actor
+                );
+        } catch {
+            this.writeJson(
+                response,
+                503,
+                {
+                    error: "Service unavailable."
+                },
+                headers
+            );
+
+            return;
+        }
+
+        this.writeJson(
+            response,
+            200,
+            result,
+            headers
         );
 
     }

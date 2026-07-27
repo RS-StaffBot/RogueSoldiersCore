@@ -178,6 +178,15 @@ test("initializes valid enabled authentication without exposing secrets", () => 
         environment: {
             DISCORD_CLIENT_ID: "234567890123456789",
             DISCORD_CLIENT_SECRET: secret
+        },
+        providerOptions: {
+            resolveTicketModule() {
+                return {
+                    listTicketsForCreator() {
+                        return [];
+                    }
+                };
+            }
         }
     });
 
@@ -326,6 +335,13 @@ test("enabled shutdown stops transport before clearing stores", async () => {
             },
             createSessionStore() {
                 return sessionStore;
+            },
+            resolveTicketModule() {
+                return {
+                    listTicketsForCreator() {
+                        return [];
+                    }
+                };
             }
         },
         server
@@ -676,6 +692,133 @@ test("ignores server-loss notification during stop", async () => {
     assert.strictEqual(
         harness.provider.state,
         ComponentState.STOPPED
+    );
+
+});
+
+test("disabled authentication constructs no Ticket service", () => {
+
+    const harness = createHarness({
+        providerOptions: {
+            createTicketService() {
+                throw new Error(
+                    "Disabled authentication must not construct Tickets."
+                );
+            }
+        }
+    });
+
+    harness.provider.initialize();
+
+    assert.strictEqual(
+        harness.provider.ticketService,
+        null
+    );
+
+});
+
+test("enabled authentication constructs the Ticket service boundary", () => {
+
+    const ticketModule = {
+        listTicketsForCreator() {
+            return [];
+        }
+    };
+    const ticketService = {
+        listCreatorTickets() {
+            return {
+                tickets: []
+            };
+        }
+    };
+    const receivedOptions = [];
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: true,
+                publicOrigin:
+                    "https://community.example",
+                discordGuildId:
+                    "123456789012345678",
+                discordRequestTimeoutMs: 10000,
+                oauthStateLifetimeMs: 600000,
+                sessionIdleLifetimeMs: 1800000,
+                sessionAbsoluteLifetimeMs: 28800000
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        },
+        environment: {
+            DISCORD_CLIENT_ID:
+                "234567890123456789",
+            DISCORD_CLIENT_SECRET: "secret"
+        },
+        providerOptions: {
+            createTicketService(options) {
+                receivedOptions.push(options);
+
+                return ticketService;
+            },
+            resolveTicketModule() {
+                return ticketModule;
+            }
+        }
+    });
+
+    harness.provider.initialize();
+
+    assert.strictEqual(
+        harness.provider.ticketService,
+        ticketService
+    );
+    assert.strictEqual(
+        receivedOptions.length,
+        1
+    );
+    assert.strictEqual(
+        receivedOptions[0].resolveTicketModule(),
+        ticketModule
+    );
+
+});
+
+test("enabled authentication requires a Ticket Module resolver", () => {
+
+    const harness = createHarness({
+        configuration: {
+            authentication: {
+                enabled: true,
+                publicOrigin:
+                    "https://community.example",
+                discordGuildId:
+                    "123456789012345678",
+                discordRequestTimeoutMs: 10000,
+                oauthStateLifetimeMs: 600000,
+                sessionIdleLifetimeMs: 1800000,
+                sessionAbsoluteLifetimeMs: 28800000
+            },
+            enabled: true,
+            host: "127.0.0.1",
+            port: 8080,
+            requestTimeoutMs: 10000,
+            shutdownTimeoutMs: 5000
+        },
+        environment: {
+            DISCORD_CLIENT_ID:
+                "234567890123456789",
+            DISCORD_CLIENT_SECRET: "secret"
+        }
+    });
+
+    assert.throws(
+        () => harness.provider.initialize(),
+        {
+            message:
+                "Website Ticket Module resolver must be a function."
+        }
     );
 
 });

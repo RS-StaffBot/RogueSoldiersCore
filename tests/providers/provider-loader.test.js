@@ -457,3 +457,84 @@ test("rejects an invalid enabled Website server factory", () => {
     );
 
 });
+
+test("enabled Website receives a Tickets Module resolver", () => {
+
+    const ticketModule = {
+        listTicketsForCreator() {
+            return [];
+        }
+    };
+    const requestedNames = [];
+    const moduleManager = {
+        get(name) {
+            requestedNames.push(name);
+
+            return ticketModule;
+        }
+    };
+    const websiteSettings = {
+        authentication: {
+            enabled: false
+        },
+        enabled: true,
+        host: "127.0.0.1",
+        port: 8080,
+        requestTimeoutMs: 10000,
+        shutdownTimeoutMs: 5000
+    };
+    const providers = ProviderLoader.load({
+        configuration: createConfiguration(
+            undefined,
+            websiteSettings
+        ),
+        createWebsiteServer() {
+            return new FakeWebsiteServer();
+        },
+        moduleManager
+    });
+    const websiteProvider = providers.find(
+        provider => provider.name === "Website"
+    );
+
+    assert.notStrictEqual(
+        websiteProvider,
+        undefined
+    );
+    assert.strictEqual(
+        websiteProvider.resolveTicketModule(),
+        ticketModule
+    );
+    assert.deepStrictEqual(
+        requestedNames,
+        ["Tickets"]
+    );
+
+});
+
+test("enabled Website rejects an invalid Module Manager", () => {
+
+    assert.throws(
+        () => ProviderLoader.load({
+            configuration: createConfiguration(
+                undefined,
+                {
+                    authentication: {
+                        enabled: false
+                    },
+                    enabled: true,
+                    host: "127.0.0.1",
+                    port: 8080,
+                    requestTimeoutMs: 10000,
+                    shutdownTimeoutMs: 5000
+                }
+            ),
+            moduleManager: {}
+        }),
+        {
+            message:
+                "Website Module Manager boundary is invalid."
+        }
+    );
+
+});

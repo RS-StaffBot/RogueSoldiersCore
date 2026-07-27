@@ -22,7 +22,9 @@ const WebsiteOAuthFlow = require(
     "./WebsiteOAuthFlow"
 );
 const WebsiteServer = require("./WebsiteServer");
-
+const WebsiteTicketService = require(
+    "./WebsiteTicketService"
+);
 class WebsiteProvider extends BaseProvider {
 
     constructor({
@@ -41,7 +43,10 @@ class WebsiteProvider extends BaseProvider {
             new WebsiteServer(options),
         createSessionStore = options =>
             new InMemoryWebsiteSessionStore(options),
+        createTicketService = options =>
+            new WebsiteTicketService(options),
         environment = process.env,
+        resolveTicketModule = null,
         server = null
     } = {}) {
 
@@ -61,13 +66,17 @@ class WebsiteProvider extends BaseProvider {
                 : () => server;
         this.createSessionStore =
             createSessionStore;
+        this.createTicketService =
+            createTicketService;
         this.environment = environment;
+        this.resolveTicketModule =
+            resolveTicketModule;
         this.server = null;
         this.oauthFlow = null;
         this.oauthStateStore = null;
         this.sessionStore = null;
-        this.authenticationOptions = null;
-        this.serverOptions = null;
+        this.ticketService = null;
+        this.authenticationOptions = null;        this.serverOptions = null;
         this.serverStartAttempted = false;
 
     }
@@ -308,14 +317,19 @@ class WebsiteProvider extends BaseProvider {
                 cookieService,
                 sessionStore: this.sessionStore
             });
+        this.ticketService =
+            this.createTicketService({
+                resolveTicketModule:
+                    this.resolveTicketModule
+            });
 
         this.server = this.createServer({
             authenticator,
             cookieService,
             oauthFlow: this.oauthFlow,
-            publicOrigin: options.publicOrigin
+            publicOrigin: options.publicOrigin,
+            ticketService: this.ticketService
         });
-
     }
 
     validateFactories(authenticationEnabled) {
@@ -331,10 +345,19 @@ class WebsiteProvider extends BaseProvider {
                 this.createDiscordOAuthClient,
                 this.createOAuthFlow,
                 this.createOAuthStateStore,
-                this.createSessionStore
+                this.createSessionStore,
+                this.createTicketService
             );
-        }
 
+            if (
+                typeof this.resolveTicketModule !==
+                    "function"
+            ) {
+                throw new Error(
+                    "Website Ticket Module resolver must be a function."
+                );
+            }
+        }
         if (
             factories.some(
                 factory =>

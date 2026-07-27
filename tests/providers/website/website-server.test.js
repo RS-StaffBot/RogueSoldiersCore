@@ -29,8 +29,8 @@ function createHarness({
     listenError = null,
     oauthFlow = null,
     publicOrigin = null,
-    timers = null
-} = {}) {
+    ticketService = null,
+    timers = null } = {}) {
 
     let httpServer;
     let factoryCount = 0;
@@ -67,7 +67,8 @@ function createHarness({
         },
         oauthFlow,
         publicOrigin,
-        setTimer: timerHarness.setTimer
+        setTimer: timerHarness.setTimer,
+        ticketService
     });
 
     return {
@@ -1291,6 +1292,437 @@ test("invalid api session clears the session cookie", async () => {
         response.headers["set-cookie"],
         "clear-session"
     );
+
+    await harness.server.stop();
+
+});
+
+test("rejects an invalid Website Ticket service boundary", () => {
+
+    assert.throws(
+        () => new WebsiteServer({
+            ticketService: {}
+        }),
+        {
+            message:
+                "Website Ticket service boundary is invalid."
+        }
+    );
+
+});
+
+test("Ticket route is hidden when no Ticket service exists", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity: {
+                actorId: "member-1",
+                displayName: "Member",
+                permissions: []
+            }
+        });
+    const harness = createHarness({
+        authenticator
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 404);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Not found."
+        }
+    );
+    assert.strictEqual(
+        authenticator.authenticateCalls.length,
+        0
+    );
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route requires GET without invoking authentication", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity: {
+                actorId: "member-1",
+                displayName: "Member",
+                permissions: []
+            }
+        });
+    const ticketCalls = [];
+    const harness = createHarness({
+        authenticator,
+        ticketService: {
+            listCreatorTickets(identity) {
+                ticketCalls.push(identity);
+
+                return {
+                    tickets: []
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "POST",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 405);
+    assert.strictEqual(response.headers.allow, "GET");
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Method not allowed."
+        }
+    );
+    assert.strictEqual(
+        authenticator.authenticateCalls.length,
+        0
+    );
+    assert.deepStrictEqual(ticketCalls, []);
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route returns 401 for a missing session", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator();
+    const ticketCalls = [];
+    const harness = createHarness({
+        authenticator,
+        ticketService: {
+            listCreatorTickets(identity) {
+                ticketCalls.push(identity);
+
+                return {
+                    tickets: []
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Authentication required."
+        }
+    );
+    assert.deepStrictEqual(ticketCalls, []);
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route clears an invalid supplied session", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            clearSessionCookie: true
+        });
+    const harness = createHarness({
+        authenticator,
+        cookieService: {
+            clearSessionCookie() {
+                return "cleared-session-cookie";
+            }
+        },
+        ticketService: {
+            listCreatorTickets() {
+                throw new Error(
+                    "Ticket service must not be called."
+                );
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 401);
+    assert.strictEqual(
+        response.headers["set-cookie"],
+        "cleared-session-cookie"
+    );
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Authentication required."
+        }
+    );
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route returns 503 for authentication failure", async () => {
+
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            authenticate() {
+                throw new Error(
+                    "Sensitive session-store failure."
+                );
+            }
+        });
+    const harness = createHarness({
+        authenticator,
+        ticketService: {
+            listCreatorTickets() {
+                return {
+                    tickets: []
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 503);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Service unavailable."
+        }
+    );
+    assert.strictEqual(
+        response.body.includes("session-store"),
+        false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route passes only authenticated identity to service", async () => {
+
+    const identity = {
+        actorId: "member-1",
+        displayName: "Member",
+        permissions: []
+    };
+    const authenticator =
+        new FakeWebsiteAuthenticator({
+            identity
+        });
+    const calls = [];
+    const harness = createHarness({
+        authenticator,
+        ticketService: {
+            listCreatorTickets(actor) {
+                calls.push(actor);
+
+                return {
+                    tickets: [
+                        {
+                            ticketId: "ticket-1",
+                            status: "OPEN",
+                            createdAt:
+                                "2026-07-26T12:00:00.000Z"
+                        }
+                    ]
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        headers: {
+            "x-actor-id": "attacker"
+        },
+        method: "GET",
+        url:
+            "/api/tickets?creatorId=attacker&actorId=attacker"
+    });
+
+    assert.strictEqual(response.statusCode, 404);
+    assert.deepStrictEqual(calls, []);
+
+    const validResponse =
+        await harness.httpServer.request({
+            headers: {
+                "x-actor-id": "attacker"
+            },
+            method: "GET",
+            url: "/api/tickets"
+        });
+
+    assert.strictEqual(validResponse.statusCode, 200);
+    assert.deepStrictEqual(calls, [
+        {
+            actorId: "member-1",
+            displayName: "Member",
+            permissions: []
+        }
+    ]);
+    assert.deepStrictEqual(
+        JSON.parse(validResponse.body),
+        {
+            tickets: [
+                {
+                    ticketId: "ticket-1",
+                    status: "OPEN",
+                    createdAt:
+                        "2026-07-26T12:00:00.000Z"
+                }
+            ]
+        }
+    );
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route returns an empty creator-owned list", async () => {
+
+    const harness = createHarness({
+        authenticator:
+            new FakeWebsiteAuthenticator({
+                identity: {
+                    actorId: "member-1",
+                    displayName: "Member",
+                    permissions: []
+                }
+            }),
+        ticketService: {
+            listCreatorTickets() {
+                return {
+                    tickets: []
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            tickets: []
+        }
+    );
+    assert.strictEqual(
+        response.headers["cache-control"],
+        "no-store"
+    );
+    assert.strictEqual(
+        response.headers["content-type"],
+        "application/json; charset=utf-8"
+    );
+    assert.strictEqual(
+        response.headers["x-content-type-options"],
+        "nosniff"
+    );
+
+    await harness.server.stop();
+
+});
+
+test("Ticket route normalizes Ticket service failures", async () => {
+
+    const harness = createHarness({
+        authenticator:
+            new FakeWebsiteAuthenticator({
+                identity: {
+                    actorId: "member-1",
+                    displayName: "Member",
+                    permissions: []
+                }
+            }),
+        ticketService: {
+            listCreatorTickets() {
+                throw new Error(
+                    "Sensitive Ticket database failure."
+                );
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/api/tickets"
+    });
+
+    assert.strictEqual(response.statusCode, 503);
+    assert.deepStrictEqual(
+        JSON.parse(response.body),
+        {
+            error: "Service unavailable."
+        }
+    );
+    assert.strictEqual(
+        response.body.includes("database"),
+        false
+    );
+
+    await harness.server.stop();
+
+});
+
+test("health route does not invoke Ticket service", async () => {
+
+    const calls = [];
+    const harness = createHarness({
+        ticketService: {
+            listCreatorTickets(identity) {
+                calls.push(identity);
+
+                return {
+                    tickets: []
+                };
+            }
+        }
+    });
+
+    await harness.server.start(defaultOptions);
+
+    const response = await harness.httpServer.request({
+        method: "GET",
+        url: "/health"
+    });
+
+    assert.strictEqual(response.statusCode, 200);
+    assert.deepStrictEqual(calls, []);
 
     await harness.server.stop();
 

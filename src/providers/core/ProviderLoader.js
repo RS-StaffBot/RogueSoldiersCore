@@ -2,8 +2,10 @@ const DiscordProvider = require("../discord/DiscordProvider");
 const Configuration = require(
     "../../configuration/ConfigurationManager"
 );
-const SevenDaysToDieProvider = require(
-    "../sevendaystodie/SevenDaysToDieProvider"
+const ModuleManager = require(
+    "../../modules/core/ModuleManager"
+);
+const SevenDaysToDieProvider = require("../sevendaystodie/SevenDaysToDieProvider"
 );
 const SevenDaysToDieTelnetClient = require(
     "../sevendaystodie/SevenDaysToDieTelnetClient"
@@ -23,8 +25,8 @@ class ProviderLoader {
             new SevenDaysToDieTelnetClient(),
         createWebsiteServer = options =>
             new WebsiteServer(options),
-        environment = process.env
-    } = {}) {
+        environment = process.env,
+        moduleManager = ModuleManager    } = {}) {
 
         const providers = [
             new DiscordProvider()
@@ -117,11 +119,22 @@ class ProviderLoader {
             );
         }
 
+        if (
+            !moduleManager ||
+            typeof moduleManager.get !== "function"
+        ) {
+            throw new Error(
+                "Website Module Manager boundary is invalid."
+            );
+        }
+
         providers.push(
             new WebsiteProvider({
                 configuration: websiteSettings,
                 createServer: createWebsiteServer,
-                environment
+                environment,
+                resolveTicketModule: () =>
+                    moduleManager.get("Tickets")
             })
         );
 
