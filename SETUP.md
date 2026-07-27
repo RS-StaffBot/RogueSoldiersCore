@@ -78,6 +78,12 @@ RSF currently writes human-readable logs to standard output and standard error. 
 
 Before production use, read `docs/Production-Logging-Troubleshooting.md`. It defines the current logging contract, secret-redaction rules, normal startup and shutdown evidence, restart-loop handling, and Provider-specific troubleshooting steps.
 
+## Discord Production Deployment
+
+Before deploying the Discord Provider into Rogue Soldiers production, read `docs/Discord-Production-Deployment.md`.
+
+It defines the Discord application and bot setup, required OAuth2 scopes, least-privilege permissions, role hierarchy, production secret handling, command registration behavior, smoke testing, token rotation, and rollback procedure.
+
 ## Verify and Start
 
 Run the automated tests:
