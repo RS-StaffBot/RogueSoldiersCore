@@ -10,6 +10,7 @@ class SettingsService {
         ownerReaders,
         ownerValidators = {},
         store = null,
+        auditStore = null,
         now = () => new Date()
     } = {}) {
 
@@ -41,10 +42,21 @@ class SettingsService {
             store !== null &&
             (
                 typeof store.save !== "function" ||
+                typeof store.get !== "function" ||
                 typeof store.delete !== "function"
             )
         ) {
             throw new Error("Settings service store is invalid.");
+        }
+
+        if (
+            auditStore !== null &&
+            (
+                typeof auditStore.runTransaction !== "function" ||
+                typeof auditStore.record !== "function"
+            )
+        ) {
+            throw new Error("Settings service audit store is invalid.");
         }
 
         if (typeof now !== "function") {
@@ -55,6 +67,7 @@ class SettingsService {
         this.ownerReaders = Object.freeze({ ...ownerReaders });
         this.ownerValidators = Object.freeze({ ...ownerValidators });
         this.store = store;
+        this.auditStore = auditStore;
         this.now = now;
 
     }
@@ -185,6 +198,28 @@ class SettingsService {
 
     }
 
+    getTimestamp() {
+
+        const timestamp = this.now();
+
+        if (!(timestamp instanceof Date) || Number.isNaN(timestamp.getTime())) {
+            throw new Error("Settings service clock returned an invalid date.");
+        }
+
+        return timestamp.toISOString();
+
+    }
+
+    executeMutation(operation) {
+
+        if (!this.auditStore) {
+            return operation();
+        }
+
+        return this.auditStore.runTransaction(operation);
+
+    }
+
     getSetting(actor, settingKey) {
 
         const permissions = this.validateActor(actor);
@@ -247,19 +282,30 @@ class SettingsService {
 
         this.validateValueType(definition, value);
         this.validateOwnerValue(definition, value);
+        const occurredAt = this.getTimestamp();
 
-        const timestamp = this.now();
+        return this.executeMutation(() => {
+            const previousRecord = this.store.get(definition.key);
+            const newRecord = this.store.save({
+                settingKey: definition.key,
+                valueType: definition.valueType,
+                value,
+                updatedAt: occurredAt,
+                updatedBy: actor.actorId
+            });
 
-        if (!(timestamp instanceof Date) || Number.isNaN(timestamp.getTime())) {
-            throw new Error("Settings service clock returned an invalid date.");
-        }
+            if (this.auditStore) {
+                this.auditStore.record({
+                    settingKey: definition.key,
+                    action: "UPDATE",
+                    previousRecord,
+                    newRecord,
+                    actorId: actor.actorId,
+                    occurredAt
+                });
+            }
 
-        return this.store.save({
-            settingKey: definition.key,
-            valueType: definition.valueType,
-            value,
-            updatedAt: timestamp.toISOString(),
-            updatedBy: actor.actorId
+            return newRecord;
         });
 
     }
@@ -282,9 +328,27 @@ class SettingsService {
             );
         }
 
-        return Object.freeze({
-            key: definition.key,
-            reset: this.store.delete(definition.key)
+        const occurredAt = this.getTimestamp();
+
+        return this.executeMutation(() => {
+            const previousRecord = this.store.get(definition.key);
+            const reset = this.store.delete(definition.key);
+
+            if (reset && this.auditStore) {
+                this.auditStore.record({
+                    settingKey: definition.key,
+                    action: "RESET",
+                    previousRecord,
+                    newRecord: null,
+                    actorId: actor.actorId,
+                    occurredAt
+                });
+            }
+
+            return Object.freeze({
+                key: definition.key,
+                reset
+            });
         });
 
     }
