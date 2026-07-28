@@ -1,10 +1,14 @@
 const BaseProvider = require("../core/BaseProvider");
 const ComponentState = require("../../core/ComponentState");
+const SevenDaysToDieCommandService = require(
+    "./SevenDaysToDieCommandService"
+);
 
 class SevenDaysToDieProvider extends BaseProvider {
 
     constructor({
         client,
+        commandService = null,
         configuration,
         environment = process.env
     } = {}) {
@@ -12,6 +16,7 @@ class SevenDaysToDieProvider extends BaseProvider {
         super("7 Days to Die");
 
         this.client = client;
+        this.commandService = commandService;
         this.configuration = configuration;
         this.environment = environment;
         this.connectionAttempted = false;
@@ -29,8 +34,20 @@ class SevenDaysToDieProvider extends BaseProvider {
             this.connectionOptions =
                 this.createConnectionOptions();
 
-            super.initialize();
+            if (this.commandService === null) {
+                this.commandService = new SevenDaysToDieCommandService({
+                    client: this.client,
+                    commandTimeoutMs:
+                        this.configuration.commandTimeoutMs ?? 5000,
+                    inactivityTimeoutMs:
+                        this.configuration.inactivityTimeoutMs ?? 250,
+                    maximumLines:
+                        this.configuration.maximumCommandLines ?? 10000
+                });
+            }
 
+            this.validateCommandService();
+            super.initialize();
             return this.getStatus();
 
         } catch (error) {
@@ -80,7 +97,6 @@ class SevenDaysToDieProvider extends BaseProvider {
             }
 
             super.start();
-
             return this.getStatus();
 
         } catch (error) {
@@ -106,13 +122,24 @@ class SevenDaysToDieProvider extends BaseProvider {
             }
 
             super.stop();
-
             return this.getStatus();
 
         } catch (error) {
             this.setError();
             throw error;
         }
+
+    }
+
+    executeCommand(command, options = {}) {
+
+        if (this.state !== ComponentState.RUNNING) {
+            return Promise.reject(new Error(
+                "7 Days to Die Provider must be running before command execution."
+            ));
+        }
+
+        return this.commandService.executeCommand(command, options);
 
     }
 
@@ -149,6 +176,19 @@ class SevenDaysToDieProvider extends BaseProvider {
             throw new Error(
                 "7 Days to Die client must provide connect and " +
                 "disconnect operations."
+            );
+        }
+
+    }
+
+    validateCommandService() {
+
+        if (
+            !this.commandService ||
+            typeof this.commandService.executeCommand !== "function"
+        ) {
+            throw new Error(
+                "7 Days to Die command service must provide execution."
             );
         }
 
