@@ -6,6 +6,8 @@ const AUTHENTICATION_SUCCESS_PATTERN =
     /logon successful\./i;
 const CONSOLE_READY_PATTERN =
     /\*\*\* connected with 7dtd server\./i;
+const CONSOLE_INSTRUCTION_PATTERN =
+    /press 'help' to get a list of all commands\. press 'exit' to end session\./i;
 const AUTHENTICATION_REJECTION_PATTERNS = [
     /password incorrect, please enter password:/i,
     /too many failed login attempts!/i
@@ -34,6 +36,7 @@ class SevenDaysToDieTelnetClient {
         this.passwordSent = false;
         this.authenticationAccepted = false;
         this.consoleReady = false;
+        this.consoleInstructionsReceived = false;
         this.cancelConnectionAttempt = null;
         this.liveSocketListeners = null;
         this.lastConnectionError = null;
@@ -65,6 +68,7 @@ class SevenDaysToDieTelnetClient {
         this.passwordSent = false;
         this.authenticationAccepted = false;
         this.consoleReady = false;
+        this.consoleInstructionsReceived = false;
         this.lastConnectionError = null;
         this.unexpectedConnectionLossHandler =
             unexpectedConnectionLossHandler;
@@ -218,9 +222,25 @@ class SevenDaysToDieTelnetClient {
                 }
 
                 if (
+                    CONSOLE_INSTRUCTION_PATTERN.test(
+                        this.inputBuffer
+                    )
+                ) {
+                    this.consoleInstructionsReceived = true;
+                }
+
+                const authenticatedConsoleReady =
                     this.passwordSent &&
                     this.authenticationAccepted &&
-                    this.consoleReady
+                    this.consoleReady;
+                const directConsoleReady =
+                    !this.passwordSent &&
+                    this.consoleReady &&
+                    this.consoleInstructionsReceived;
+
+                if (
+                    authenticatedConsoleReady ||
+                    directConsoleReady
                 ) {
                     succeed();
                 }
@@ -370,7 +390,6 @@ class SevenDaysToDieTelnetClient {
             const error = new Error(
                 "7 Days to Die connection was lost."
             );
-
             this.lastConnectionError = error;
             this.ready = false;
 
@@ -390,7 +409,6 @@ class SevenDaysToDieTelnetClient {
                 const error = new Error(
                     "7 Days to Die connection closed unexpectedly."
                 );
-
                 this.lastConnectionError = error;
                 this.notifyUnexpectedConnectionLoss(error);
 
@@ -419,7 +437,6 @@ class SevenDaysToDieTelnetClient {
 
         const handler =
             this.unexpectedConnectionLossHandler;
-
         this.unexpectedConnectionLossHandler = null;
 
         if (!handler) {
@@ -469,6 +486,7 @@ class SevenDaysToDieTelnetClient {
         this.passwordSent = false;
         this.authenticationAccepted = false;
         this.consoleReady = false;
+        this.consoleInstructionsReceived = false;
         this.cancelConnectionAttempt = null;
         this.unexpectedConnectionLossHandler = null;
         this.connectionLossNotified = false;
