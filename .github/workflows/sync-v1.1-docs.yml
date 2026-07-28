@@ -1,0 +1,53 @@
+name: Sync v1.1 documentation
+
+on:
+  push:
+    branches:
+      - release/v1.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/v1.1.0
+      - name: Update cumulative documentation
+        shell: python
+        run: |
+          from pathlib import Path
+
+          decision = Path('docs/Decision-Log.md')
+          text = decision.read_text(encoding='utf-8')
+          marker = '## Administration and Configuration Foundation'
+          if marker not in text:
+              text += '''\n\n## Administration and Configuration Foundation\n\n### Decision\n\nCore owns immutable setting definitions, authorization, durable overrides, administration audit history, and live mutation coordination. Modules retain business validation and active values. Future Discord or Website administration interfaces must call these validated Core services rather than directly mutate Module properties, configuration files, stores, or database rows.\n\nNormal settings and secret configuration use separate boundaries. Secret values remain environment-backed, path-specific operational configuration and cannot enter normal settings persistence, reads, mutations, or audit history.\n\n### Reason\n\nThis division preserves one validated administrative path, prevents interfaces from duplicating business rules, keeps secrets out of editable community settings, and allows runtime values, persistence, and audit history to remain consistent under failure.\n\n### Guardrails\n\n- The first configurable owner is Economy.\n- Discord and Website settings interfaces are not implemented.\n- Discord roles are not translated into RSF settings permissions.\n- Secret editing, encrypted storage, rotation, and vault integration are not implemented.\n- Provider restart controls, generic plugin configuration, multi-community settings, and remote database support remain future work.\n'''
+              decision.write_text(text, encoding='utf-8')
+
+          glossary = Path('docs/Glossary.md')
+          text = glossary.read_text(encoding='utf-8')
+          marker = '## Setting Definition'
+          if marker not in text:
+              text += '''\n\n## Setting Definition\n\nAn immutable Core-owned description of one editable non-secret value, including its key, owner, value type, permissions, and change behavior.\n\n## Settings Registry\n\nThe Core-owned collection that validates and resolves setting definitions. Unknown keys fail rather than being treated as arbitrary configuration.\n\n## Settings Service\n\nThe Core service boundary for authorized setting reads, updates, and resets. It coordinates definition lookup, actor validation, permissions, owner validation, persistence, and optional audit behavior.\n\n## Live Settings Service\n\nThe audited settings mutation service that also applies successful changes to a running owner through an applicator and restores the previous runtime value when the operation fails.\n\n## Setting Override\n\nA durable non-secret value stored in SQLite that replaces an owner's default until reset.\n\n## Administration Audit History\n\nThe durable ordered record of successful settings updates and resets, including actor, action, setting key, previous record, new record, and occurrence time.\n\n## Secret Configuration\n\nA separate path-specific environment-backed boundary for operational secrets. Secret values cannot be normal settings, SQLite overrides, or settings audit records.\n\n## Configuration Redaction\n\nThe process that replaces common secret fields and known raw secret values in nested diagnostic objects, arrays, and messages before they are exposed.\n\n## Economy Settings Applicator\n\nThe owner-specific live settings adapter that reads, applies, restores, and supplies defaults for the six configurable Economy values.\n'''
+              glossary.write_text(text, encoding='utf-8')
+
+          onboarding = Path('docs/AI-ONBOARDING.md')
+          text = onboarding.read_text(encoding='utf-8')
+          old = '13. `Glossary.md`'
+          new = '13. `Glossary.md`\n14. `Administration-Configuration.md`'
+          if new not in text and old in text:
+              onboarding.write_text(text.replace(old, new, 1), encoding='utf-8')
+      - name: Commit documentation synchronization
+        run: |
+          if git diff --quiet -- docs; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/Decision-Log.md docs/Glossary.md docs/AI-ONBOARDING.md
+          git commit -m "Synchronize v1.1 source-of-truth documentation"
+          git push origin HEAD:release/v1.1.0
