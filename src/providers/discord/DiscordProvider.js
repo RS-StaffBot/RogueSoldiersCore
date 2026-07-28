@@ -11,6 +11,12 @@ const CommandLoader = require("./commands/CommandLoader");
 const InteractionHandler = require("./handlers/InteractionHandler");
 const CommandRegistrar = require("./services/CommandRegistrar");
 const CommandRegistry = require("./services/CommandRegistry");
+const DiscordGameCommandAuthorizer = require(
+    "./services/DiscordGameCommandAuthorizer"
+);
+const DiscordGameServerProviderResolver = require(
+    "./services/DiscordGameServerProviderResolver"
+);
 
 class DiscordProvider extends BaseProvider {
 
@@ -20,8 +26,12 @@ class DiscordProvider extends BaseProvider {
         commandRegistry = CommandRegistry,
         createClient = options => new Client(options),
         environment = process.env,
+        gameCommandAuthorizer =
+            new DiscordGameCommandAuthorizer(),
+        gameServerProviderResolver = null,
         interactionHandler = InteractionHandler,
-        logger = Logger
+        logger = Logger,
+        resolveGameServerProvider = () => undefined
     } = {}) {
 
         super("Discord");
@@ -31,6 +41,12 @@ class DiscordProvider extends BaseProvider {
         this.commandRegistry = commandRegistry;
         this.createClient = createClient;
         this.environment = environment;
+        this.gameCommandAuthorizer = gameCommandAuthorizer;
+        this.gameServerProviderResolver =
+            gameServerProviderResolver ||
+            new DiscordGameServerProviderResolver({
+                resolveProvider: resolveGameServerProvider
+            });
         this.interactionHandler = interactionHandler;
         this.logger = logger;
         this.client = null;
@@ -48,13 +64,11 @@ class DiscordProvider extends BaseProvider {
                     GatewayIntentBits.Guilds
                 ]
             });
-
             this.loadCommands();
 
             this.interactionHandler.register(this.client);
 
             super.initialize();
-
             return this.getStatus();
 
         } catch (error) {
@@ -75,7 +89,6 @@ class DiscordProvider extends BaseProvider {
         this.state = ComponentState.STARTING;
 
         let cleanupReadyListener = () => {};
-
         try {
 
             const token = this.environment.DISCORD_TOKEN;
@@ -94,7 +107,6 @@ class DiscordProvider extends BaseProvider {
             }
 
             const readiness = this.waitForReadiness();
-
             cleanupReadyListener = readiness.cleanup;
 
             await this.client.login(token);
@@ -123,7 +135,6 @@ class DiscordProvider extends BaseProvider {
             });
 
             super.start();
-
             return this.getStatus();
 
         } catch (error) {
@@ -176,9 +187,12 @@ class DiscordProvider extends BaseProvider {
     loadCommands() {
 
         this.commandRegistry.clear();
-
-        const commands = this.commandLoader.load();
-
+        const commands = this.commandLoader.load({
+            gameCommandAuthorizer:
+                this.gameCommandAuthorizer,
+            gameServerProviderResolver:
+                this.gameServerProviderResolver
+        });
         for (const command of commands) {
             this.commandRegistry.register(command);
         }
@@ -206,7 +220,6 @@ class DiscordProvider extends BaseProvider {
             }
 
             super.stop();
-
             return this.getStatus();
 
         } catch (error) {
