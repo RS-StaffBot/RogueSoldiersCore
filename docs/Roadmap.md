@@ -4,9 +4,9 @@
 
 **Repository Version:** v1.2.0
 
-**Current Milestone:** No active implementation milestone selected
+**Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** v1.2.0 completed and tagged
+**Status:** Selected and planned; implementation has not started
 
 ## Completed Milestones
 
@@ -24,6 +24,79 @@
 - v1.0.0 - Production Release
 - v1.1.0 - Administration and Configuration Foundation
 - v1.2.0 - 7 Days to Die Command Execution Foundation
+
+## v1.3.0 - Discord Game Server Command Interface
+
+### Goal
+
+Provide a narrow Discord slash-command interface over the completed 7 Days to Die Provider command service.
+
+The initial command family is:
+
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say <message>`
+
+### Architecture Boundary
+
+```text
+Discord interaction
+    |
+    v
+Discord command
+    |
+    v
+SevenDaysToDieProvider.executeCommand()
+    |
+    v
+7DTD Telnet command service
+```
+
+The Discord Provider owns:
+
+- Slash-command definitions
+- Discord permission checks
+- Interaction handling and reply deferral
+- User-facing result formatting
+- Safe Discord error wording
+
+The 7 Days to Die Provider retains ownership of:
+
+- Telnet communication
+- Command execution
+- Completion detection
+- Response and event separation
+- Timeout and connection failures
+- Single-active-command enforcement
+
+No Module is introduced for these direct platform operations.
+
+### Planned Phases
+
+1. Define the Discord permission and Provider-resolution boundary.
+2. Add `/game status` without sending a remote command.
+3. Add `/game time` using `gettime`.
+4. Add `/game players` using `listplayers`.
+5. Add `/game say` using the verified `say` command path.
+6. Add response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
+7. Add command registration and interaction tests.
+8. Perform live Discord-to-game verification.
+9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
+
+### Outside v1.3.0
+
+- Arbitrary console command execution
+- Hosted-player ban, kick, whitelist, or player-administration workflows
+- Cross-platform player identity linking
+- Discord and in-game chat bridging
+- Economy-backed game purchases or rewards
+- Command queues
+- Multiple simultaneous game commands
+- Multiple game servers
+- Automatic game-server startup or process supervision
+- Public Telnet exposure
+- Logfile-based command-response parsing
 
 ## v1.2.0 - 7 Days to Die Command Execution Foundation
 
@@ -43,36 +116,16 @@ Verified work:
 - Password-protected and direct-console readiness compatibility
 - Live command verification against a running 7 Days to Die V3.1 test server
 
-## v1.2.0 Boundary
-
-The milestone proves the 7 Days to Die Provider-owned command-response boundary and exposes a safe single-command Provider service.
-
-Outside v1.2.0:
-
-- Discord game-server slash commands
-- Ban, kick, whitelist, or player-administration workflows
-- Player identity linking
-- Discord and in-game chat bridging
-- Economy-backed in-game purchases or rewards
-- Multiple simultaneous game commands
-- Multiple game servers
-- Automatic game-server startup or process supervision
-- Public Telnet exposure
-- Logfile-based command-response parsing
-
-## Release Record
+## v1.2.0 Release Record
 
 - Release pull request: `#32`
 - Release merge commit: `9faa79314d092ba3e8092af1e00405af6d6cc9b8`
 - Annotated release tag: `v1.2.0`
 
-## Post-v1.2 Direction
+## Future Direction
 
-The next milestone must be selected from demonstrated Rogue Soldiers operational needs. No future milestone is active merely because it appears below.
+Future milestones may include:
 
-Likely future areas include:
-
-- Discord game-server command interfaces over the Provider command service
 - Hosted game-server player administration
 - Discord and in-game chat integration
 - Economy-backed in-game rewards and purchases
