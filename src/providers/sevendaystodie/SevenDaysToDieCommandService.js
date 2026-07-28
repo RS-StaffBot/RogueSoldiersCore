@@ -34,6 +34,16 @@ const KNOWN_COMMANDS = new Set([
     "say"
 ]);
 
+const STARTUP_BANNER_PATTERNS = [
+    /^Server port:\s+\d+$/u,
+    /^Max players:\s+\d+$/u,
+    /^Game mode:\s+.+$/u,
+    /^World:\s+.+$/u,
+    /^Game name:\s+.+$/u,
+    /^Difficulty:\s+.+$/u,
+    /^Press 'help' to get a list of all commands\. Press 'exit' to end session\.$/u
+];
+
 class SevenDaysToDieCommandService {
 
     constructor({
@@ -117,6 +127,7 @@ class SevenDaysToDieCommandService {
                 framer: new SevenDaysToDieTelnetLineFramer(),
                 responseLines: [],
                 eventLines: [],
+                startupBannerActive: false,
                 resolve,
                 socket,
                 startedAt,
@@ -191,6 +202,10 @@ class SevenDaysToDieCommandService {
                 break;
             }
 
+            if (this.shouldIgnoreStartupBannerLine(active, line)) {
+                continue;
+            }
+
             const lineType = this.lineClassifier.classify(line, {
                 command: active.command
             });
@@ -233,6 +248,25 @@ class SevenDaysToDieCommandService {
                 this.scheduleInactivity(active);
             }
         }
+
+    }
+
+    shouldIgnoreStartupBannerLine(active, line) {
+
+        if (STARTUP_BANNER_PATTERNS.some(pattern => pattern.test(line))) {
+            active.startupBannerActive = true;
+            return true;
+        }
+
+        if (active.startupBannerActive && line.length === 0) {
+            return true;
+        }
+
+        if (active.startupBannerActive) {
+            active.startupBannerActive = false;
+        }
+
+        return false;
 
     }
 
