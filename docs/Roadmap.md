@@ -4,9 +4,9 @@
 
 **Repository Version:** v1.2.0
 
-**Current Milestone:** v1.2.0 - 7 Days to Die Command Execution Foundation
+**Current Milestone:** No active implementation milestone selected
 
-**Status:** Closure in progress pending release pull request, merged-main verification, and tag
+**Status:** v1.2.0 completed and tagged
 
 ## Completed Milestones
 
@@ -23,10 +23,11 @@
 - v0.9.0 - Website Provider
 - v1.0.0 - Production Release
 - v1.1.0 - Administration and Configuration Foundation
+- v1.2.0 - 7 Days to Die Command Execution Foundation
 
 ## v1.2.0 - 7 Days to Die Command Execution Foundation
 
-Status: Implemented and live-verified; release closure in progress
+Status: Completed and tagged
 
 Verified work:
 
@@ -59,16 +60,11 @@ Outside v1.2.0:
 - Public Telnet exposure
 - Logfile-based command-response parsing
 
-## Release Closure
+## Release Record
 
-Remaining release actions:
-
-- Synchronize `package-lock.json` to version `1.2.0`
-- Pass release-closure pull request validation
-- Merge the release-closure pull request
-- Verify merged `main`
-- Confirm all version values report `1.2.0`
-- Create and push annotated tag `v1.2.0`
+- Release pull request: `#32`
+- Release merge commit: `9faa79314d092ba3e8092af1e00405af6d6cc9b8`
+- Annotated release tag: `v1.2.0`
 
 ## Post-v1.2 Direction
 
