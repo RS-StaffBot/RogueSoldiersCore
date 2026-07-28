@@ -34,12 +34,15 @@ const KNOWN_COMMANDS = new Set([
     "say"
 ]);
 
-const INVALID_COMMAND_PATTERN =
-    /^\*\*\* ERROR: unknown command '(?:[^']+)'$/u;
-const GET_TIME_PATTERN = /^Day \d+, \d{2}:\d{2}$/u;
-const LIST_PLAYERS_PATTERN = /^Total of \d+ in the game$/u;
-const HELP_OUTPUT_PATTERN =
-    /^(?:\*\*\* Command\(s\):|Description:)/u;
+const STARTUP_BANNER_PATTERNS = [
+    /^Server port:\s+\d+$/u,
+    /^Max players:\s+\d+$/u,
+    /^Game mode:\s+.+$/u,
+    /^World:\s+.+$/u,
+    /^Game name:\s+.+$/u,
+    /^Difficulty:\s+.+$/u,
+    /^Press 'help' to get a list of all commands\. Press 'exit' to end session\.$/u
+];
 
 class SevenDaysToDieCommandService {
 
@@ -124,7 +127,7 @@ class SevenDaysToDieCommandService {
                 framer: new SevenDaysToDieTelnetLineFramer(),
                 responseLines: [],
                 eventLines: [],
-                responseStarted: false,
+                startupBannerActive: false,
                 resolve,
                 socket,
                 startedAt,
@@ -199,12 +202,8 @@ class SevenDaysToDieCommandService {
                 break;
             }
 
-            if (!active.responseStarted) {
-                if (!this.isResponseStart(line, active)) {
-                    continue;
-                }
-
-                active.responseStarted = true;
+            if (this.shouldIgnoreStartupBannerLine(active, line)) {
+                continue;
             }
 
             const lineType = this.lineClassifier.classify(line, {
@@ -252,49 +251,22 @@ class SevenDaysToDieCommandService {
 
     }
 
-    isResponseStart(line, active) {
+    shouldIgnoreStartupBannerLine(active, line) {
 
-        if (
-            line.includes(
-                `INF Executing command '${active.command}' by Telnet`
-            )
-        ) {
+        if (STARTUP_BANNER_PATTERNS.some(pattern => pattern.test(line))) {
+            active.startupBannerActive = true;
             return true;
         }
 
-        if (INVALID_COMMAND_PATTERN.test(line)) {
+        if (active.startupBannerActive && line.length === 0) {
             return true;
         }
 
-        if (
-            active.commandName === "gettime" &&
-            GET_TIME_PATTERN.test(line)
-        ) {
-            return true;
+        if (active.startupBannerActive) {
+            active.startupBannerActive = false;
         }
 
-        if (
-            (active.commandName === "listplayers" ||
-                active.commandName === "lp") &&
-            LIST_PLAYERS_PATTERN.test(line)
-        ) {
-            return true;
-        }
-
-        if (
-            active.commandName === "say" &&
-            this.lineClassifier.isMatchingSayResponse(
-                line,
-                active.command
-            )
-        ) {
-            return true;
-        }
-
-        return (
-            active.commandName === "help" &&
-            HELP_OUTPUT_PATTERN.test(line)
-        );
+        return false;
 
     }
 
