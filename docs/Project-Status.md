@@ -6,13 +6,13 @@ v1.2.0
 
 ## Current Milestone
 
-v1.2.0 - 7 Days to Die Command Execution Foundation
+No active implementation milestone selected.
 
-Status: Closure in progress pending release pull request, final merged-main verification, and tag.
+Status: v1.2.0 completed and tagged.
 
 ## Last Completed Milestone
 
-v1.1.0 - Administration and Configuration Foundation
+v1.2.0 - 7 Days to Die Command Execution Foundation
 
 Status: Completed and tagged
 
@@ -58,7 +58,7 @@ All successful commands returned deterministic completion reasons, startup banne
 
 ## Automated Verification
 
-The release branch is required to pass:
+The v1.2.0 release passed:
 
 ```powershell
 npm.cmd ci
@@ -67,14 +67,14 @@ npm.cmd test
 npm.cmd run lint
 ```
 
-The final local regression before closure passed with:
+Final verification results:
 
 - 0 production vulnerabilities
 - 325 tests passed
 - 0 failed tests
-- ESLint passing after removal of the temporary untracked live-verification script
-
-GitHub Actions validates the project on Node.js 22.
+- ESLint passed
+- GitHub Actions passed on Node.js 22
+- Annotated tag `v1.2.0` points to verified merged `main`
 
 ## Current Production Boundaries
 
@@ -95,15 +95,11 @@ GitHub Actions validates the project on Node.js 22.
 - Secrets cannot be edited through the settings system.
 - Cross-platform identity, clustering, remote databases, and multi-community administration remain future work.
 
-## Release Closure Requirements
+## Release Record
 
-Before v1.2.0 is tagged:
-
-- All version locations must report `1.2.0`.
-- The release-closure pull request must pass CI.
-- Documentation must match the merged repository.
-- The final repository state must be verified.
-- The annotated `v1.2.0` tag must be created from verified `main` and pushed to GitHub.
+- Release pull request: `#32`
+- Release merge commit: `9faa79314d092ba3e8092af1e00405af6d6cc9b8`
+- Annotated release tag: `v1.2.0`
 
 ## Release Notes
 
