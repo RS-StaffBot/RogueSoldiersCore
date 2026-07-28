@@ -48,8 +48,6 @@ class SevenDaysToDieTelnetLineFramer {
             this.lineBuffer += this.decoder.write(payload);
         }
 
-        this.enforceBufferLimit();
-
         const lines = [];
         let newlineIndex = this.lineBuffer.indexOf("\n");
 
