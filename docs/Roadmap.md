@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Repository Version:** v1.0.0
+**Repository Version:** v1.1.0
 
-**Current Milestone:** v1.0.0 - Production Release
+**Current Milestone:** No active implementation milestone selected
 
-**Status:** Release closure in progress
+**Status:** v1.1.0 closure complete pending release tag
 
 ## Completed Milestones
 
@@ -21,64 +21,72 @@
 - v0.7.0 - Database
 - v0.8.0 - 7 Days to Die Provider
 - v0.9.0 - Website Provider
+- v1.0.0 - Production Release
+- v1.1.0 - Administration and Configuration Foundation
 
-## v1.0.0 - Production Release
+## v1.1.0 - Administration and Configuration Foundation
 
-Status: Release closure in progress
+Status: Completed
 
-Completed production work:
+Verified work:
 
-- GitHub Actions validation for pull requests and `main`
-- Production process lifecycle and graceful shutdown handling
-- Production configuration and secret-handling contract
-- SQLite backup and restore procedures
-- Production logging and troubleshooting documentation
-- Discord production deployment documentation
-- Website production deployment documentation
-- Production smoke-test checklist
-- Production regression and security review
-- Blocking high/critical production dependency audit in CI
-- v1.0.0 release notes
-- Version synchronization initiated
+- Setting ownership and immutable definitions
+- Permission-protected setting reads and mutations
+- Durable SQLite setting overrides
+- Owner validation and Economy business rules
+- Administration audit history
+- Six configurable Economy settings
+- Startup application of persisted overrides
+- Immediate live updates and resets
+- Runtime compensation aligned with persistence and audit rollback
+- Separate secret configuration and redaction boundary
+- Regression and security review
+- Documentation and version synchronization
 
-Remaining closure work:
+## v1.1.0 Boundary
 
-- Synchronize every version location to `1.0.0`
-- Pass the release-closure pull request validation
-- Merge the release-closure pull request
-- Run the final local dependency audit, automated tests, and lint against merged `main`
-- Confirm the working tree is clean
-- Create and push the annotated `v1.0.0` tag
+The milestone establishes backend services required by future administrative interfaces. It does not add an administrative interface itself.
 
-## v1.0.0 Release Boundary
+Outside v1.1.0:
 
-The production release includes the existing verified framework, Discord command infrastructure, Moderation, Economy, Tickets, SQLite persistence, optional 7 Days to Die connectivity, optional Website transport and authentication, and the production operating procedures required for a controlled Rogue Soldiers deployment.
-
-The following remain outside v1.0.0:
-
+- Website settings pages
+- Discord `/settings` commands
+- Mobile administration APIs
+- Discord role-to-RSF permission mapping
+- Game-account linking
+- Provider restart controls
+- Website secret editing
+- Generic plugin configuration
+- Multi-community settings
+- Remote database support
 - 7 Days to Die administrative command execution
-- Player lookup and game-server moderation actions
-- Discord-to-game and game-to-Discord chat bridging
-- Economy purchases that produce in-game effects
-- Persistent Website sessions
-- Website staff workflows and broader Module administration
-- Cross-platform identity mapping
-- Multi-process or clustered database operation
-- Multi-community administration
+- Discord and in-game chat bridging
+- Economy-backed in-game purchases
 
-## Post-v1 Direction
+## Release Closure
 
-Future milestones should be selected from demonstrated Rogue Soldiers operational needs rather than implemented speculatively.
+Remaining release actions:
+
+- Pass release-closure pull request validation
+- Merge the release-closure pull request
+- Verify merged `main`
+- Confirm all version values report `1.1.0`
+- Create and push annotated tag `v1.1.0`
+
+## Post-v1.1 Direction
+
+The next milestone must be selected from demonstrated Rogue Soldiers operational needs. No future milestone is active merely because it appears below.
 
 Likely future areas include:
 
-- Proving and implementing the 7 Days to Die command-response boundary
+- A Discord or Website administration interface over the v1.1 settings services
+- Discord role translation into reusable RSF permissions
+- Proving the 7 Days to Die command-response boundary
 - Hosted game-server player administration
 - Discord and in-game chat integration
 - Economy-backed in-game rewards and purchases
 - Ticket channels, transcripts, and appeal workflows
-- Website staff controls and broader administration
-- Persistent Website sessions and improved deployment operations
+- Persistent Website sessions
 - Cross-platform identity mapping
 
 Every future milestone must preserve the established architecture:
