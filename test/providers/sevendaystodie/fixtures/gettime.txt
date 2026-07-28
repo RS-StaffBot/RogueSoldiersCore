@@ -1,0 +1,4 @@
+gettime
+2026-07-27T22:12:19 3109.544 INF Executing command 'gettime' by Telnet from 127.0.0.1:50000
+Day 1, 11:40
+2026-07-27T22:12:24 3114.544 INF Time: 51.86m FPS: 20.00 Heap: 1601.2MB Ply: 1 Zom: 0 Ent: 1
