@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phases 1 through 3 are complete and Phase 4 is next
+**Status:** In progress; Phases 1 through 4 are complete and Phase 5 is next
 
 ## Completed Milestones
 
@@ -114,13 +114,27 @@ Phase 3 established:
 - No execution when the Provider is unavailable
 - Deterministic tests without live Discord or Telnet access
 
+### Completed Phase 4
+
+Phase 4 established:
+
+- A guild-only `/game players` subcommand
+- Reuse of the Phase 1 authorization and Provider-resolution boundaries
+- Deferred ephemeral replies before remote execution
+- Fixed `listplayers` execution through the narrow Provider service
+- Parsing of verified player rows and the `Total of N in the game` terminator
+- Discord output limited to player display names and total count
+- Raw IP addresses, platform identifiers, positions, health, and other server fields excluded from Discord
+- Safe handling for empty, unavailable, and malformed results
+- Deterministic tests without live Discord or Telnet access
+
 ### Planned Phases
 
 1. Completed: define the Discord permission and Provider-resolution boundary.
 2. Completed: add `/game status` without sending a remote command.
 3. Completed: add `/game time` using `gettime`.
-4. Next: add `/game players` using `listplayers`.
-5. Add `/game say` using the verified `say` command path.
+4. Completed: add `/game players` using `listplayers`.
+5. Next: add `/game say` using the verified `say` command path.
 6. Add response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
 7. Add command registration and interaction tests.
 8. Perform live Discord-to-game verification.
