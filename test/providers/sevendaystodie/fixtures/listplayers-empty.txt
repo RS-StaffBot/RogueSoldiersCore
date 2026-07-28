@@ -1,0 +1,3 @@
+listplayers
+2026-07-27T21:25:19 289.694 INF Executing command 'listplayers' by Telnet from 127.0.0.1:50000
+Total of 0 in the game

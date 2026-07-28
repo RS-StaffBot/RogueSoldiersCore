@@ -1,0 +1,2 @@
+thiscommanddoesnotexist
+*** ERROR: unknown command 'thiscommanddoesnotexist'

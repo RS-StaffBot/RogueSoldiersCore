@@ -1,0 +1,3 @@
+say "RSF command-response test"
+2026-07-27T22:13:43 3193.967 INF Executing command 'say "RSF command-response test"' by Telnet from 127.0.0.1:50000
+2026-07-27T22:13:43 3193.968 INF Chat (from '-non-player-', entity id '-1', to 'Global'): RSF command-response test

@@ -1,0 +1,7 @@
+help say
+2026-07-27T22:14:03 3213.768 INF Executing command 'help say' by Telnet from 127.0.0.1:50000
+*** Command(s): say ***
+No detailed help available.
+Description: Sends a message to all connected clients
+
+2026-07-27T22:14:05 3215.821 INF Entity animalRabbit 192 killed by zombieBowler 191
