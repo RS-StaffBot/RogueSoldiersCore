@@ -81,7 +81,7 @@ class LiveSettingsService extends SettingsService {
         const applicator = this.getApplicator(definition);
         const previousRuntimeValue = applicator.get(definition.key);
         const occurredAt = this.getTimestamp();
-        let runtimeApplied = false;
+        let runtimeApplicationAttempted = false;
 
         return this.runLiveMutation(() => {
             const previousRecord = this.store.get(definition.key);
@@ -102,15 +102,15 @@ class LiveSettingsService extends SettingsService {
                 occurredAt
             });
 
+            runtimeApplicationAttempted = true;
             applicator.apply(definition.key, value);
-            runtimeApplied = true;
 
             return Object.freeze({
                 ...newRecord,
                 activeValue: applicator.get(definition.key)
             });
         }, () => {
-            if (runtimeApplied) {
+            if (runtimeApplicationAttempted) {
                 applicator.restore(definition.key, previousRuntimeValue);
             }
         });
@@ -153,7 +153,7 @@ class LiveSettingsService extends SettingsService {
         this.validateOwnerValue(definition, defaultValue);
 
         const occurredAt = this.getTimestamp();
-        let runtimeApplied = false;
+        let runtimeApplicationAttempted = false;
 
         return this.runLiveMutation(() => {
             const reset = this.store.delete(definition.key);
@@ -173,8 +173,8 @@ class LiveSettingsService extends SettingsService {
                 occurredAt
             });
 
+            runtimeApplicationAttempted = true;
             applicator.apply(definition.key, defaultValue);
-            runtimeApplied = true;
 
             return Object.freeze({
                 key: definition.key,
@@ -182,7 +182,7 @@ class LiveSettingsService extends SettingsService {
                 activeValue: applicator.get(definition.key)
             });
         }, () => {
-            if (runtimeApplied) {
+            if (runtimeApplicationAttempted) {
                 applicator.restore(definition.key, previousRuntimeValue);
             }
         });
