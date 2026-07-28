@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Repository Version:** v1.1.0
+**Repository Version:** v1.2.0
 
-**Current Milestone:** No active implementation milestone selected
+**Current Milestone:** v1.2.0 - 7 Days to Die Command Execution Foundation
 
-**Status:** v1.1.0 closure complete pending release tag
+**Status:** Closure in progress pending release pull request, merged-main verification, and tag
 
 ## Completed Milestones
 
@@ -24,70 +24,67 @@
 - v1.0.0 - Production Release
 - v1.1.0 - Administration and Configuration Foundation
 
-## v1.1.0 - Administration and Configuration Foundation
+## v1.2.0 - 7 Days to Die Command Execution Foundation
 
-Status: Completed
+Status: Implemented and live-verified; release closure in progress
 
 Verified work:
 
-- Setting ownership and immutable definitions
-- Permission-protected setting reads and mutations
-- Durable SQLite setting overrides
-- Owner validation and Economy business rules
-- Administration audit history
-- Six configurable Economy settings
-- Startup application of persisted overrides
-- Immediate live updates and resets
-- Runtime compensation aligned with persistence and audit rollback
-- Separate secret configuration and redaction boundary
-- Regression and security review
-- Documentation and version synchronization
+- Sanitized raw Telnet evidence fixtures
+- Telnet line framing and protocol-byte removal
+- One active command at a time
+- Provider-owned command-response service
+- Deterministic completion for `gettime`, `listplayers`, `lp`, `say`, `help`, and invalid commands
+- Bounded inactivity fallback for unverified multiline output
+- Unsolicited event separation
+- Timeout, disconnect, write, decision, and truncation failure handling
+- Stale startup-banner exclusion
+- Password-protected and direct-console readiness compatibility
+- Live command verification against a running 7 Days to Die V3.1 test server
 
-## v1.1.0 Boundary
+## v1.2.0 Boundary
 
-The milestone establishes backend services required by future administrative interfaces. It does not add an administrative interface itself.
+The milestone proves the 7 Days to Die Provider-owned command-response boundary and exposes a safe single-command Provider service.
 
-Outside v1.1.0:
+Outside v1.2.0:
 
-- Website settings pages
-- Discord `/settings` commands
-- Mobile administration APIs
-- Discord role-to-RSF permission mapping
-- Game-account linking
-- Provider restart controls
-- Website secret editing
-- Generic plugin configuration
-- Multi-community settings
-- Remote database support
-- 7 Days to Die administrative command execution
+- Discord game-server slash commands
+- Ban, kick, whitelist, or player-administration workflows
+- Player identity linking
 - Discord and in-game chat bridging
-- Economy-backed in-game purchases
+- Economy-backed in-game purchases or rewards
+- Multiple simultaneous game commands
+- Multiple game servers
+- Automatic game-server startup or process supervision
+- Public Telnet exposure
+- Logfile-based command-response parsing
 
 ## Release Closure
 
 Remaining release actions:
 
+- Synchronize `package-lock.json` to version `1.2.0`
 - Pass release-closure pull request validation
 - Merge the release-closure pull request
 - Verify merged `main`
-- Confirm all version values report `1.1.0`
-- Create and push annotated tag `v1.1.0`
+- Confirm all version values report `1.2.0`
+- Create and push annotated tag `v1.2.0`
 
-## Post-v1.1 Direction
+## Post-v1.2 Direction
 
 The next milestone must be selected from demonstrated Rogue Soldiers operational needs. No future milestone is active merely because it appears below.
 
 Likely future areas include:
 
-- A Discord or Website administration interface over the v1.1 settings services
-- Discord role translation into reusable RSF permissions
-- Proving the 7 Days to Die command-response boundary
+- Discord game-server command interfaces over the Provider command service
 - Hosted game-server player administration
 - Discord and in-game chat integration
 - Economy-backed in-game rewards and purchases
+- Cross-platform player identity mapping
+- A Discord or Website administration interface over the v1.1 settings services
+- Discord role translation into reusable RSF permissions
 - Ticket channels, transcripts, and appeal workflows
 - Persistent Website sessions
-- Cross-platform identity mapping
 
 Every future milestone must preserve the established architecture:
 
