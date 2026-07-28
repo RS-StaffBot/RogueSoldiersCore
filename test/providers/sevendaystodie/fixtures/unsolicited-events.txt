@@ -1,0 +1,5 @@
+2026-07-27T22:13:19 3170.117 INF VehicleManager saving 0 (0 + 0)
+2026-07-27T22:13:19 3170.118 INF DroneManager saving 0 (0 + 0)
+2026-07-27T22:13:19 3170.119 INF VehicleManager saved 9 bytes
+2026-07-27T22:13:19 3170.283 INF [DECO] written 75800, in 16ms
+2026-07-27T22:13:24 3174.568 INF Time: 52.87m FPS: 20.00 Heap: 1586.0MB Ply: 1 Zom: 2 Ent: 5
