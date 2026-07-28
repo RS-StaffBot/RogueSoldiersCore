@@ -60,7 +60,7 @@ function createInteraction({
     };
 }
 
-test("defines the guild-only game status slash command", () => {
+test("defines the guild-only game command family", () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createResolver(
@@ -78,7 +78,7 @@ test("defines the guild-only game status slash command", () => {
     );
     assert.deepEqual(
         data.options.map(option => option.name),
-        ["status", "time"]
+        ["status", "time", "players"]
     );
 });
 
