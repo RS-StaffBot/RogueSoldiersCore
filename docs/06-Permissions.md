@@ -72,6 +72,24 @@ The Discord Provider translates `ManageMessages` into `VIEW_ALL`, `RESPOND`, `AS
 
 Discord translation determines which reusable identifiers an interaction presents. `TicketModule` remains responsible for the final authorization decision; Provider commands do not duplicate Ticket authorization rules.
 
+## Discord Game Command Authorization
+
+Verified location:
+
+```text
+src/providers/discord/services/DiscordGameCommandAuthorizer.js
+```
+
+The initial `/game` command family uses one reusable Discord Provider requirement:
+
+```text
+Discord Manage Guild permission
+```
+
+`DiscordGameCommandAuthorizer` validates the Discord member-permission boundary and reports whether the member has `ManageGuild`. The authorizer is injected into the Discord command-loading boundary so future `/game` subcommands use one permission decision path.
+
+This is a Discord platform-operation requirement, not a Module business permission. No Shared game-server permission identifier is introduced because v1.3.0 currently has no second platform or Module consumer for that identifier.
+
 ## Not Yet Implemented
 
 - Role-to-RSF permission mapping
@@ -82,3 +100,4 @@ Discord translation determines which reusable identifiers an interaction present
 - Discord Economy transfer authorization
 - Configurable Ticket staff roles
 - Broader Ticket permission administration
+- Configurable Discord game-server staff roles

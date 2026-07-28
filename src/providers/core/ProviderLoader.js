@@ -5,7 +5,9 @@ const Configuration = require(
 const ModuleManager = require(
     "../../modules/core/ModuleManager"
 );
-const SevenDaysToDieProvider = require("../sevendaystodie/SevenDaysToDieProvider"
+const ProviderManager = require("./ProviderManager");
+const SevenDaysToDieProvider = require(
+    "../sevendaystodie/SevenDaysToDieProvider"
 );
 const SevenDaysToDieTelnetClient = require(
     "../sevendaystodie/SevenDaysToDieTelnetClient"
@@ -26,10 +28,24 @@ class ProviderLoader {
         createWebsiteServer = options =>
             new WebsiteServer(options),
         environment = process.env,
-        moduleManager = ModuleManager    } = {}) {
+        moduleManager = ModuleManager,
+        providerManager = ProviderManager
+    } = {}) {
+
+        if (
+            !providerManager ||
+            typeof providerManager.get !== "function"
+        ) {
+            throw new Error(
+                "Discord game Provider Manager boundary is invalid."
+            );
+        }
 
         const providers = [
-            new DiscordProvider()
+            new DiscordProvider({
+                resolveGameServerProvider: name =>
+                    providerManager.get(name)
+            })
         ];
         const gameSettings = configuration.get(
             "providers.sevendaystodie",

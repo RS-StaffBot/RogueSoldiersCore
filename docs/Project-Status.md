@@ -8,7 +8,7 @@ v1.2.0
 
 v1.3.0 - Discord Game Server Command Interface
 
-Status: Selected and planned; implementation has not started.
+Status: In progress; Phase 1 implementation is complete and awaiting merge.
 
 ## Milestone Goal
 
@@ -21,12 +21,27 @@ The first command family is planned as:
 - `/game players`
 - `/game say <message>`
 
-The Discord Provider will own slash-command definitions, Discord permission checks, interaction handling, response deferral, and user-facing formatting. The 7 Days to Die Provider will continue owning Telnet communication, command execution, completion detection, response and event separation, timeout behavior, and connection failures.
+The Discord Provider owns slash-command definitions, Discord permission checks, interaction handling, response deferral, and user-facing formatting. The 7 Days to Die Provider continues owning Telnet communication, command execution, completion detection, response and event separation, timeout behavior, and connection failures.
+
+## Verified Phase 1 Boundary
+
+Phase 1 adds the Discord-side authorization and Provider-resolution foundations without adding a `/game` command.
+
+Verified work:
+
+- Added one reusable Discord game-command authorization service.
+- Selected Discord `ManageGuild` as the initial fixed staff requirement.
+- Added a Provider Manager-backed resolver for the framework-loaded `7 Days to Die` Provider.
+- Distinguished unavailable, not-ready, invalid-boundary, and available resolution outcomes.
+- Returned only a frozen `executeCommand` service boundary to future commands.
+- Prevented commands from receiving the Provider Manager, Core Registry, Telnet client, socket, configuration, password, or other Provider internals.
+- Injected both focused boundaries into the Discord command-loading path.
+- Added deterministic tests without Discord login, Telnet sockets, or live credentials.
 
 ## Planned Phases
 
-1. Define the Discord permission and Provider-resolution boundary.
-2. Add `/game status` without sending a remote command.
+1. Completed: define the Discord permission and Provider-resolution boundary.
+2. Next: add `/game status` without sending a remote command.
 3. Add `/game time` through `gettime`.
 4. Add `/game players` through `listplayers`.
 5. Add `/game say` through the verified `say` command path.
