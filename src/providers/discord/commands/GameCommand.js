@@ -57,6 +57,13 @@ class GameCommand extends BaseCommand {
                             "Shows the current in-game day and time."
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("players")
+                        .setDescription(
+                            "Shows the players currently in the game."
+                        )
+                )
         );
 
         this.gameCommandAuthorizer = gameCommandAuthorizer;
@@ -100,6 +107,11 @@ class GameCommand extends BaseCommand {
             return;
         }
 
+        if (subcommand === "players") {
+            await this.executePlayers(interaction);
+            return;
+        }
+
         throw new Error(
             `Unsupported game command subcommand: ${subcommand}`
         );
@@ -123,11 +135,7 @@ class GameCommand extends BaseCommand {
         const resolution =
             this.gameServerProviderResolver.resolve();
 
-        if (
-            !resolution ||
-            resolution.available !== true ||
-            !resolution.service
-        ) {
+        if (!this.isAvailableResolution(resolution)) {
             await interaction.reply({
                 content: this.createStatusMessage(resolution),
                 flags: MessageFlags.Ephemeral
@@ -152,6 +160,43 @@ class GameCommand extends BaseCommand {
 
     }
 
+    async executePlayers(interaction) {
+
+        const resolution =
+            this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({
+            flags: MessageFlags.Ephemeral
+        });
+
+        const result = await resolution.service.executeCommand(
+            "listplayers"
+        );
+        const players = this.parsePlayers(result);
+
+        await interaction.editReply({
+            content: this.createPlayersMessage(players)
+        });
+
+    }
+
+    isAvailableResolution(resolution) {
+        return Boolean(
+            resolution &&
+            resolution.available === true &&
+            resolution.service &&
+            typeof resolution.service.executeCommand === "function"
+        );
+    }
+
     findTimeLine(result) {
 
         if (!result || !Array.isArray(result.responseLines)) {
@@ -162,6 +207,59 @@ class GameCommand extends BaseCommand {
             typeof line === "string" &&
             /^Day \d+, \d{2}:\d{2}$/u.test(line)
         ) || null;
+
+    }
+
+    parsePlayers(result) {
+
+        if (!result || !Array.isArray(result.responseLines)) {
+            return null;
+        }
+
+        const totalLine = result.responseLines.find(line =>
+            typeof line === "string" &&
+            /^Total of \d+ in the game$/u.test(line)
+        );
+
+        if (!totalLine) {
+            return null;
+        }
+
+        const totalMatch = /^Total of (\d+) in the game$/u.exec(totalLine);
+        const total = Number.parseInt(totalMatch[1], 10);
+        const names = result.responseLines
+            .map(line => {
+                if (typeof line !== "string") {
+                    return null;
+                }
+
+                const match = /^\d+\. id=\d+, ([^,]+),/u.exec(line);
+                return match ? match[1].trim() : null;
+            })
+            .filter(Boolean);
+
+        if (names.length !== total) {
+            return null;
+        }
+
+        return Object.freeze({
+            names: Object.freeze([...names]),
+            total
+        });
+
+    }
+
+    createPlayersMessage(players) {
+
+        if (!players) {
+            return "Unable to read the current 7 Days to Die player list.";
+        }
+
+        if (players.total === 0) {
+            return "No players are currently in the 7 Days to Die server.";
+        }
+
+        return `Players online (${players.total}): ${players.names.join(", ")}`;
 
     }
 

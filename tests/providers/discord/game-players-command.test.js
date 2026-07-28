@@ -24,6 +24,19 @@ function createAuthorizer() {
     };
 }
 
+function createAvailableResolver(executeCommand) {
+    return {
+        resolve() {
+            return {
+                available: true,
+                service: { executeCommand },
+                status:
+                    DiscordGameServerProviderResolver.Status.AVAILABLE
+            };
+        }
+    };
+}
+
 function createInteraction() {
     const deferred = [];
     const edits = [];
@@ -35,7 +48,7 @@ function createInteraction() {
         options: {
             getSubcommand(required) {
                 assert.equal(required, true);
-                return "time";
+                return "players";
             }
         },
         deferred,
@@ -53,34 +66,7 @@ function createInteraction() {
     };
 }
 
-function createAvailableResolver(executeCommand) {
-    return {
-        resolve() {
-            return {
-                available: true,
-                service: { executeCommand },
-                status:
-                    DiscordGameServerProviderResolver.Status.AVAILABLE
-            };
-        }
-    };
-}
-
-test("defines the game time subcommand", () => {
-    const command = new GameCommand({
-        gameCommandAuthorizer: createAuthorizer(),
-        gameServerProviderResolver: createAvailableResolver(async () => ({}))
-    });
-
-    const data = command.data.toJSON();
-
-    assert.deepEqual(
-        data.options.map(option => option.name),
-        ["status", "time", "players"]
-    );
-});
-
-test("executes gettime through the resolved Provider service", async () => {
+test("executes listplayers through the resolved Provider service", async () => {
     const commands = [];
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
@@ -89,8 +75,9 @@ test("executes gettime through the resolved Provider service", async () => {
                 commands.push(remoteCommand);
                 return {
                     responseLines: [
-                        "gettime",
-                        "Day 8, 14:25"
+                        "listplayers",
+                        "0. id=171, TestPlayer, pos=(-133.4, 73.0, 495.7), remote=True, health=86, ip=192.0.2.10",
+                        "Total of 1 in the game"
                     ]
                 };
             }
@@ -100,17 +87,38 @@ test("executes gettime through the resolved Provider service", async () => {
 
     await command.execute(interaction);
 
-    assert.deepEqual(commands, ["gettime"]);
+    assert.deepEqual(commands, ["listplayers"]);
     assert.deepEqual(interaction.replies, []);
     assert.deepEqual(interaction.deferred, [{
         flags: MessageFlags.Ephemeral
     }]);
     assert.deepEqual(interaction.edits, [{
-        content: "7 Days to Die time: Day 8, 14:25."
+        content: "Players online (1): TestPlayer"
     }]);
 });
 
-test("does not execute gettime when the Provider is unavailable", async () => {
+test("reports an empty server without exposing raw output", async () => {
+    const command = new GameCommand({
+        gameCommandAuthorizer: createAuthorizer(),
+        gameServerProviderResolver: createAvailableResolver(
+            async () => ({
+                responseLines: [
+                    "listplayers",
+                    "Total of 0 in the game"
+                ]
+            })
+        )
+    });
+    const interaction = createInteraction();
+
+    await command.execute(interaction);
+
+    assert.deepEqual(interaction.edits, [{
+        content: "No players are currently in the 7 Days to Die server."
+    }]);
+});
+
+test("does not execute listplayers when the Provider is unavailable", async () => {
     let executions = 0;
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
@@ -137,12 +145,15 @@ test("does not execute gettime when the Provider is unavailable", async () => {
     }]);
 });
 
-test("reports a safe message when gettime has no verified time line", async () => {
+test("reports malformed player output safely", async () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(
             async () => ({
-                responseLines: ["gettime", "unexpected output"]
+                responseLines: [
+                    "0. id=171, TestPlayer, ip=192.0.2.10",
+                    "Total of 2 in the game"
+                ]
             })
         )
     });
@@ -151,27 +162,34 @@ test("reports a safe message when gettime has no verified time line", async () =
     await command.execute(interaction);
 
     assert.deepEqual(interaction.edits, [{
-        content: "Unable to read the current 7 Days to Die time."
+        content: "Unable to read the current 7 Days to Die player list."
     }]);
 });
 
-test("accepts only the verified Day N, HH:MM response format", () => {
+test("parses only player names and verified totals", () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(async () => ({}))
     });
 
-    assert.equal(
-        command.findTimeLine({
-            responseLines: ["Day 1, 00:05"]
+    assert.deepEqual(
+        command.parsePlayers({
+            responseLines: [
+                "0. id=171, Alpha, pos=(0, 0, 0), ip=192.0.2.10",
+                "1. id=172, Bravo, pos=(1, 1, 1), ip=192.0.2.11",
+                "Total of 2 in the game"
+            ]
         }),
-        "Day 1, 00:05"
+        {
+            names: ["Alpha", "Bravo"],
+            total: 2
+        }
     );
     assert.equal(
-        command.findTimeLine({
-            responseLines: ["Day one, midnight"]
+        command.parsePlayers({
+            responseLines: ["unexpected output"]
         }),
         null
     );
-    assert.equal(command.findTimeLine(null), null);
+    assert.equal(command.parsePlayers(null), null);
 });
