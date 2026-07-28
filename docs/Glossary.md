@@ -395,3 +395,40 @@ SQLite write-ahead logging enabled by the Database Service for file-backed datab
 ## Single-Process Persistence Boundary
 
 The current deployment model using one framework process and one Core-owned SQLite connection. Multi-process databases, replication, clustering, and remote hosting remain future work.
+
+
+## Setting Definition
+
+An immutable Core-owned description of one editable non-secret value, including its key, owner, value type, permissions, and change behavior.
+
+## Settings Registry
+
+The Core-owned collection that validates and resolves setting definitions. Unknown keys fail rather than being treated as arbitrary configuration.
+
+## Settings Service
+
+The Core service boundary for authorized setting reads, updates, and resets. It coordinates definition lookup, actor validation, permissions, owner validation, persistence, and optional audit behavior.
+
+## Live Settings Service
+
+The audited settings mutation service that also applies successful changes to a running owner through an applicator and restores the previous runtime value when the operation fails.
+
+## Setting Override
+
+A durable non-secret value stored in SQLite that replaces an owner's default until reset.
+
+## Administration Audit History
+
+The durable ordered record of successful settings updates and resets, including actor, action, setting key, previous record, new record, and occurrence time.
+
+## Secret Configuration
+
+A separate path-specific environment-backed boundary for operational secrets. Secret values cannot be normal settings, SQLite overrides, or settings audit records.
+
+## Configuration Redaction
+
+The process that replaces common secret fields and known raw secret values in nested diagnostic objects, arrays, and messages before they are exposed.
+
+## Economy Settings Applicator
+
+The owner-specific live settings adapter that reads, applies, restores, and supplies defaults for the six configurable Economy values.

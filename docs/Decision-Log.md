@@ -347,3 +347,23 @@ Creator IDs, assignee IDs, messages, raw Ticket records, store details, database
 ### Reason
 
 This is the smallest production-shaped Website-to-Module checkpoint. It proves authenticated Module access while preserving Module ownership, persistence isolation, creator identity binding, minimal data exposure, and the existing Provider lifecycle.
+
+## Administration and Configuration Foundation
+
+### Decision
+
+Core owns immutable setting definitions, authorization, durable overrides, administration audit history, and live mutation coordination. Modules retain business validation and active values. Future Discord or Website administration interfaces must call these validated Core services rather than directly mutate Module properties, configuration files, stores, or database rows.
+
+Normal settings and secret configuration use separate boundaries. Secret values remain environment-backed, path-specific operational configuration and cannot enter normal settings persistence, reads, mutations, or audit history.
+
+### Reason
+
+This division preserves one validated administrative path, prevents interfaces from duplicating business rules, keeps secrets out of editable community settings, and allows runtime values, persistence, and audit history to remain consistent under failure.
+
+### Guardrails
+
+- The first configurable owner is Economy.
+- Discord and Website settings interfaces are not implemented.
+- Discord roles are not translated into RSF settings permissions.
+- Secret editing, encrypted storage, rotation, and vault integration are not implemented.
+- Provider restart controls, generic plugin configuration, multi-community settings, and remote database support remain future work.
