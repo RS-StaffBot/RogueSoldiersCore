@@ -27,7 +27,7 @@ class DiscordProvider extends BaseProvider {
         createClient = options => new Client(options),
         environment = process.env,
         gameCommandAuthorizer =
-            new DiscordGameCommandAuthorizer(),
+        new DiscordGameCommandAuthorizer(),
         gameServerProviderResolver = null,
         interactionHandler = InteractionHandler,
         logger = Logger,
