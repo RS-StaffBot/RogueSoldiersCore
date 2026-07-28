@@ -34,6 +34,13 @@ const KNOWN_COMMANDS = new Set([
     "say"
 ]);
 
+const INVALID_COMMAND_PATTERN =
+    /^\*\*\* ERROR: unknown command '(?:[^']+)'$/u;
+const GET_TIME_PATTERN = /^Day \d+, \d{2}:\d{2}$/u;
+const LIST_PLAYERS_PATTERN = /^Total of \d+ in the game$/u;
+const HELP_OUTPUT_PATTERN =
+    /^(?:\*\*\* Command\(s\):|Description:)/u;
+
 class SevenDaysToDieCommandService {
 
     constructor({
@@ -117,6 +124,7 @@ class SevenDaysToDieCommandService {
                 framer: new SevenDaysToDieTelnetLineFramer(),
                 responseLines: [],
                 eventLines: [],
+                responseStarted: false,
                 resolve,
                 socket,
                 startedAt,
@@ -191,6 +199,14 @@ class SevenDaysToDieCommandService {
                 break;
             }
 
+            if (!active.responseStarted) {
+                if (!this.isResponseStart(line, active)) {
+                    continue;
+                }
+
+                active.responseStarted = true;
+            }
+
             const lineType = this.lineClassifier.classify(line, {
                 command: active.command
             });
@@ -233,6 +249,52 @@ class SevenDaysToDieCommandService {
                 this.scheduleInactivity(active);
             }
         }
+
+    }
+
+    isResponseStart(line, active) {
+
+        if (
+            line.includes(
+                `INF Executing command '${active.command}' by Telnet`
+            )
+        ) {
+            return true;
+        }
+
+        if (INVALID_COMMAND_PATTERN.test(line)) {
+            return true;
+        }
+
+        if (
+            active.commandName === "gettime" &&
+            GET_TIME_PATTERN.test(line)
+        ) {
+            return true;
+        }
+
+        if (
+            (active.commandName === "listplayers" ||
+                active.commandName === "lp") &&
+            LIST_PLAYERS_PATTERN.test(line)
+        ) {
+            return true;
+        }
+
+        if (
+            active.commandName === "say" &&
+            this.lineClassifier.isMatchingSayResponse(
+                line,
+                active.command
+            )
+        ) {
+            return true;
+        }
+
+        return (
+            active.commandName === "help" &&
+            HELP_OUTPUT_PATTERN.test(line)
+        );
 
     }
 
