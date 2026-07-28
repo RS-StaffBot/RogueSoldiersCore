@@ -14,7 +14,7 @@ test("frames split and combined CRLF and LF lines", () => {
         framer.push("Day 1, 11:"),
         []
     );
-    assert.equal(framer.getBufferedCharacterCount(), 13);
+    assert.equal(framer.getBufferedCharacterCount(), 10);
 
     const lines = framer.push(
         "40\r\nTotal of 1 in the game\npartial"
