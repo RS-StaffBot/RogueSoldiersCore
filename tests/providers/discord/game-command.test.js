@@ -78,7 +78,7 @@ test("defines the guild-only game status slash command", () => {
     );
     assert.deepEqual(
         data.options.map(option => option.name),
-        ["status"]
+        ["status", "time"]
     );
 });
 
