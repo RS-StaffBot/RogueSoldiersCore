@@ -1,6 +1,7 @@
 const BanCommand = require("./BanCommand");
 const BalanceCommand = require("./BalanceCommand");
 const DailyCommand = require("./DailyCommand");
+const GameCommand = require("./GameCommand");
 const HelpCommand = require("./HelpCommand");
 const KickCommand = require("./KickCommand");
 const LeaderboardCommand = require("./LeaderboardCommand");
@@ -13,12 +14,19 @@ const WarnCommand = require("./WarnCommand");
 
 class CommandLoader {
 
-    load() {
+    load({
+        gameCommandAuthorizer,
+        gameServerProviderResolver
+    } = {}) {
 
         return [
             new BanCommand(),
             new BalanceCommand(),
             new DailyCommand(),
+            new GameCommand({
+                gameCommandAuthorizer,
+                gameServerProviderResolver
+            }),
             new HelpCommand(),
             new KickCommand(),
             new LeaderboardCommand(),
