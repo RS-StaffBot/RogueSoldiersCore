@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phase 1 is complete and Phase 2 is next
+**Status:** In progress; Phases 1 and 2 are complete and Phase 3 is next
 
 ## Completed Milestones
 
@@ -89,11 +89,23 @@ Phase 1 established:
 - Discord command-loader injection for both focused boundaries
 - Deterministic automated tests without live Discord or Telnet access
 
+### Completed Phase 2
+
+Phase 2 established:
+
+- A guild-only `/game status` subcommand
+- `ManageGuild` authorization through the Phase 1 authorizer
+- Provider-state inspection through the Phase 1 resolver
+- Safe ephemeral replies for available, unavailable, not-ready, and invalid Provider-boundary outcomes
+- No remote Telnet command execution for status inspection
+- Registration through the existing Discord command loader
+- Deterministic command-definition and interaction tests
+
 ### Planned Phases
 
 1. Completed: define the Discord permission and Provider-resolution boundary.
-2. Next: add `/game status` without sending a remote command.
-3. Add `/game time` using `gettime`.
+2. Completed: add `/game status` without sending a remote command.
+3. Next: add `/game time` using `gettime`.
 4. Add `/game players` using `listplayers`.
 5. Add `/game say` using the verified `say` command path.
 6. Add response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.

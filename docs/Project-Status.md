@@ -8,7 +8,7 @@ v1.2.0
 
 v1.3.0 - Discord Game Server Command Interface
 
-Status: In progress; Phase 1 implementation is complete and awaiting merge.
+Status: In progress; Phases 1 and 2 are complete and Phase 3 is next.
 
 ## Milestone Goal
 
@@ -25,7 +25,7 @@ The Discord Provider owns slash-command definitions, Discord permission checks, 
 
 ## Verified Phase 1 Boundary
 
-Phase 1 adds the Discord-side authorization and Provider-resolution foundations without adding a `/game` command.
+Phase 1 added the Discord-side authorization and Provider-resolution foundations without adding a `/game` command.
 
 Verified work:
 
@@ -38,11 +38,25 @@ Verified work:
 - Injected both focused boundaries into the Discord command-loading path.
 - Added deterministic tests without Discord login, Telnet sockets, or live credentials.
 
+## Verified Phase 2 Status Command
+
+Phase 2 adds the first Discord game-server slash command without sending a Telnet command.
+
+Verified work:
+
+- Added the guild-only `/game status` subcommand.
+- Applied the Phase 1 `ManageGuild` authorization boundary.
+- Used the Phase 1 Provider resolver rather than accessing Registry or Provider internals.
+- Reported available, unavailable, not-ready, and invalid Provider-boundary states with safe ephemeral replies.
+- Kept status inspection local to the Discord-side Provider boundary; no remote game command is executed.
+- Registered the command through the existing Discord command loader.
+- Added deterministic command-definition, authorization, resolution, reply, and unsupported-subcommand tests.
+
 ## Planned Phases
 
 1. Completed: define the Discord permission and Provider-resolution boundary.
-2. Next: add `/game status` without sending a remote command.
-3. Add `/game time` through `gettime`.
+2. Completed: add `/game status` without sending a remote command.
+3. Next: add `/game time` through `gettime`.
 4. Add `/game players` through `listplayers`.
 5. Add `/game say` through the verified `say` command path.
 6. Add formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
@@ -124,7 +138,7 @@ Final v1.2.0 verification results:
 - The Discord Provider requires valid production credentials and network access.
 - The optional 7 Days to Die Provider supports one active command at a time through raw Telnet.
 - Raw Telnet is unencrypted and must remain on loopback, LAN, VPN, or another protected private path.
-- Discord game-server commands are not yet implemented.
+- `/game status` is implemented; remote Discord game-server commands are not yet implemented.
 - Hosted player moderation workflows are not implemented.
 - Discord and in-game chat bridging is not implemented.
 - Economy-backed in-game purchases are not implemented.
