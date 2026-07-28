@@ -114,7 +114,6 @@ class SevenDaysToDieTelnetLineFramer {
                     break;
                 case ParserState.IAC:
                     if (byte === TELNET.IAC) {
-                        output.push(byte);
                         this.parserState = ParserState.DATA;
                     } else if (
                         byte === TELNET.DO ||
