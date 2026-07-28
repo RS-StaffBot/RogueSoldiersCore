@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** Selected and planned; implementation has not started
+**Status:** In progress; Phase 1 is complete and Phase 2 is next
 
 ## Completed Milestones
 
@@ -47,6 +47,9 @@ Discord interaction
 Discord command
     |
     v
+Discord game Provider resolver
+    |
+    v
 SevenDaysToDieProvider.executeCommand()
     |
     v
@@ -60,6 +63,7 @@ The Discord Provider owns:
 - Interaction handling and reply deferral
 - User-facing result formatting
 - Safe Discord error wording
+- Narrow resolution of the framework-loaded game Provider
 
 The 7 Days to Die Provider retains ownership of:
 
@@ -72,10 +76,23 @@ The 7 Days to Die Provider retains ownership of:
 
 No Module is introduced for these direct platform operations.
 
+### Completed Phase 1
+
+Phase 1 established:
+
+- `DiscordGameCommandAuthorizer`
+- Discord `ManageGuild` as the initial game-command permission requirement
+- `DiscordGameServerProviderResolver`
+- Stable available, unavailable, not-ready, and invalid-boundary outcomes
+- A frozen service containing only `executeCommand`
+- Provider Manager-backed resolution without exposing the Provider Manager to commands
+- Discord command-loader injection for both focused boundaries
+- Deterministic automated tests without live Discord or Telnet access
+
 ### Planned Phases
 
-1. Define the Discord permission and Provider-resolution boundary.
-2. Add `/game status` without sending a remote command.
+1. Completed: define the Discord permission and Provider-resolution boundary.
+2. Next: add `/game status` without sending a remote command.
 3. Add `/game time` using `gettime`.
 4. Add `/game players` using `listplayers`.
 5. Add `/game say` using the verified `say` command path.
