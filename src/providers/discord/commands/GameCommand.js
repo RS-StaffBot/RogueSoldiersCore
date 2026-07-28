@@ -50,6 +50,13 @@ class GameCommand extends BaseCommand {
                             "Shows whether the game server Provider is available."
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("time")
+                        .setDescription(
+                            "Shows the current in-game day and time."
+                        )
+                )
         );
 
         this.gameCommandAuthorizer = gameCommandAuthorizer;
@@ -83,11 +90,23 @@ class GameCommand extends BaseCommand {
 
         const subcommand = interaction.options.getSubcommand(true);
 
-        if (subcommand !== "status") {
-            throw new Error(
-                `Unsupported game command subcommand: ${subcommand}`
-            );
+        if (subcommand === "status") {
+            await this.executeStatus(interaction);
+            return;
         }
+
+        if (subcommand === "time") {
+            await this.executeTime(interaction);
+            return;
+        }
+
+        throw new Error(
+            `Unsupported game command subcommand: ${subcommand}`
+        );
+
+    }
+
+    async executeStatus(interaction) {
 
         const resolution =
             this.gameServerProviderResolver.resolve();
@@ -96,6 +115,53 @@ class GameCommand extends BaseCommand {
             content: this.createStatusMessage(resolution),
             flags: MessageFlags.Ephemeral
         });
+
+    }
+
+    async executeTime(interaction) {
+
+        const resolution =
+            this.gameServerProviderResolver.resolve();
+
+        if (
+            !resolution ||
+            resolution.available !== true ||
+            !resolution.service
+        ) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({
+            flags: MessageFlags.Ephemeral
+        });
+
+        const result = await resolution.service.executeCommand(
+            "gettime"
+        );
+        const timeLine = this.findTimeLine(result);
+
+        await interaction.editReply({
+            content: timeLine
+                ? `7 Days to Die time: ${timeLine}.`
+                : "Unable to read the current 7 Days to Die time."
+        });
+
+    }
+
+    findTimeLine(result) {
+
+        if (!result || !Array.isArray(result.responseLines)) {
+            return null;
+        }
+
+        return result.responseLines.find(line =>
+            typeof line === "string" &&
+            /^Day \d+, \d{2}:\d{2}$/u.test(line)
+        ) || null;
 
     }
 
