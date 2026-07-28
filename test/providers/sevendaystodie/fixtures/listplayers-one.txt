@@ -1,0 +1,5 @@
+listplayers
+2026-07-27T22:11:53 3083.394 INF Executing command 'listplayers' by Telnet from 127.0.0.1:50000
+0. id=171, TestPlayer, pos=(-133.4, 73.0, 495.7), rot=(-14.1, 111.1, 0.0), remote=True, health=86, deaths=0, zombies=0, players=0, score=0, level=1, pltfmid=Steam_REDACTED, crossid=EOS_REDACTED, ip=192.0.2.10, ping=0
+Total of 1 in the game
+2026-07-27T22:11:54 3084.544 INF Time: 51.36m FPS: 20.00 Heap: 1592.9MB Ply: 1 Zom: 1 Ent: 3
