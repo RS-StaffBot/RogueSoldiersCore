@@ -51,6 +51,25 @@ SQLite is authoritative for production Economy state. Direct `EconomyModule` con
 
 The Economy Module does not implement a shop, cross-platform identity mapping, a Discord `/transfer` command, or an administrative interface.
 
+### Configurable Economy Settings
+
+v1.1 provides six validated Economy settings:
+
+- `startingBalance`
+- `dailyReward`
+- `dailyCooldownMilliseconds`
+- `leaderboardLimit`
+- `transactionPageLimit`
+- `transferPolicy`
+
+Persisted overrides are resolved during Module loading. Invalid stored values fail startup rather than silently producing unsafe configuration.
+
+Live settings mutations are coordinated through Core. Successful changes update persistence, audit history, and the running Economy Module as one logical operation. Failed persistence, audit, transaction completion, or partial runtime application restores the previous runtime value.
+
+Changing `startingBalance` affects accounts created after the change. It does not rewrite existing balances or historical transactions.
+
+The Economy Module does not expose a settings interface. Discord and Website settings interfaces, role mapping, Provider restart controls, cross-platform identity, shops, and in-game purchases remain future work.
+
 ## Ticket Module
 
 The Ticket Module owns platform-neutral Ticket business logic and authorization and validates state reconstructed through its store contract.
@@ -118,3 +137,11 @@ SQLite is authoritative for production Moderation audit state. Direct `Moderatio
 An invalid durable record causes Moderation initialization to fail rather than being silently accepted. Storage failures do not report success or emit a successful moderation audit log.
 
 Moderation, Economy, and Ticket persistence has been verified across restart. Database transactions protect the durable facts owned by each Module but cannot roll back external Discord actions.
+
+## Settings Ownership Boundary
+
+Modules own business validation and active business values. Core owns setting definitions, permissions, persistence, administration audit coordination, and live mutation orchestration.
+
+A future administrative interface must call the validated Core settings services. It must not directly edit Module properties, Module stores, configuration files, or database rows.
+
+Secret configuration does not belong to Module settings and cannot enter normal settings persistence or administration audit history.

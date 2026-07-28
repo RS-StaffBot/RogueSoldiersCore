@@ -29,6 +29,7 @@ Before making recommendations, read these documents in order:
 11. `Roadmap.md`
 12. `Dependencies.md`
 13. `Glossary.md`
+14. `Administration-Configuration.md`
 
 Use these documents to understand the approved project direction, terminology, architecture, active milestone, and completed work.
 

@@ -2,17 +2,17 @@
 
 ## Current Version
 
-v1.0.0
+v1.1.0
 
 ## Current Milestone
 
-v1.0.0 - Production Release
+No active implementation milestone selected.
 
-Status: Release closure in progress
+Status: v1.1.0 closure complete pending release tag.
 
 ## Last Completed Milestone
 
-v0.9.0 - Website Provider
+v1.1.0 - Administration and Configuration Foundation
 
 Status: Completed
 
@@ -27,20 +27,36 @@ Status: Completed
 - Core-owned SQLite persistence and migrations
 - Optional 7 Days to Die Provider connectivity
 - Optional Website Provider with Discord OAuth and creator-owned Ticket listing
+- Production deployment, recovery, logging, validation, and security procedures
 
-## Verified v1.0.0 Production Work
+## Verified v1.1.0 Administration Work
 
-- GitHub Actions validation on pull requests and `main`
-- Production process lifecycle, signal handling, rollback, and graceful shutdown
-- Production configuration and secret-handling contract
-- SQLite backup, checksum verification, restore, rollback, and recovery procedures
-- Production logging and troubleshooting runbook
-- Discord production deployment guide
-- Website production deployment guide
-- Production smoke-test checklist
-- Production regression and security review
-- Blocking high/critical production dependency audit in CI
-- v1.0.0 release notes and version synchronization
+- Core-owned setting definitions and registry
+- Permission-protected setting reads, updates, and resets
+- Durable SQLite setting overrides
+- Validated Economy setting ownership and business rules
+- Administration audit history with deterministic pagination
+- Persisted Economy settings applied during startup
+- Immediate live Economy setting updates and resets
+- Transactional persistence, audit, and runtime compensation
+- Separate environment-backed secret configuration boundary
+- Nested configuration and known-value redaction
+- Regression and security review covering partial runtime failures
+
+## Current Settings Boundary
+
+The first configurable owner is the Economy Module. Its supported settings are:
+
+- Starting balance
+- Daily reward
+- Daily cooldown
+- Leaderboard limit
+- Transaction page limit
+- Transfer policy
+
+Settings operations remain Core services. No Discord or Website administration interface is implemented. Providers and future interfaces must invoke the validated settings services rather than directly changing Module properties, configuration files, or database rows.
+
+Secret values remain outside normal settings persistence and audit history. They are retrieved only through declared secret paths backed by protected environment values.
 
 ## Automated Verification
 
@@ -53,30 +69,31 @@ npm.cmd test
 npm.cmd run lint
 ```
 
-The latest completed regression before release closure contained 227 passing automated tests. The release-closure pull request must preserve or increase that passing count.
+GitHub Actions validates the project on Node.js 22.
 
 ## Current Production Boundaries
 
 - RSF supports a single-process SQLite deployment.
+- Node.js 22.13 or newer is required for the built-in `node:sqlite` API.
 - The Discord Provider requires valid production credentials and network access.
-- The optional 7 Days to Die Provider requires a protected private path and does not yet execute administrative commands.
+- The optional 7 Days to Die Provider does not yet execute administrative commands.
 - The Website Provider and Website authentication remain disabled by default.
-- Public Website deployment requires an external HTTPS reverse proxy and exact Discord callback registration.
-- Website sessions and pending OAuth attempts are intentionally lost on restart.
-- Website functionality remains limited to implemented health, authentication, identity, logout, and creator-owned Ticket-listing routes.
-- Cross-platform identity, game-server command control, Discord/game chat bridging, in-game Economy purchases, persistent Website sessions, clustering, and multi-community administration remain future work.
+- Website sessions and pending OAuth attempts remain in memory and are lost on restart.
+- Settings have no Discord or Website editing interface.
+- Discord roles are not yet translated into RSF settings permissions.
+- Secrets cannot be edited through the settings system.
+- Cross-platform identity, game-server command control, chat bridging, in-game Economy purchases, clustering, remote databases, and multi-community administration remain future work.
 
 ## Release Closure Requirements
 
-Before v1.0.0 is tagged:
+Before v1.1.0 is tagged:
 
-- All version locations must report `1.0.0`.
+- All version locations must report `1.1.0`.
 - The release-closure pull request must pass CI.
-- The dependency audit, full automated tests, and lint must pass locally after merge.
 - Documentation must match the merged repository.
-- The working tree must be clean.
-- The annotated `v1.0.0` tag must be created from the verified `main` commit and pushed to GitHub.
+- The final repository state must be verified.
+- The annotated `v1.1.0` tag must be created from verified `main` and pushed to GitHub.
 
 ## Release Notes
 
-See `docs/Release-Notes-v1.0.0.md` for the release summary, included capabilities, accepted boundaries, and final release procedure.
+See `docs/Release-Notes-v1.1.0.md`.
