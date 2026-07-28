@@ -64,7 +64,7 @@ test("removes Telnet negotiation bytes across chunk boundaries", () => {
 
 });
 
-test("removes Telnet subnegotiation and preserves escaped IAC data", () => {
+test("removes Telnet subnegotiation and escaped control bytes", () => {
 
     const framer = new SevenDaysToDieTelnetLineFramer();
     const chunk = Buffer.concat([
@@ -74,13 +74,7 @@ test("removes Telnet subnegotiation and preserves escaped IAC data", () => {
         Buffer.from("after\n", "utf8")
     ]);
 
-    const lines = framer.push(chunk);
-
-    assert.equal(lines.length, 1);
-    assert.equal(
-        lines[0],
-        "before" + String.fromCharCode(255) + "after"
-    );
+    assert.deepEqual(framer.push(chunk), ["beforeafter"]);
 
 });
 
