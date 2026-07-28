@@ -6,13 +6,25 @@
 - `discord.js`
 - `dotenv`
 
+## Supported Node Version
+
+RSF is developed and validated on Node.js 22. GitHub Actions installs Node 22 before running dependency installation, the production audit, tests, and lint.
+
+Node 22.13 is the minimum supported runtime because RSF uses the built-in `node:sqlite` API without the earlier launch flag requirement. A future Node major-version upgrade must be tested deliberately before changing the supported runtime.
+
 ## Database Runtime
 
-RSF uses SQLite support bundled with Node through the built-in `node:sqlite` API. No third-party database package, native npm add-on, native compilation toolchain, ORM, or query builder is required.
+RSF uses SQLite support bundled with Node through `node:sqlite`. No third-party SQLite package, native npm add-on, native compilation toolchain, ORM, or query builder is required.
 
-Node 22.13 is the minimum supported runtime because that version made `node:sqlite` available without the `--experimental-sqlite` launch flag. The API remains marked active development in the Node 22 documentation.
+`node:sqlite` executes synchronously. The current persistence architecture targets one application process and one Core-owned SQLite connection. Remote database hosting, replication, and clustering are not current dependencies or capabilities.
 
-`node:sqlite` executes synchronously. The current persistence architecture targets one application process and one Core-owned SQLite connection. Remote database hosting, replication, clustering, backup and restore tooling, and operational database administration are not current dependencies or capabilities.
+## Settings Persistence
+
+The v1.1 settings foundation uses the same Core-owned SQLite runtime. Setting overrides and administration audit history are stored through focused Core stores and migrations. No separate database package or remote service was added.
+
+## Secret Configuration
+
+Secret values are read from protected environment configuration through declared secret paths. Secrets are not stored in tracked JSON files, SQLite setting overrides, or settings audit history. No vault client, encryption package, or secret-management service is currently required.
 
 ## Development
 
@@ -31,4 +43,4 @@ npm run lint
 
 RSF does not require a third-party terminal-color dependency. Core Logger uses ANSI escape sequences directly and falls back to plain text when unsupported.
 
-`winston` remains removed as a direct dependency.
+`winston`, `better-sqlite3`, and other native SQLite npm bindings remain removed as direct dependencies.
