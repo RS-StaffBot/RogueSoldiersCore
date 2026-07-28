@@ -1,0 +1,151 @@
+const test = require("node:test");
+const assert = require("node:assert/strict");
+
+const SevenDaysToDieCommandCompletionReason = require(
+    "../../../src/providers/sevendaystodie/" +
+    "SevenDaysToDieCommandCompletionReason"
+);
+const SevenDaysToDieCommandCompletionRules = require(
+    "../../../src/providers/sevendaystodie/" +
+    "SevenDaysToDieCommandCompletionRules"
+);
+
+function decide(command, lines) {
+
+    const rules = new SevenDaysToDieCommandCompletionRules();
+    const decider = rules.createDecider(command);
+    let decision = null;
+
+    for (const latestLine of lines) {
+        decision = decider({ latestLine, lines });
+    }
+
+    return decision;
+}
+
+test("completes gettime only on its verified response line", () => {
+
+    const pending = decide("gettime", [
+        "2026-07-27T22:12:19 INF Executing command 'gettime' by Telnet"
+    ]);
+    const complete = decide("gettime", [
+        "2026-07-27T22:12:19 INF Executing command 'gettime' by Telnet",
+        "Day 1, 11:40"
+    ]);
+
+    assert.deepEqual(pending, { completed: false });
+    assert.deepEqual(complete, {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("completes listplayers and lp on the total line", () => {
+
+    for (const command of ["listplayers", "lp"]) {
+        const complete = decide(command, [
+            "0. id=171, TestPlayer, health=86, level=1",
+            "Total of 1 in the game"
+        ]);
+
+        assert.deepEqual(complete, {
+            completed: true,
+            completionReason:
+                SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+        });
+    }
+
+});
+
+test("completes say only on the matching non-player chat event", () => {
+
+    const rules = new SevenDaysToDieCommandCompletionRules();
+    const decider = rules.createDecider(
+        "say \"RSF command-response test\""
+    );
+
+    assert.deepEqual(decider({
+        latestLine:
+            "2026-07-27T22:13:43 INF Chat (from '-non-player-', " +
+            "entity id '-1', to 'Global'): different message"
+    }), { completed: false });
+
+    assert.deepEqual(decider({
+        latestLine:
+            "2026-07-27T22:13:43 INF Chat (from '-non-player-', " +
+            "entity id '-1', to 'Global'): RSF command-response test"
+    }), {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("completes help after description and the following blank line", () => {
+
+    const rules = new SevenDaysToDieCommandCompletionRules();
+    const decider = rules.createDecider("help say");
+
+    assert.deepEqual(decider({
+        latestLine: "*** Command(s): say ***"
+    }), { completed: false });
+    assert.deepEqual(decider({
+        latestLine: "No detailed help available."
+    }), { completed: false });
+    assert.deepEqual(decider({
+        latestLine: "Description: Sends a message to all connected clients"
+    }), { completed: false });
+    assert.deepEqual(decider({ latestLine: "" }), {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("completes every command immediately on verified unknown command", () => {
+
+    const complete = decide("thiscommanddoesnotexist", [
+        "*** ERROR: unknown command 'thiscommanddoesnotexist'"
+    ]);
+
+    assert.deepEqual(complete, {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.INVALID_COMMAND
+    });
+
+});
+
+test("does not treat unrelated server events as command completion", () => {
+
+    const pending = decide("gettime", [
+        "2026-07-27T22:12:24 INF Time: 51.86m FPS: 20.00",
+        "2026-07-27T22:14:05 INF Entity animalRabbit killed by zombieBowler",
+        "2026-07-27T22:15:19 INF VehicleManager saving 0 (0 + 0)"
+    ]);
+
+    assert.deepEqual(pending, { completed: false });
+
+});
+
+test("returns frozen decisions and validates command and line input", () => {
+
+    const rules = new SevenDaysToDieCommandCompletionRules();
+    const decider = rules.createDecider("gettime");
+    const decision = decider({ latestLine: "Day 1, 11:40" });
+
+    assert.equal(Object.isFrozen(decision), true);
+    assert.throws(
+        () => rules.createDecider(" gettime "),
+        /non-empty single trimmed line/
+    );
+    assert.throws(
+        () => decider({ latestLine: null }),
+        /completion line must be a string/
+    );
+
+});
