@@ -4,7 +4,8 @@ const SevenDaysToDieCommandCompletionReason = Object.freeze({
     INACTIVITY: "INACTIVITY",
     TIMEOUT: "TIMEOUT",
     DISCONNECTED: "DISCONNECTED",
-    SIZE_LIMIT: "SIZE_LIMIT"
+    SIZE_LIMIT: "SIZE_LIMIT",
+    EXECUTION_ERROR: "EXECUTION_ERROR"
 });
 
 module.exports = SevenDaysToDieCommandCompletionReason;
