@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phases 1 through 4 are complete and Phase 5 is next
+**Status:** In progress; Phases 1 through 5 are complete and Phase 6 is next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 Provide a narrow Discord slash-command interface over the completed 7 Days to Die Provider command service.
 
-The initial command family is:
+The command family is:
 
 - `/game status`
 - `/game time`
@@ -40,112 +40,68 @@ The initial command family is:
 
 ### Architecture Boundary
 
-```text
-Discord interaction
-    |
-    v
-Discord command
-    |
-    v
-Discord game Provider resolver
-    |
-    v
-SevenDaysToDieProvider.executeCommand()
-    |
-    v
-7DTD Telnet command service
-```
+The Discord Provider owns slash-command definitions, Discord permissions, input validation, interaction handling, reply deferral, result formatting, safe error wording, and narrow game Provider resolution.
 
-The Discord Provider owns:
-
-- Slash-command definitions
-- Discord permission checks
-- Interaction handling and reply deferral
-- User-facing result formatting
-- Safe Discord error wording
-- Narrow resolution of the framework-loaded game Provider
-
-The 7 Days to Die Provider retains ownership of:
-
-- Telnet communication
-- Command execution
-- Completion detection
-- Response and event separation
-- Timeout and connection failures
-- Single-active-command enforcement
+The 7 Days to Die Provider retains ownership of Telnet communication, command execution, completion detection, response and event separation, timeout and connection failures, and single-active-command enforcement.
 
 No Module is introduced for these direct platform operations.
 
 ### Completed Phase 1
 
-Phase 1 established:
-
-- `DiscordGameCommandAuthorizer`
-- Discord `ManageGuild` as the initial game-command permission requirement
-- `DiscordGameServerProviderResolver`
-- Stable available, unavailable, not-ready, and invalid-boundary outcomes
-- A frozen service containing only `executeCommand`
-- Provider Manager-backed resolution without exposing the Provider Manager to commands
-- Discord command-loader injection for both focused boundaries
-- Deterministic automated tests without live Discord or Telnet access
+- Reusable Discord game-command authorization using `ManageGuild`
+- Focused game Provider resolver
+- Stable Provider availability outcomes
+- Frozen service exposing only `executeCommand`
+- Deterministic tests without live Discord or Telnet access
 
 ### Completed Phase 2
 
-Phase 2 established:
-
-- A guild-only `/game status` subcommand
-- `ManageGuild` authorization through the Phase 1 authorizer
-- Provider-state inspection through the Phase 1 resolver
-- Safe ephemeral replies for available, unavailable, not-ready, and invalid Provider-boundary outcomes
-- No remote Telnet command execution for status inspection
-- Registration through the existing Discord command loader
-- Deterministic command-definition and interaction tests
+- Guild-only `/game status`
+- Safe ephemeral Provider-state replies
+- No remote command execution
 
 ### Completed Phase 3
 
-Phase 3 established:
-
-- A guild-only `/game time` subcommand
-- Reuse of the Phase 1 authorization and Provider-resolution boundaries
-- Deferred ephemeral replies before remote execution
-- Fixed `gettime` execution through the narrow Provider service
-- Extraction of the verified `Day N, HH:MM` response format
-- Safe handling when no verified time line is present
-- No execution when the Provider is unavailable
-- Deterministic tests without live Discord or Telnet access
+- Guild-only `/game time`
+- Fixed `gettime` execution
+- Verified `Day N, HH:MM` parsing
+- Safe unavailable and malformed-result handling
 
 ### Completed Phase 4
 
-Phase 4 established:
+- Guild-only `/game players`
+- Fixed `listplayers` execution
+- Verified player row and total parsing
+- Discord output limited to display names and total count
+- Private server fields excluded from Discord
 
-- A guild-only `/game players` subcommand
-- Reuse of the Phase 1 authorization and Provider-resolution boundaries
-- Deferred ephemeral replies before remote execution
-- Fixed `listplayers` execution through the narrow Provider service
-- Parsing of verified player rows and the `Total of N in the game` terminator
-- Discord output limited to player display names and total count
-- Raw IP addresses, platform identifiers, positions, health, and other server fields excluded from Discord
-- Safe handling for empty, unavailable, and malformed results
+### Completed Phase 5
+
+- Guild-only `/game say message:<text>`
+- Required message bounded to 1-200 characters
+- Unsafe command-shaping characters and control characters rejected before Provider resolution
+- Only the fixed game-chat operation is executed
+- Safe success and failure acknowledgements without raw Telnet output
 - Deterministic tests without live Discord or Telnet access
 
 ### Planned Phases
 
-1. Completed: define the Discord permission and Provider-resolution boundary.
-2. Completed: add `/game status` without sending a remote command.
-3. Completed: add `/game time` using `gettime`.
-4. Completed: add `/game players` using `listplayers`.
-5. Next: add `/game say` using the verified `say` command path.
-6. Add response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
-7. Add command registration and interaction tests.
+1. Completed: authorization and Provider resolution.
+2. Completed: `/game status`.
+3. Completed: `/game time`.
+4. Completed: `/game players`.
+5. Completed: `/game say`.
+6. Next: consolidate response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
+7. Add final command registration and interaction coverage.
 8. Perform live Discord-to-game verification.
 9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
 
 ### Outside v1.3.0
 
 - Arbitrary console command execution
-- Hosted-player ban, kick, whitelist, or player-administration workflows
+- Hosted-player administration
 - Cross-platform player identity linking
-- Discord and in-game chat bridging
+- Continuous Discord and in-game chat bridging
 - Economy-backed game purchases or rewards
 - Command queues
 - Multiple simultaneous game commands
@@ -164,11 +120,9 @@ Verified work:
 - Telnet line framing and protocol-byte removal
 - One active command at a time
 - Provider-owned command-response service
-- Deterministic completion for `gettime`, `listplayers`, `lp`, `say`, `help`, and invalid commands
-- Bounded inactivity fallback for unverified multiline output
+- Deterministic completion for verified commands
 - Unsolicited event separation
 - Timeout, disconnect, write, decision, and truncation failure handling
-- Stale startup-banner exclusion
 - Password-protected and direct-console readiness compatibility
 - Live command verification against a running 7 Days to Die V3.1 test server
 
@@ -180,16 +134,7 @@ Verified work:
 
 ## Future Direction
 
-Future milestones may include:
-
-- Hosted game-server player administration
-- Discord and in-game chat integration
-- Economy-backed in-game rewards and purchases
-- Cross-platform player identity mapping
-- A Discord or Website administration interface over the v1.1 settings services
-- Discord role translation into reusable RSF permissions
-- Ticket channels, transcripts, and appeal workflows
-- Persistent Website sessions
+Future milestones may include hosted game-server player administration, continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
 
 Every future milestone must preserve the established architecture:
 

@@ -78,7 +78,7 @@ test("defines the guild-only game command family", () => {
     );
     assert.deepEqual(
         data.options.map(option => option.name),
-        ["status", "time", "players"]
+        ["status", "time", "players", "say"]
     );
 });
 

@@ -8,6 +8,8 @@ const DiscordGameServerProviderResolver = require(
     "../services/DiscordGameServerProviderResolver"
 );
 
+const MAXIMUM_SAY_MESSAGE_LENGTH = 200;
+
 class GameCommand extends BaseCommand {
 
     constructor({
@@ -64,6 +66,23 @@ class GameCommand extends BaseCommand {
                             "Shows the players currently in the game."
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("say")
+                        .setDescription(
+                            "Sends a staff message to the game server."
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("message")
+                                .setDescription(
+                                    "The message to send in game."
+                                )
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(MAXIMUM_SAY_MESSAGE_LENGTH)
+                        )
+                )
         );
 
         this.gameCommandAuthorizer = gameCommandAuthorizer;
@@ -109,6 +128,11 @@ class GameCommand extends BaseCommand {
 
         if (subcommand === "players") {
             await this.executePlayers(interaction);
+            return;
+        }
+
+        if (subcommand === "say") {
+            await this.executeSay(interaction);
             return;
         }
 
@@ -186,6 +210,56 @@ class GameCommand extends BaseCommand {
             content: this.createPlayersMessage(players)
         });
 
+    }
+
+    async executeSay(interaction) {
+
+        const message = interaction.options.getString("message", true);
+
+        if (!this.isValidSayMessage(message)) {
+            await interaction.reply({
+                content:
+                    "The game message must be 1-200 characters and cannot contain quotes, backslashes, or control characters.",
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const resolution =
+            this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({
+            flags: MessageFlags.Ephemeral
+        });
+
+        const result = await resolution.service.executeCommand(
+            `say "${message}"`
+        );
+
+        await interaction.editReply({
+            content: result && result.status === "SUCCESS"
+                ? "The message was sent to the 7 Days to Die server."
+                : "Unable to send the message to the 7 Days to Die server."
+        });
+
+    }
+
+    isValidSayMessage(message) {
+        return Boolean(
+            typeof message === "string" &&
+            message.length >= 1 &&
+            message.length <= MAXIMUM_SAY_MESSAGE_LENGTH &&
+            message.trim() === message &&
+            !/["\\\u0000-\u001f\u007f]/u.test(message)
+        );
     }
 
     isAvailableResolution(resolution) {

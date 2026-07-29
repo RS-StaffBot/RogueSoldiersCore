@@ -24,7 +24,7 @@ function createAuthorizer() {
     };
 }
 
-function createInteraction() {
+function createInteraction(message = "Server restart in ten minutes.") {
     const deferred = [];
     const edits = [];
     const replies = [];
@@ -35,7 +35,12 @@ function createInteraction() {
         options: {
             getSubcommand(required) {
                 assert.equal(required, true);
-                return "time";
+                return "say";
+            },
+            getString(name, required) {
+                assert.equal(name, "message");
+                assert.equal(required, true);
+                return message;
             }
         },
         deferred,
@@ -66,52 +71,91 @@ function createAvailableResolver(executeCommand) {
     };
 }
 
-test("defines the game time subcommand", () => {
+test("defines the required bounded game say message option", () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(async () => ({}))
     });
 
     const data = command.data.toJSON();
+    const say = data.options.find(option => option.name === "say");
 
-    assert.deepEqual(
-        data.options.map(option => option.name),
-        ["status", "time", "players", "say"]
-    );
+    assert.ok(say);
+    assert.equal(say.options.length, 1);
+    assert.equal(say.options[0].name, "message");
+    assert.equal(say.options[0].required, true);
+    assert.equal(say.options[0].min_length, 1);
+    assert.equal(say.options[0].max_length, 200);
 });
 
-test("executes gettime through the resolved Provider service", async () => {
+test("executes only the fixed quoted say command", async () => {
     const commands = [];
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(
             async remoteCommand => {
                 commands.push(remoteCommand);
-                return {
-                    responseLines: [
-                        "gettime",
-                        "Day 8, 14:25"
-                    ]
-                };
+                return { status: "SUCCESS" };
             }
         )
     });
-    const interaction = createInteraction();
+    const interaction = createInteraction("Welcome to Rogue Soldiers!");
 
     await command.execute(interaction);
 
-    assert.deepEqual(commands, ["gettime"]);
+    assert.deepEqual(commands, [
+        "say \"Welcome to Rogue Soldiers!\""
+    ]);
     assert.deepEqual(interaction.replies, []);
     assert.deepEqual(interaction.deferred, [{
         flags: MessageFlags.Ephemeral
     }]);
     assert.deepEqual(interaction.edits, [{
-        content: "7 Days to Die time: Day 8, 14:25."
+        content: "The message was sent to the 7 Days to Die server."
     }]);
 });
 
-test("does not execute gettime when the Provider is unavailable", async () => {
-    let executions = 0;
+test("rejects unsafe messages before Provider resolution", async () => {
+    const unsafeMessages = [
+        "",
+        " leading",
+        "trailing ",
+        "contains \"quotes\"",
+        "contains\\backslash",
+        "line\nbreak",
+        "a".repeat(201)
+    ];
+
+    for (const message of unsafeMessages) {
+        let resolutions = 0;
+        const command = new GameCommand({
+            gameCommandAuthorizer: createAuthorizer(),
+            gameServerProviderResolver: {
+                resolve() {
+                    resolutions += 1;
+                    return null;
+                }
+            }
+        });
+        const interaction = createInteraction(message);
+
+        await command.execute(interaction);
+
+        assert.equal(resolutions, 0);
+        assert.deepEqual(interaction.deferred, []);
+        assert.equal(interaction.replies.length, 1);
+        assert.match(
+            interaction.replies[0].content,
+            /must be 1-200 characters/
+        );
+        assert.equal(
+            interaction.replies[0].flags,
+            MessageFlags.Ephemeral
+        );
+    }
+});
+
+test("does not execute say when the Provider is unavailable", async () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: {
@@ -128,7 +172,6 @@ test("does not execute gettime when the Provider is unavailable", async () => {
 
     await command.execute(interaction);
 
-    assert.equal(executions, 0);
     assert.deepEqual(interaction.deferred, []);
     assert.deepEqual(interaction.edits, []);
     assert.deepEqual(interaction.replies, [{
@@ -137,13 +180,11 @@ test("does not execute gettime when the Provider is unavailable", async () => {
     }]);
 });
 
-test("reports a safe message when gettime has no verified time line", async () => {
+test("reports a safe failure when the say result is not successful", async () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(
-            async () => ({
-                responseLines: ["gettime", "unexpected output"]
-            })
+            async () => ({ status: "TIMEOUT" })
         )
     });
     const interaction = createInteraction();
@@ -151,27 +192,6 @@ test("reports a safe message when gettime has no verified time line", async () =
     await command.execute(interaction);
 
     assert.deepEqual(interaction.edits, [{
-        content: "Unable to read the current 7 Days to Die time."
+        content: "Unable to send the message to the 7 Days to Die server."
     }]);
-});
-
-test("accepts only the verified Day N, HH:MM response format", () => {
-    const command = new GameCommand({
-        gameCommandAuthorizer: createAuthorizer(),
-        gameServerProviderResolver: createAvailableResolver(async () => ({}))
-    });
-
-    assert.equal(
-        command.findTimeLine({
-            responseLines: ["Day 1, 00:05"]
-        }),
-        "Day 1, 00:05"
-    );
-    assert.equal(
-        command.findTimeLine({
-            responseLines: ["Day one, midnight"]
-        }),
-        null
-    );
-    assert.equal(command.findTimeLine(null), null);
 });
