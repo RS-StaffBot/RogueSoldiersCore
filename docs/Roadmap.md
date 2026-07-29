@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phases 1 through 7 are complete and Phase 8 is next
+**Status:** In progress; Phases 1 through 8 are complete and Phase 9 is next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 Provide a narrow Discord slash-command interface over the completed 7 Days to Die Provider command service.
 
-The command family is:
+The implemented command family is:
 
 - `/game status`
 - `/game time`
@@ -80,18 +80,16 @@ No Module is introduced for these direct platform operations.
 - Guild-only `/game say message:<text>`
 - Required message bounded to 1-200 characters
 - Unsafe command-shaping characters and control characters rejected before Provider resolution
-- Only the fixed game-chat operation is executed
-- Safe success and failure acknowledgements without raw Telnet output
-- Deterministic tests without live Discord or Telnet access
+- Only the fixed game-chat operation executed
+- Safe acknowledgement without raw Telnet output
 
 ### Completed Phase 6
 
 - Shared Discord-side execution wrapper for remote `/game` operations
 - Stable formatting for timeout, disconnect, generic failure, malformed result, and thrown execution errors
-- Deferred ephemeral replies preserved for remote operations
+- Deferred ephemeral replies preserved
 - Raw Telnet output, credentials, IP addresses, socket details, and internal error text excluded from Discord
 - Provider and Discord ownership boundaries preserved
-- Deterministic failure-path coverage
 
 ### Completed Phase 7
 
@@ -101,7 +99,16 @@ No Module is introduced for these direct platform operations.
 - Required bounded `message` option verified
 - Existing `interactionCreate` dispatch verified
 - Every subcommand verified against its fixed Provider operation and expected Discord response
-- Deterministic integration coverage without Discord login, Telnet sockets, credentials, or a live game server
+
+### Completed Phase 8
+
+- Live startup verified with Discord and the optional 7 Days to Die Provider running
+- `/game status` verified against live Provider availability
+- `/game time` verified through live `gettime` execution
+- `/game players` verified through live `listplayers` execution
+- `/game say` verified through live Telnet execution and in-game chat output
+- Live server logs confirmed the fixed command paths
+- Negative permission behavior remains covered by deterministic automated tests because a second suitable Discord account was unavailable for live testing
 
 ### Planned Phases
 
@@ -112,8 +119,8 @@ No Module is introduced for these direct platform operations.
 5. Completed: `/game say`.
 6. Completed: response formatting and safe failure handling.
 7. Completed: final command registration and interaction coverage.
-8. Next: perform live Discord-to-game verification.
-9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
+8. Completed: live Discord-to-game verification.
+9. Next: regression, documentation synchronization, version synchronization, release notes, and v1.3.0 release closure.
 
 ### Outside v1.3.0
 
