@@ -2,127 +2,31 @@
 
 ## Rogue Soldiers Framework
 
-The central coordinating software framework for the Rogue Soldiers Clan ecosystem. RSF combines Core infrastructure, platform Providers, reusable Modules, Shared contracts, and persistence without treating any one interface as the framework itself.
+The Core, Provider, Module, and Shared ecosystem that powers Rogue Soldiers Clan operations.
 
 ## Core
 
-The framework layer responsible for bootstrap, configuration, lifecycle coordination, registration, logging, database infrastructure, migrations, and loading Modules and Providers.
+Framework infrastructure that coordinates configuration, lifecycle, logging, events, registration, database access, and dependency startup and shutdown.
 
 ## Provider
 
-A platform boundary that owns platform clients, protocols, input and output translation, and platform-specific operations. Providers invoke reusable Module behavior and do not directly access Module database tables.
-
-## Discord Provider
-
-The first active Provider and interface. It owns the Discord client, slash commands, interactions, Discord permission and hierarchy checks, Discord API operations, and response formatting.
-
-## WebsiteProvider
-
-The optional, disabled-by-default Provider that coordinates validated loopback-only Website configuration and the lifecycle of `WebsiteServer`.
-
-## WebsiteServer
-
-The Provider-owned `node:http` transport boundary. It owns listening readiness, fixed route dispatch, security headers, request timeout, server-loss notification, and bounded shutdown. Its implemented routes are `GET /health`, `GET /auth/discord`, `GET /auth/discord/callback`, `POST /auth/logout`, `GET /api/me`, and authenticated creator-owned `GET /api/tickets` when the required boundaries are enabled.
-
-## WebsiteTicketService
-
-The focused Website Provider service that translates an authenticated Website identity into a creator-owned Ticket Module listing. It resolves the framework-loaded `Tickets` Module through an injected resolver and returns only allowlisted Website Ticket fields.
-
-## Website Ticket Listing
-
-The authenticated `GET /api/tickets` capability that lists at most 20 newest-first Tickets belonging to the authenticated actor. The request cannot supply a different creator, actor, permission set, filter, limit, or offset.
-
-## Website Ticket Response
-
-The allowlisted creator-facing Ticket representation containing only `ticketId`, `status`, and `createdAt`. It is newly constructed from Module snapshots and does not expose creator identity, assignee identity, messages, stores, database rows, or persistence details.
-
-## WebsiteAuthenticator
-
-The Website Provider-local `authenticate(request)` contract. It denies authentication while disabled and resolves Website sessions when enabled. It returns an identity plus whether an invalid supplied session cookie must be cleared.
-
-## Website Authenticated Identity
-
-A Provider-local identity containing an actor ID, display name, and permission-string array. Valid identities are normalized into defensive frozen snapshots and only allowlisted fields are returned by `GET /api/me`. This is not a Shared principal or cross-platform identity model.
-
-## Website Authentication Configuration
-
-The Provider-local, startup-time contract that validates whether Website authentication is disabled or has the complete non-secret deployment configuration required for Discord OAuth. It returns a frozen snapshot, excludes the Discord client secret, and performs no network, Module, Registry, store, or database access.
-
-## Canonical Public Origin
-
-The exact externally visible HTTPS origin configured for Website authentication, with no credentials, path, query, fragment, or trailing slash. The Discord callback URI is derived from this value and is not inferred from request headers.
-
-## Authentication Disabled State
-
-The default Website authentication state represented by the frozen snapshot `{ enabled: false }`. It requires no public origin, guild ID, Discord client ID, or Discord client secret; Website transport and health may run while production identity requests remain denied.
-
-## Discord OAuth Client
-
-The focused Website Provider component that performs Discord OAuth protocol requests and validates required responses.
-
-## Website OAuth Flow
-
-The Website Provider component that coordinates login, callback validation, guild-membership checks, token revocation, and RSF session creation.
-
-## OAuth State Store
-
-The bounded in-memory store for one-time browser-bound Discord OAuth attempts.
-
-## Website Session Store
-
-The bounded in-memory store for opaque Website sessions, identity snapshots, idle expiration, absolute expiration, and revocation.
-
-## Opaque Website Session
-
-A random browser token whose digest identifies server-side session state. It contains no browser-readable identity, permission, or OAuth claims.
-
-## OAuth Binding Cookie
-
-The short-lived protected cookie that binds a pending OAuth attempt to the browser that initiated it.
-
-## Website Session Cookie
-
-The protected `__Host-rsf_session` cookie containing only the opaque session token.
-
-## Guild-Membership Login Eligibility
-
-The current policy requiring an accepted human Discord member of the configured guild. It is not an RSF business permission or staff-role grant.
-
-## In-Memory Session Limitation
-
-Website sessions and pending OAuth attempts are revoked on Provider shutdown or process restart and are not shared across processes.
-
-## Website Health
-
-The unauthenticated `GET /health` response that reports Website HTTP transport readiness only. It does not report authentication, Discord, Module, or database state.
-
-## Game Provider
-
-A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first current game Provider boundary.
-
-## SevenDaysToDieProvider
-
-The optional Provider that coordinates validated configuration, lifecycle, and readiness for the 7 Days to Die raw TCP client. It is disabled by default and does not currently execute administrative commands.
-
-## SevenDaysToDieTelnetClient
-
-The Provider-owned client that uses Node's built-in `node:net` API for the 7 Days to Die raw TCP connection, Telnet password submission, authentication readiness, connection timeout, and disconnection.
-
-## Command-Response Boundary
-
-The evidence-backed rule that identifies when one remote command's output is complete and distinguishes it from unsolicited console logs. No 7 Days to Die command-response boundary is currently approved or implemented.
-
-## Deployment-Specific Configuration
-
-Future validated game-server connection settings and console-behavior evidence for the intended server version, hosting environment, and management interface. It is not an implemented configuration store or web interface, and secrets must remain outside tracked JSON.
+A platform integration boundary. Providers own external clients, protocols, API calls, platform-specific validation, interactions, events, lifecycle, and presentation.
 
 ## Module
 
-A platform-neutral owner of cohesive business rules, validation, domain records, and Module-specific persistence contracts.
+A platform-neutral owner of cohesive business rules, validation, authorization, domain records, and Module-specific persistence contracts.
 
 ## Shared
 
 The layer for small platform-neutral contracts and identifiers that are genuinely shared across architectural boundaries. It does not own platform integrations, Core lifecycle, or Module business state.
+
+## Component
+
+A named framework part with a focused responsibility and, where applicable, lifecycle behavior.
+
+## Lifecycle
+
+The ordered initialization, startup, running, stopping, stopped, and error behavior of framework components.
 
 ## Business Logic
 
@@ -132,303 +36,107 @@ Reusable rules, validation, authorization, state transitions, and domain behavio
 
 Client APIs, protocol details, identity translation, permission translation, presentation, and other behavior tied to a Provider's platform.
 
-## Component
+## Discord Provider
 
-A named framework part with a focused responsibility and, where applicable, lifecycle behavior.
+The Provider that owns Discord login, slash-command registration, interaction dispatch, Discord permission and hierarchy checks, API operations, and Discord responses.
 
-## Lifecycle
+## Discord Game Command Authorizer
 
-The ordered initialization, readiness, operation, and shutdown of framework components.
+The Discord Provider service that applies the fixed `ManageGuild` requirement to the guild-only `/game` command family.
 
-## Bootstrap
+## Discord Game Server Provider Resolver
 
-The Core composition root that creates infrastructure, registers framework components, applies migrations, loads Modules and Providers, starts the framework, and coordinates shutdown.
+The Discord Provider service that resolves the framework-loaded `7 Days to Die` Provider and returns either a stable failure status or a frozen service exposing only `executeCommand`.
 
-## Core Registry
+## Game Provider
 
-The Core-owned registry through which named framework services, Managers, Modules, and Providers are resolved.
+A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first implemented game Provider.
 
-## Discord Command Registry
+## SevenDaysToDieProvider
 
-The Discord Provider registry that owns the validated slash-command definitions used for both Discord registration and runtime dispatch.
+The optional Provider that coordinates validated configuration, lifecycle, Telnet readiness, and Provider-level command execution for a 7 Days to Die server.
 
-## CommandLoader
+It exposes `executeCommand(command)` while retaining ownership of the command service and keeping Telnet, socket, credentials, and configuration private.
 
-The Discord Provider component that discovers command files, validates their definitions and execution contracts, and loads them into the Discord Command Registry.
+## SevenDaysToDieTelnetClient
 
-## CommandRegistrar
+The Provider-owned raw TCP client built on Node's `node:net` API.
 
-The Discord Provider component that publishes the loaded slash-command definitions through Discord REST.
+It owns password-authenticated and direct-console readiness, Telnet protocol-byte stripping, UTF-8 line framing, CRLF writes, connection timeout, post-readiness connection-loss notification, and awaited idempotent disconnection.
 
-## InteractionHandler
+## SevenDaysToDieCommandService
 
-The Discord Provider component that receives Discord interactions and dispatches commands through the Discord Command Registry.
+The Provider-owned service that executes one active command at a time, applies the response-start gate, separates command response lines from unsolicited event lines, applies evidence-backed completion rules, and returns immutable results or failures.
 
-## EventBus
+## Command-Response Boundary
 
-The Core event service for framework-owned event subscription and publication. It does not make platform events or business state Shared by default.
+The implemented evidence-backed rules that determine when a remote command response begins and completes and distinguish it from stale startup output and unsolicited console events.
 
-## Permission
+Verified deterministic completion exists for `gettime`, `listplayers`, `lp`, `say`, `help`, and invalid or unknown commands. Other meaningful multiline output uses bounded inactivity completion.
 
-A reusable authorization identifier owned outside a platform. A Provider translates platform permissions into these identifiers, while the relevant Module makes the final business authorization decision.
+## Response-Start Gate
 
-## Store
+The command-service rule that prevents stale Telnet startup-banner lines from entering the first command result.
 
-A Module-specific persistence contract separating Module business rules and public domain records from storage operations and durable row mapping.
+## Unsolicited Event
 
-## Migration
+A game-server console line that is not part of the active command response. Events are classified and stored separately from response lines.
 
-An ordered, deterministic database schema change applied and tracked by Core before Modules reconstruct durable state.
+## Immutable Command Result
 
-## Database Service
+A defensive frozen result containing command status, completion reason, response lines, event lines, and truncation state without exposing mutable internal arrays.
 
-The Core component that owns the single SQLite connection lifecycle, configuration validation, health checks, controlled store construction, and shutdown.
+## Deployment-Specific Configuration
 
-## Milestone
+Validated local configuration for the intended server deployment, including enabled state, private host, Telnet port, and connection timeout. Secrets remain environment-only.
 
-A versioned body of planned work that progresses through implementation checkpoints, verification, closure, and authorized release actions.
+The current configuration loads the implemented command execution service when enabled; it is not a web administration interface.
 
-## Phase
+## Raw Telnet
 
-A bounded correction or implementation stage that must complete its own scope and verification before the next approved stage begins.
+The unencrypted administrative TCP transport used by the 7 Days to Die Provider. It must remain on loopback, LAN, VPN, or another protected private path and must not be exposed directly to the public internet.
 
-## Duplicate Ownership
+## `/game` Command Family
 
-The architectural error in which more than one active component claims authority for the same registry, lifecycle, business rule, state, command path, or persistence responsibility.
+The guild-only Discord command family requiring `ManageGuild`:
 
-## Repository-First Rule
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say message:<text>`
 
-The practice of verifying current repository code and source-of-truth documents before selecting or describing a change, rather than relying on historical assumptions.
+## Website Provider
 
-## Architecture Change Rule
+The optional Provider that owns loopback HTTP transport, Discord OAuth integration, secure cookies, in-memory Website sessions, and the current creator-owned Ticket listing boundary.
 
-The rule that a major architecture change requires evidence from at least two accepted conditions: a second real implementation need, duplicated responsibility, a blocked verified requirement, or test or operational evidence of a lifecycle, integrity, or isolation problem.
+## Website Authentication
 
-## Economy Module
+The Discord OAuth authorization-code flow with PKCE S256, one-time state, browser binding, guild-membership checks, token revocation, and an opaque RSF Website session.
 
-The platform-neutral Module that owns Economy business rules, validation, transfers, transactions, daily rewards, leaderboards, validated settings, and public state integrity.
+## Website Session
 
-## Economy Account
+An opaque bounded in-memory session associated with a frozen Website identity. Website sessions are revoked on Provider shutdown or process restart and are not shared across processes.
 
-A record identified by a non-empty user ID with a non-negative safe-integer balance and creation date. Production accounts are durable in SQLite.
+## In-Memory Session Limitation
 
-## Economy Transaction
+Website sessions and pending OAuth attempts are revoked on Provider shutdown or process restart and are not shared across processes.
 
-A `CREDIT`, `DEBIT`, or `TRANSFER` record with a durable sequential successful transaction ID, validated amount, reason, resulting balance data, and creation date.
+## Website Health
 
-## Economy Transfer Policy
+The unauthenticated `GET /health` response that reports Website HTTP transport readiness only. It does not report authentication, Discord, Module, or database state.
 
-The Module setting that controls transfers: `DISABLED`, `STAFF_ONLY`, or `EVERYONE`.
+## Registry
 
-## Daily Reward
+The Core-owned lookup boundary for registered framework services.
 
-A configurable Economy credit that a user may claim after the configured cooldown has elapsed.
+## Provider Manager
 
-## Leaderboard
+The Core Provider registry and lifecycle coordinator. Discord game commands do not receive it directly.
 
-A ranked defensive snapshot of Economy accounts ordered by descending balance and then user ID for deterministic ties.
+## Module Manager
 
-## Transaction Pagination
+The Core Module registry and lifecycle coordinator used by Providers to resolve framework-loaded Modules through narrow boundaries.
 
-The Economy Module API that returns bounded, newest-first transaction pages with page metadata. Production pagination retrieves bounded SQLite results.
+## SQLite Authority
 
-## Defensive Snapshot
-
-An independently mutable account, transaction, configuration, array, or `Date` result that does not expose the Economy Module's internal state.
-
-## Atomic Economy Write
-
-An Economy operation that either commits all related balance, account, daily claim, transaction, and ID changes or leaves all of them unchanged on failure. Production writes use one SQLite transaction; direct isolated use provides the same guarantee through the in-memory store.
-
-## Ticket Module
-
-The platform-neutral Module that owns Ticket validation, records, messages, assignment, status transitions, creator ownership, staff authorization, public ID formats, and public state integrity.
-
-## Ticket Record
-
-An immutable record containing a Ticket ID, creator identity, optional assignee identity, `OPEN` or `CLOSED` status, and creation time.
-
-## Ticket Status
-
-The current Ticket state. RSF supports `OPEN` and `CLOSED`, with only the `OPEN` to `CLOSED` transition.
-
-## Ticket Message
-
-An immutable, append-only Ticket history entry containing a globally sequential message ID, Ticket ID, author identity, content, and creation time.
-
-## Ticket Creator
-
-The identity that creates a Ticket and owns its creator-authorized operations.
-
-## Ticket Assignee
-
-An optional identity recorded as responsible for an open Ticket. Assignment alone grants no Ticket authority.
-
-## Creator-Owned Ticket Operation
-
-A Ticket read, message, or closing operation that its creator may perform without a staff permission.
-
-## Ticket Permission
-
-A reusable `tickets.*` identifier used by `TicketModule` to authorize staff operations independently of Discord permissions.
-
-## Ticket Assignment
-
-The Module-owned operation that assigns, reassigns, or unassigns an open Ticket.
-
-## Ticket Message History
-
-The per-Ticket, append-ordered collection of immutable messages. Closed Ticket history remains readable.
-
-## Defensive Frozen Snapshot
-
-An immutable Ticket record or message copied from internal state. Public arrays containing snapshots are independent from Module storage.
-
-## Atomic Ticket Write
-
-A Ticket operation that either commits its complete record, history, and ID-sequence change or leaves all related state unchanged on failure. Production writes use one SQLite transaction; direct isolated use provides the same guarantee through the in-memory store.
-
-## Discord Ticket Permission Translation
-
-The Provider process that maps Discord permissions into reusable Ticket permission identifiers before `TicketModule` makes the final authorization decision. The fixed, non-configurable mapping introduced in v0.6.0 remains current.
-
-## Moderation Module
-
-The Module that owns supported moderation actions, action-to-permission mapping, audit-record creation, validated reconstruction, and its audit store contract.
-
-## Moderation Action
-
-A supported operation: `BAN`, `KICK`, `WARN`, `TIMEOUT`, `UNTIMEOUT`, or `PURGE`.
-
-## Moderation Permission
-
-A reusable permission identifier required by a moderation action. The Discord Provider translates it into Discord permission checks.
-
-## DiscordModerationGuard
-
-A Discord Provider service that centralizes target safety, hierarchy, manageability checks, and action wording.
-
-## Moderation Audit Record
-
-An immutable record containing action, guild, moderator, optional target, reason, and details. Production records are durable in SQLite.
-
-## Moderation Audit
-
-The formatted terminal output produced for a successfully recorded moderation action.
-
-## Logger
-
-The Core class responsible for log categories, ANSI terminal colors, and plain-text fallback.
-
-## Audit Persistence
-
-Durable storage of Moderation audit records outside process memory. Production Moderation audit records are stored in SQLite and reconstructed through the Module-owned record contract.
-
-## Economy Persistence
-
-SQLite-authoritative production storage of Economy accounts, balances, claims, and transactions. Credits, debits, transfers, and daily claims commit all related durable facts atomically, and direct Module construction retains an in-memory store for isolated use.
-
-## Ticket Persistence
-
-SQLite-authoritative production storage of Tickets, messages, assignments, status, ordering, and independent Ticket and message ID sequences. Direct Module construction retains an in-memory store for isolated use.
-
-## Discord Ticket Infrastructure
-
-Future channel, thread, category, permission-overwrite, transcript, and configurable-role workflows. They are not implemented.
-
-## Migration Manager
-
-The Core component that validates, transactionally applies, tracks, skips, and rolls back ordered schema migrations.
-
-## Migration Loader
-
-The Core component that combines Module migrations into one globally ordered migration list before Module loading.
-
-## Schema Migration
-
-A deterministic `NNN_lowercase_name` database change applied transactionally before Modules reconstruct durable state.
-
-## Migration History
-
-The `rsf_schema_migrations` table that records successfully applied migration IDs and timestamps.
-
-## Module Store
-
-A Module-specific persistence contract that separates Module business rules and public records from durable row mapping and storage operations.
-
-## In-Memory Store
-
-The non-durable store implementation used by direct isolated Module construction and tests.
-
-## SQLite Store
-
-The production implementation of a Module store that uses the private Core-owned SQLite connection and parameterized SQL.
-
-## Durable State
-
-Module state stored outside process memory so it survives framework shutdown and restart.
-
-## SQLite-Authoritative State
-
-Production state for which a successful SQLite commit is the source of truth and no separate in-memory authority reports success first.
-
-## Restart Recovery
-
-Reconstruction and validation of committed Module state when the framework starts again.
-
-## Durable Reconstruction
-
-The process of rebuilding stored rows through Module-owned record validation before exposing public results.
-
-## Durable Sequence
-
-A committed SQLite sequence used to preserve public identity continuation across restart without consuming the next successful ID on rollback.
-
-## Transactional Write
-
-A durable operation that commits all related database facts together or rolls them all back on failure.
-
-## WAL Mode
-
-SQLite write-ahead logging enabled by the Database Service for file-backed databases.
-
-## Single-Process Persistence Boundary
-
-The current deployment model using one framework process and one Core-owned SQLite connection. Multi-process databases, replication, clustering, and remote hosting remain future work.
-
-
-## Setting Definition
-
-An immutable Core-owned description of one editable non-secret value, including its key, owner, value type, permissions, and change behavior.
-
-## Settings Registry
-
-The Core-owned collection that validates and resolves setting definitions. Unknown keys fail rather than being treated as arbitrary configuration.
-
-## Settings Service
-
-The Core service boundary for authorized setting reads, updates, and resets. It coordinates definition lookup, actor validation, permissions, owner validation, persistence, and optional audit behavior.
-
-## Live Settings Service
-
-The audited settings mutation service that also applies successful changes to a running owner through an applicator and restores the previous runtime value when the operation fails.
-
-## Setting Override
-
-A durable non-secret value stored in SQLite that replaces an owner's default until reset.
-
-## Administration Audit History
-
-The durable ordered record of successful settings updates and resets, including actor, action, setting key, previous record, new record, and occurrence time.
-
-## Secret Configuration
-
-A separate path-specific environment-backed boundary for operational secrets. Secret values cannot be normal settings, SQLite overrides, or settings audit records.
-
-## Configuration Redaction
-
-The process that replaces common secret fields and known raw secret values in nested diagnostic objects, arrays, and messages before they are exposed.
-
-## Economy Settings Applicator
-
-The owner-specific live settings adapter that reads, applies, restores, and supplies defaults for the six configurable Economy values.
+The decision that production Moderation, Economy, Ticket, settings, and other implemented durable state use Core-managed SQLite while Modules retain business ownership.
