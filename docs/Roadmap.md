@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phases 1 through 5 are complete and Phase 6 is next
+**Status:** In progress; Phases 1 through 6 are complete and Phase 7 is next
 
 ## Completed Milestones
 
@@ -84,6 +84,15 @@ No Module is introduced for these direct platform operations.
 - Safe success and failure acknowledgements without raw Telnet output
 - Deterministic tests without live Discord or Telnet access
 
+### Completed Phase 6
+
+- Shared Discord-side execution wrapper for remote `/game` operations
+- Stable formatting for timeout, disconnect, generic failure, malformed result, and thrown execution errors
+- Deferred ephemeral replies preserved for remote operations
+- Raw Telnet output, credentials, IP addresses, socket details, and internal error text excluded from Discord
+- Provider and Discord ownership boundaries preserved
+- Deterministic failure-path coverage
+
 ### Planned Phases
 
 1. Completed: authorization and Provider resolution.
@@ -91,8 +100,8 @@ No Module is introduced for these direct platform operations.
 3. Completed: `/game time`.
 4. Completed: `/game players`.
 5. Completed: `/game say`.
-6. Next: consolidate response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
-7. Add final command registration and interaction coverage.
+6. Completed: response formatting and safe failure handling.
+7. Next: add final command registration and interaction coverage.
 8. Perform live Discord-to-game verification.
 9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
 
