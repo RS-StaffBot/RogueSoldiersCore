@@ -1,14 +1,18 @@
 # Providers
 
+## Provider Responsibility
+
+Providers integrate RSF with external platforms and systems. They own platform clients, protocols, lifecycle, platform-specific validation, interaction handling, API calls, and presentation. Providers remain persistence-blind and must not access Module stores, database connections, SQL, or SQLite row formats.
+
 ## Discord Provider
 
-The Discord Provider owns Discord clients, interactions, REST registration, Discord permission checks, hierarchy checks, manageability checks, API operations, and Discord responses.
+The Discord Provider owns Discord login, readiness, slash-command registration, interaction dispatch, Discord permission and hierarchy checks, API operations, and Discord responses.
 
-Initialization prepares the Discord client, commands, and interaction handling. The Provider may report `RUNNING` only after login readiness and slash-command registration succeed. Missing configuration, login failure, readiness failure, or registration failure propagates to framework startup and leaves the Provider in `ERROR`. Shutdown awaits client destruction.
+It reports `RUNNING` only after login readiness and slash-command registration succeed. Missing configuration, login failure, readiness failure, or registration failure propagates to framework startup and leaves the Provider in `ERROR`. Shutdown awaits client destruction.
 
-## Verified Commands
+### Verified Commands
 
-The Discord Provider loads exactly 12 unique commands:
+The Discord Provider loads 13 unique top-level commands:
 
 - `/ping`
 - `/help`
@@ -22,191 +26,123 @@ The Discord Provider loads exactly 12 unique commands:
 - `/daily`
 - `/leaderboard`
 - `/ticket`
+- `/game`
 
-## Economy Commands
+### Module-Facing Commands
 
-The Discord Provider implements three Economy-facing commands:
+Economy, Moderation, and Ticket commands translate Discord interactions into narrow calls to framework-loaded Modules. They do not construct Modules or access Module persistence.
 
-- `/balance` resolves a selected Discord user, or the invoking user, and displays the balance returned by the Economy Module.
-- `/daily` requests a daily reward and formats successful and cooldown responses.
-- `/leaderboard` requests ranked Economy entries and formats them for Discord.
+The Ticket command supports creator and staff workflows through ephemeral responses. The current workflow does not create Discord channels, threads, categories, permission overwrites, or transcripts.
 
-These commands translate Discord interactions and format responses. Economy accounts, balances, rewards, cooldowns, transactions, settings, and leaderboard rules remain in `EconomyModule`.
+### Discord Moderation Safety
 
-Each Economy command resolves the framework-loaded Economy Module through the Core Registry and Module Manager. The commands do not instantiate `EconomyModule`.
+`DiscordModerationGuard` centralizes Discord-specific moderation safety checks, including self-target prevention, server-owner protection, moderator and bot role hierarchy, target manageability, and action-specific rejection wording.
 
-## Ticket Command
+### Discord Game Command Boundary
 
-The Discord Provider implements one `/ticket` command with creator-owned subcommands:
+The guild-only `/game` family requires `ManageGuild` and includes:
 
-- `/ticket create`
-- `/ticket list`
-- `/ticket view`
-- `/ticket message`
-- `/ticket close`
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say message:<text>`
 
-The command also provides a staff subcommand group:
+The Discord Provider owns command definitions, authorization, input validation, response deferral, safe result parsing, and user-facing formatting.
 
-- `/ticket staff list`
-- `/ticket staff view`
-- `/ticket staff message`
-- `/ticket staff assign`
-- `/ticket staff unassign`
-- `/ticket staff close`
+Commands resolve the framework-loaded `7 Days to Die` Provider through a focused resolver. Successful resolution returns only a frozen service exposing `executeCommand`. Commands do not receive Provider Manager, Registry, Telnet, socket, configuration, or credential internals.
 
-Ticket responses are ephemeral. Creator and staff lists request at most 20 Tickets from the Module and report any remainder. Staff Ticket views request at most the latest five messages, normalize message whitespace, and truncate long displayed content.
-
-Discord user IDs are translated into Ticket actor, creator, author, and assignee identities. Discord permissions are translated into reusable Ticket permission identifiers, while final validation and authorization remain in `TicketModule`. Discord mentions, timestamps, response wording, and presentation limits belong to the Provider.
-
-The command resolves the framework-loaded Ticket Module through the Core Registry and Module Manager. It does not instantiate `TicketModule` or access its internal storage. The current workflow does not create Discord channels, threads, categories, permission overwrites, or transcripts.
-
-## DiscordModerationGuard
-
-Verified location:
-
-```text
-src/providers/discord/services/DiscordModerationGuard.js
-```
-
-The guard centralizes Discord-specific safety checks and wording for ban, kick, timeout, and untimeout actions.
-
-Checks include:
-
-- Self-target prevention
-- Server-owner protection
-- Moderator role hierarchy
-- Bot role hierarchy
-- Target manageability
-- Action-specific rejection wording
-
-## Boundary
-
-Discord-specific behavior remains in the Provider. Reusable moderation actions, Economy and Ticket business operations, permission identifiers, authorization, and audit-record behavior remain outside the Provider.
-
-Providers and commands are persistence-blind. They resolve framework-loaded Modules and do not access Module stores, issue SQL, construct database connections, or depend on SQLite row formats.
+Remote operations use stable Discord-side handling for timeout, disconnect, generic execution failure, malformed results, and thrown errors. Raw Telnet output, credentials, IP addresses, platform IDs, positions, health values, socket details, and internal errors are not exposed to Discord.
 
 ## 7 Days to Die Provider
 
-`SevenDaysToDieProvider` is an optional game-server Provider and is disabled by default. `ProviderLoader` omits it when its configuration is missing or disabled, so absent connection values are safe while it is disabled. Connection values are validated only when the Provider is enabled.
+`SevenDaysToDieProvider` is optional and disabled by default. `ProviderLoader` omits it when configuration is missing or disabled. Enabled configuration is validated before client use.
 
-The Provider coordinates configuration, lifecycle, and `SevenDaysToDieTelnetClient`. The client uses Node's built-in `node:net` API to open the game server's raw TCP management connection, submit the Telnet password after the verified prompt, and wait for confirmed authentication and console readiness within the configured connection timeout. The Provider reports `RUNNING` only after that readiness completes.
+The Provider owns lifecycle and the command-service boundary. It exposes Provider-level `executeCommand(command)` while keeping transport and command internals private.
 
-An unexpected socket error or closure after readiness moves the Provider to `ERROR` through a one-time client notification. Intentional shutdown does not create an error state, removes live connection listeners, and awaits idempotent client disconnection.
+### Telnet Client and Readiness
 
-Raw TCP management traffic is unencrypted. It must use loopback, a LAN, a VPN, or another protected private path rather than exposing the Telnet service or password to the public internet.
+`SevenDaysToDieTelnetClient` uses Node's built-in `node:net` API to open the raw TCP management connection.
 
-The current Provider does not execute administrative commands, parse players or server events, perform player administration, connect Discord to the game, or invoke Economy behavior. Automated coverage uses handwritten client and socket fakes and does not require a live game server.
+Verified transport behavior includes:
 
-### Command Execution Deferral
+- Password-authenticated readiness
+- Direct-console readiness when the server does not present a password prompt
+- Raw line framing across split and combined chunks
+- Telnet control-byte and subnegotiation stripping
+- UTF-8 preservation across chunk boundaries
+- CRLF command writes
+- Bounded connection readiness timeout
+- One-time unexpected connection-loss notification
+- Idempotent awaited disconnection
 
-Administrative command execution is deferred. Current official documentation does not define a deterministic command-response terminator or reliable isolation between command output and unsolicited server logs. Implementation must wait until deployment-specific evidence establishes response completion boundaries, unsolicited-log filtering behavior, server-version and hosting compatibility, and safe command-timeout behavior.
+The Provider reports `RUNNING` only after console readiness is confirmed. Unexpected socket loss after readiness moves it to `ERROR`. Intentional shutdown remains `STOPPED`.
 
-A direct single-command client operation remains the preferred future shape. No response marker or prompt has been approved, and no command queue, command coordinator, generic command framework, or guessed delimiter is implemented.
+### Command-Response Boundary
 
-### Future Configuration Boundary
+The Provider owns one active command at a time through `SevenDaysToDieCommandService`.
 
-A future validated web administration interface may collect game-server connection settings and deployment-specific console information. It must invoke validated RSF configuration operations rather than edit source files directly. Telnet passwords or secret references must remain outside tracked JSON.
+The implemented response-start gate excludes stale startup-banner lines from the first command result. Incoming lines are classified and separated into command response lines and unsolicited event lines.
 
-This is future architecture only. The current Website Provider does not expose game-server configuration, persist configuration changes, or provide a live administration workflow. Game-server protocol and command behavior remain owned by the 7 Days to Die Provider, and command execution must remain unavailable until its connection and response-boundary requirements are satisfied.
+Evidence-backed deterministic completion exists for:
 
-Reusable moderation, Economy, authorization, transaction, and cross-platform business policy remains Module-owned. Game Providers must invoke validated Module operations and must not directly access Module database tables.
+- `gettime`
+- `listplayers`
+- `lp`
+- `say`
+- `help`
+- Invalid or unknown commands
+
+Unverified multiline output uses a bounded inactivity fallback after meaningful output begins.
+
+Command results and failure contracts are immutable and defensive. Supported outcomes cover success, timeout, disconnect, write failure, completion-decision failure, size truncation, and generic execution failure.
+
+The command execution boundary was live verified against a running 7 Days to Die V3.1.0 b13 server.
+
+### Discord Operations
+
+The Discord Provider currently uses the command service for:
+
+- `gettime` through `/game time`
+- `listplayers` through `/game players`
+- quoted `say` through `/game say`
+
+`/game status` inspects Provider availability without executing a remote command.
+
+### Security Boundary
+
+Raw Telnet is unencrypted, administrative, and untrusted. It must remain on loopback, LAN, VPN, or another protected private path. It must not be exposed directly to the public internet.
+
+Telnet passwords remain environment-only and outside tracked JSON.
+
+### Current Exclusions
+
+The current Provider and Discord integration do not include:
+
+- Arbitrary console execution
+- Hosted-player ban, kick, whitelist, or other administration workflows
+- Cross-platform identity linking
+- Continuous Discord and in-game chat bridging
+- Economy-backed in-game purchases or rewards
+- Command queues or simultaneous commands
+- Multiple game servers
+- Automatic process supervision
 
 ## Website Provider
 
-`WebsiteProvider` is optional and disabled by default. When enabled, `ProviderLoader` adds it after Discord and the optional 7 Days to Die Provider. Production configuration requires the exact loopback host `127.0.0.1`; public binding is not implemented.
+`WebsiteProvider` is optional and disabled by default. When enabled, it binds only to the exact loopback host `127.0.0.1`; public binding is not implemented.
 
-`WebsiteServer` uses Node's built-in `node:http` API and reports readiness only after listening succeeds. It retains the tested Provider lifecycle behavior for startup failure, unexpected post-readiness server loss, bounded shutdown, forced connection cleanup, and repeated safe shutdown.
+`WebsiteServer` owns HTTP transport and reports readiness only after listening succeeds. It retains tested startup-failure, unexpected-loss, bounded-shutdown, forced-connection-cleanup, and repeated-shutdown behavior.
 
-`WebsiteAuthenticator` owns the Provider-local `authenticate(request)` boundary. It denies authentication while Website authentication is disabled. When enabled, it resolves opaque Website session cookies through the session store and returns an identity plus whether an invalid supplied session cookie must be cleared. The Website identity contains only `actorId`, `displayName`, and an empty `permissions` array.
+### Authentication Boundary
 
-### Discord OAuth and Session Boundaries
+Website authentication is disabled by default. When enabled, the Provider validates a canonical HTTPS public origin, Discord guild and client IDs, an environment-supplied Discord client secret, and bounded OAuth and session lifetimes.
 
-`DiscordOAuthClient` is the focused Discord OAuth protocol boundary. It builds the Discord authorization URL, exchanges authorization codes, fetches the current Discord user and configured guild member, and revokes OAuth authorization. It uses Node 22 built-in `fetch` and crypto behavior, normalizes failures without exposing secrets or Discord response bodies, and retains no OAuth token after callback completion.
+The implemented OAuth boundary uses Discord authorization-code flow with PKCE S256, one-time state, browser binding, guild-membership enforcement, token revocation before RSF session creation, secure cookies, bounded in-memory attempts, and bounded in-memory sessions.
 
-`InMemoryWebsiteOAuthStateStore` holds bounded one-time OAuth attempts in memory. Each attempt uses separate state, PKCE verifier, and browser-binding values. Sensitive lookup values are stored as digests where implemented. The store enforces expiration, replay rejection, atomic consumption, and capacity, clears all attempts on shutdown, and does not persist attempts across restart.
-
-`InMemoryWebsiteSessionStore` holds opaque Website sessions in memory. It stores token digests, frozen Website identity snapshots, and timestamps; enforces idle and absolute expiration; supports activity refresh, revocation, capacity enforcement, and shutdown clearing. Sessions do not survive Provider or process restart. No JWT or database session persistence exists.
-
-`WebsiteCookieService` owns focused cookie parsing and serialization. The session cookie is `__Host-rsf_session`; the OAuth binding cookie is `__Secure-rsf_oauth_binding`. Both use `Secure`, `HttpOnly`, `SameSite=Lax`, an approved `Path`, integer `Max-Age`, and no `Domain`.
-
-`WebsiteOAuthFlow` coordinates login initiation and callback processing. It uses Discord authorization-code OAuth with PKCE S256, one-time state, and browser binding. It enforces configured guild membership and rejects bots, system users, pending members, guest members, and non-members. It maps identity as:
-
-```text
-actorId = Discord user ID
-displayName = guild nickname -> global name -> username
-permissions = []
-```
-
-The flow revokes Discord OAuth authorization before creating an RSF session. Guild membership grants login eligibility only; it creates no Module permission or staff role mapping.
+Website sessions and pending OAuth attempts do not survive Provider or process restart.
 
 ### Website Ticket Boundary
 
-`WebsiteTicketService` is a focused Website Provider service that translates an authenticated Website identity into a creator-owned Ticket Module read.
+Creator-owned Ticket listing is the only implemented Website-to-Module capability. The Provider resolves the framework-loaded Tickets Module through a narrow service and returns only allowlisted creator-facing fields.
 
-The service resolves the framework-loaded `Tickets` Module through an injected Module Manager-backed resolver. It does not construct `TicketModule`, access Ticket stores, issue SQL, or depend on SQLite row formats.
-
-The service supplies the authenticated `actorId` as both the Ticket creator and actor identity:
-
-```text
-creatorId = authenticated actorId
-actorId = authenticated actorId
-actorPermissions = authenticated permissions
-```
-
-It invokes `TicketModule.listTicketsForCreator` with fixed read options:
-
-```text
-limit = 20
-offset = 0
-latest = true
-```
-
-Request-controlled creator IDs, actor IDs, limits, offsets, status filters, and permission values are not accepted.
-
-Successful responses contain only allowlisted creator-facing fields:
-
-- `ticketId`
-- `status`
-- `createdAt`
-
-Creator identity, assignee identity, messages, persistence details, and raw Ticket records are not exposed.
-
-### Website Routes
-
-- `GET /health` remains unauthenticated, reports transport readiness only, and makes no Discord or Module request.
-- `GET /auth/discord` exists only when authentication is enabled. It creates state, PKCE, and browser binding, sets the binding cookie, and returns a `303` Discord authorization redirect.
-- `GET /auth/discord/callback` validates and consumes state before Discord access, enforces browser binding, exchanges the code, verifies identity and membership, revokes the OAuth grant, creates an RSF session, and returns `303` to `/api/me`. It returns generic `400`, `401`, `403`, or `503` failures and clears the binding cookie on callback outcomes.
-- `POST /auth/logout` requires the exact configured `Origin`. Missing or mismatched origins return `403`; valid requests revoke the session, clear cookies, return an empty `204`, and remain idempotent.
-- `GET /api/me` uses the session-backed authenticator when enabled. Valid sessions receive the existing allowlisted `200` identity response. Missing or invalid sessions receive `401`; invalid supplied session cookies are cleared. Internal authentication failures return generic `503`.
-- `GET /api/tickets` exists only when authentication and the Website Ticket service are enabled. It authenticates the session, binds the Ticket creator and actor to the authenticated identity, and returns an allowlisted creator-owned Ticket list. Missing or invalid sessions return `401`; invalid supplied session cookies are cleared. Authentication, Ticket Module availability, and Ticket operation failures return generic `503`.
-- Non-`GET` requests to `/api/tickets` return `405` with `Allow: GET` without authenticating or invoking the Ticket Module.
-
-### Authentication Configuration
-
-`WebsiteAuthenticationConfiguration` is a Provider-local validator invoked during `WebsiteProvider` initialization. It validates configuration without network, database, Module, or Registry access and returns a frozen non-secret snapshot.
-
-Authentication is disabled by default. While disabled, `publicOrigin` and `discordGuildId` may remain empty, and neither a Discord client ID nor a Discord client secret is required. The Website Provider can start, `GET /health` remains available, production `GET /api/me` remains deny-only, and authentication routes return `404`. No OAuth client, state store, session store, or OAuth flow is constructed.
-
-When authentication is enabled, initialization requires:
-
-- A canonical HTTPS public origin without credentials, a path, query, fragment, or trailing slash
-- Valid positive Discord guild and client snowflake strings
-- A non-empty `DISCORD_CLIENT_SECRET` from the environment
-- A Discord request timeout and OAuth state, session idle, and session absolute lifetimes within their validated bounds
-- A session absolute lifetime at least as long as the session idle lifetime
-
-The callback URI is derived exactly as `<publicOrigin>/auth/discord/callback`. It is not configured separately and is not inferred from `Host`, `Forwarded`, or `X-Forwarded-*` request headers.
-
-Invalid enabled configuration fails Provider initialization before the HTTP listener is started. Valid enabled configuration constructs the OAuth and session boundaries before listener startup.
-
-Request-level Discord failures do not move `WebsiteProvider` to `ERROR`; unexpected transport loss retains existing `ERROR` behavior. Shutdown marks the OAuth flow as stopping, stops transport, and clears pending attempts and sessions.
-
-### Current Boundaries
-
-- Creator-owned Ticket listing is the only implemented Website-to-Module capability.
-- Ticket creation, Ticket detail views, Ticket messages, closing, staff workflows, Moderation, Economy, configuration, and administration routes are not implemented.
-- The Website Provider resolves only the framework-loaded Ticket Module through the narrow `WebsiteTicketService` boundary.
-- The Website Provider does not access Module stores, database connections, SQL, or SQLite rows.
-- No persistent session storage, frontend, public binding, trusted-proxy behavior, or role-to-permission translation exists.
-- No public deployment has been completed.
-- Live use requires a configured HTTPS reverse proxy and registered Discord callback. The loopback listener must not be exposed directly.
+Ticket creation, detail views, messages, closing, staff workflows, Moderation, Economy, configuration, administration routes, frontend, persistent sessions, public binding, trusted-proxy behavior, and role-to-permission translation are not implemented.
