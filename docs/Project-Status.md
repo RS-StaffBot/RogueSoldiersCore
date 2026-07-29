@@ -8,7 +8,7 @@ v1.2.0
 
 v1.3.0 - Discord Game Server Command Interface
 
-Status: In progress; Phases 1 through 6 are complete and Phase 7 is next.
+Status: In progress; Phases 1 through 7 are complete and Phase 8 is next.
 
 ## Milestone Goal
 
@@ -77,6 +77,16 @@ The Discord Provider owns slash-command definitions, Discord permission checks, 
 - Kept failure ownership boundaries intact: the 7 Days to Die Provider produces command outcomes while the Discord Provider formats them for staff.
 - Added deterministic coverage for every supported failure outcome.
 
+## Verified Phase 7 Registration and Interaction Coverage
+
+- Verified the serialized guild-only `/game` command definition.
+- Verified the fixed `ManageGuild` default permission.
+- Verified registration of `status`, `time`, `players`, and `say` through the existing command loader and registry.
+- Verified the bounded required `message` option for `/game say`.
+- Verified dispatch through the existing Discord `interactionCreate` handler.
+- Verified every subcommand reaches the correct fixed Provider operation and returns the expected Discord response.
+- Added deterministic integration coverage without Discord login, Telnet sockets, credentials, or a live game server.
+
 ## Planned Phases
 
 1. Completed: define the Discord permission and Provider-resolution boundary.
@@ -85,8 +95,8 @@ The Discord Provider owns slash-command definitions, Discord permission checks, 
 4. Completed: add `/game players` through `listplayers`.
 5. Completed: add `/game say` through the verified `say` command path.
 6. Completed: consolidate response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
-7. Next: add final command registration and interaction coverage.
-8. Perform live Discord-to-game verification.
+7. Completed: add final command registration and interaction coverage.
+8. Next: perform live Discord-to-game verification.
 9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
 
 ## v1.3.0 Boundaries

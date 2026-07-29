@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.3.0 - Discord Game Server Command Interface
 
-**Status:** In progress; Phases 1 through 6 are complete and Phase 7 is next
+**Status:** In progress; Phases 1 through 7 are complete and Phase 8 is next
 
 ## Completed Milestones
 
@@ -93,6 +93,16 @@ No Module is introduced for these direct platform operations.
 - Provider and Discord ownership boundaries preserved
 - Deterministic failure-path coverage
 
+### Completed Phase 7
+
+- Serialized guild-only `/game` definition verified through the existing loader and registry
+- Fixed `ManageGuild` default permission verified
+- `status`, `time`, `players`, and `say` registration verified
+- Required bounded `message` option verified
+- Existing `interactionCreate` dispatch verified
+- Every subcommand verified against its fixed Provider operation and expected Discord response
+- Deterministic integration coverage without Discord login, Telnet sockets, credentials, or a live game server
+
 ### Planned Phases
 
 1. Completed: authorization and Provider resolution.
@@ -101,8 +111,8 @@ No Module is introduced for these direct platform operations.
 4. Completed: `/game players`.
 5. Completed: `/game say`.
 6. Completed: response formatting and safe failure handling.
-7. Next: add final command registration and interaction coverage.
-8. Perform live Discord-to-game verification.
+7. Completed: final command registration and interaction coverage.
+8. Next: perform live Discord-to-game verification.
 9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
 
 ### Outside v1.3.0
