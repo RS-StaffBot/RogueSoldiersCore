@@ -2,11 +2,11 @@
 
 ## Current Status
 
-**Repository Version:** v1.2.0
+**Repository Version:** v1.3.0
 
-**Current Milestone:** v1.3.0 - Discord Game Server Command Interface
+**Current Milestone:** No implementation milestone selected
 
-**Status:** In progress; Phases 1 through 8 are complete and Phase 9 is next
+**Status:** v1.3.0 release candidate complete pending merge and tag
 
 ## Completed Milestones
 
@@ -24,14 +24,17 @@
 - v1.0.0 - Production Release
 - v1.1.0 - Administration and Configuration Foundation
 - v1.2.0 - 7 Days to Die Command Execution Foundation
+- v1.3.0 - Discord Game Server Command Interface
 
 ## v1.3.0 - Discord Game Server Command Interface
+
+Status: Completed pending release tag
 
 ### Goal
 
 Provide a narrow Discord slash-command interface over the completed 7 Days to Die Provider command service.
 
-The implemented command family is:
+### Implemented Commands
 
 - `/game status`
 - `/game time`
@@ -46,81 +49,25 @@ The 7 Days to Die Provider retains ownership of Telnet communication, command ex
 
 No Module is introduced for these direct platform operations.
 
-### Completed Phase 1
+### Completed Work
 
-- Reusable Discord game-command authorization using `ManageGuild`
-- Focused game Provider resolver
-- Stable Provider availability outcomes
-- Frozen service exposing only `executeCommand`
-- Deterministic tests without live Discord or Telnet access
+1. Reusable `ManageGuild` authorization and narrow Provider resolution.
+2. Guild-only `/game status` without remote execution.
+3. Fixed `gettime` execution with verified time parsing.
+4. Fixed `listplayers` execution with privacy-safe name and total formatting.
+5. Fixed quoted `say` execution with bounded input validation.
+6. Shared safe failure formatting for timeout, disconnect, command failure, malformed result, and thrown errors.
+7. Final serialized registration and interaction-dispatch integration coverage.
+8. Live Discord-to-game verification against a running 7 Days to Die server.
+9. Regression, documentation synchronization, version synchronization, and release notes.
 
-### Completed Phase 2
+### Verification Result
 
-- Guild-only `/game status`
-- Safe ephemeral Provider-state replies
-- No remote command execution
-
-### Completed Phase 3
-
-- Guild-only `/game time`
-- Fixed `gettime` execution
-- Verified `Day N, HH:MM` parsing
-- Safe unavailable and malformed-result handling
-
-### Completed Phase 4
-
-- Guild-only `/game players`
-- Fixed `listplayers` execution
-- Verified player row and total parsing
-- Discord output limited to display names and total count
-- Private server fields excluded from Discord
-
-### Completed Phase 5
-
-- Guild-only `/game say message:<text>`
-- Required message bounded to 1-200 characters
-- Unsafe command-shaping characters and control characters rejected before Provider resolution
-- Only the fixed game-chat operation executed
-- Safe acknowledgement without raw Telnet output
-
-### Completed Phase 6
-
-- Shared Discord-side execution wrapper for remote `/game` operations
-- Stable formatting for timeout, disconnect, generic failure, malformed result, and thrown execution errors
-- Deferred ephemeral replies preserved
-- Raw Telnet output, credentials, IP addresses, socket details, and internal error text excluded from Discord
-- Provider and Discord ownership boundaries preserved
-
-### Completed Phase 7
-
-- Serialized guild-only `/game` definition verified through the existing loader and registry
-- Fixed `ManageGuild` default permission verified
-- `status`, `time`, `players`, and `say` registration verified
-- Required bounded `message` option verified
-- Existing `interactionCreate` dispatch verified
-- Every subcommand verified against its fixed Provider operation and expected Discord response
-
-### Completed Phase 8
-
-- Live startup verified with Discord and the optional 7 Days to Die Provider running
-- `/game status` verified against live Provider availability
-- `/game time` verified through live `gettime` execution
-- `/game players` verified through live `listplayers` execution
-- `/game say` verified through live Telnet execution and in-game chat output
-- Live server logs confirmed the fixed command paths
-- Negative permission behavior remains covered by deterministic automated tests because a second suitable Discord account was unavailable for live testing
-
-### Planned Phases
-
-1. Completed: authorization and Provider resolution.
-2. Completed: `/game status`.
-3. Completed: `/game time`.
-4. Completed: `/game players`.
-5. Completed: `/game say`.
-6. Completed: response formatting and safe failure handling.
-7. Completed: final command registration and interaction coverage.
-8. Completed: live Discord-to-game verification.
-9. Next: regression, documentation synchronization, version synchronization, release notes, and v1.3.0 release closure.
+- Live Discord and 7 Days to Die Provider startup passed.
+- `/game status`, `/game time`, `/game players`, and `/game say` passed live verification.
+- Server logs confirmed `gettime`, `listplayers`, and quoted `say` execution.
+- The game chat displayed the Discord-originated message.
+- Automated tests verify rejection without `ManageGuild`; a second suitable account was unavailable for the live negative-permission check.
 
 ### Outside v1.3.0
 
@@ -136,31 +83,9 @@ No Module is introduced for these direct platform operations.
 - Public Telnet exposure
 - Logfile-based command-response parsing
 
-## v1.2.0 - 7 Days to Die Command Execution Foundation
-
-Status: Completed and tagged
-
-Verified work:
-
-- Sanitized raw Telnet evidence fixtures
-- Telnet line framing and protocol-byte removal
-- One active command at a time
-- Provider-owned command-response service
-- Deterministic completion for verified commands
-- Unsolicited event separation
-- Timeout, disconnect, write, decision, and truncation failure handling
-- Password-protected and direct-console readiness compatibility
-- Live command verification against a running 7 Days to Die V3.1 test server
-
-## v1.2.0 Release Record
-
-- Release pull request: `#32`
-- Release merge commit: `9faa79314d092ba3e8092af1e00405af6d6cc9b8`
-- Annotated release tag: `v1.2.0`
-
 ## Future Direction
 
-Future milestones may include hosted game-server player administration, continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
+A future milestone must be explicitly selected before implementation begins. Candidate directions include hosted game-server player administration, continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
 
 Every future milestone must preserve the established architecture:
 
