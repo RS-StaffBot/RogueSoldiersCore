@@ -108,7 +108,6 @@ function createInteraction(subcommand, message = null) {
         },
         async deferReply(payload) {
             deferred.push(payload);
-            this.deferred = true;
         },
         async editReply(payload) {
             edits.push(payload);
