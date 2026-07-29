@@ -180,7 +180,7 @@ test("does not execute say when the Provider is unavailable", async () => {
     }]);
 });
 
-test("reports a safe failure when the say result is not successful", async () => {
+test("reports a safe timeout when the say result times out", async () => {
     const command = new GameCommand({
         gameCommandAuthorizer: createAuthorizer(),
         gameServerProviderResolver: createAvailableResolver(
@@ -192,6 +192,6 @@ test("reports a safe failure when the say result is not successful", async () =>
     await command.execute(interaction);
 
     assert.deepEqual(interaction.edits, [{
-        content: "Unable to send the message to the 7 Days to Die server."
+        content: "The game server did not respond in time."
     }]);
 });

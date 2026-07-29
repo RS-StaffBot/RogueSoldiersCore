@@ -171,10 +171,17 @@ class GameCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
-        const result = await resolution.service.executeCommand(
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
             "gettime"
         );
-        const timeLine = this.findTimeLine(result);
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const timeLine = this.findTimeLine(execution.result);
 
         await interaction.editReply({
             content: timeLine
@@ -201,10 +208,17 @@ class GameCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
-        const result = await resolution.service.executeCommand(
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
             "listplayers"
         );
-        const players = this.parsePlayers(result);
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const players = this.parsePlayers(execution.result);
 
         await interaction.editReply({
             content: this.createPlayersMessage(players)
@@ -240,16 +254,66 @@ class GameCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
-        const result = await resolution.service.executeCommand(
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
             `say "${message}"`
         );
 
         await interaction.editReply({
-            content: result && result.status === "SUCCESS"
+            content: execution.success
                 ? "The message was sent to the 7 Days to Die server."
-                : "Unable to send the message to the 7 Days to Die server."
+                : execution.message
         });
 
+    }
+
+    async executeRemoteCommand(service, command) {
+
+        try {
+            const result = await service.executeCommand(command);
+
+            if (!result || typeof result !== "object") {
+                return this.createExecutionFailure(
+                    "The game server returned an invalid response."
+                );
+            }
+
+            if (result.status === undefined || result.status === "SUCCESS") {
+                return Object.freeze({
+                    success: true,
+                    result
+                });
+            }
+
+            if (result.status === "TIMEOUT") {
+                return this.createExecutionFailure(
+                    "The game server did not respond in time."
+                );
+            }
+
+            if (result.status === "DISCONNECTED") {
+                return this.createExecutionFailure(
+                    "The game server connection was lost."
+                );
+            }
+
+            return this.createExecutionFailure(
+                "The game server could not complete the command."
+            );
+        } catch {
+            return this.createExecutionFailure(
+                "The game server command could not be completed."
+            );
+        }
+
+    }
+
+    createExecutionFailure(message) {
+        return Object.freeze({
+            success: false,
+            message,
+            result: null
+        });
     }
 
     isValidSayMessage(message) {
