@@ -6,7 +6,7 @@
 
 **Current Milestone:** No implementation milestone selected
 
-**Status:** v1.3.0 release candidate complete pending merge and tag
+**Status:** v1.3.0 completed, merged, and tagged
 
 ## Completed Milestones
 
@@ -28,7 +28,7 @@
 
 ## v1.3.0 - Discord Game Server Command Interface
 
-Status: Completed pending release tag
+Status: Completed and tagged
 
 ### Goal
 
@@ -59,7 +59,7 @@ No Module is introduced for these direct platform operations.
 6. Shared safe failure formatting for timeout, disconnect, command failure, malformed result, and thrown errors.
 7. Final serialized registration and interaction-dispatch integration coverage.
 8. Live Discord-to-game verification against a running 7 Days to Die server.
-9. Regression, documentation synchronization, version synchronization, and release notes.
+9. Regression, documentation synchronization, version synchronization, release notes, merge, and release tagging.
 
 ### Verification Result
 
@@ -68,6 +68,14 @@ No Module is introduced for these direct platform operations.
 - Server logs confirmed `gettime`, `listplayers`, and quoted `say` execution.
 - The game chat displayed the Discord-originated message.
 - Automated tests verify rejection without `ManageGuild`; a second suitable account was unavailable for the live negative-permission check.
+- Local release verification passed with 0 production vulnerabilities, 370 tests passed, 0 failed tests, and ESLint passing.
+- GitHub Actions passed on Node.js 22.
+
+### Release Record
+
+- Release pull request: `#43`
+- Release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
+- Annotated tag: `v1.3.0`
 
 ### Outside v1.3.0
 

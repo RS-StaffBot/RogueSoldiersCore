@@ -8,7 +8,7 @@ v1.3.0
 
 No implementation milestone is currently selected.
 
-v1.3.0 - Discord Game Server Command Interface is complete pending merge and release tagging.
+v1.3.0 - Discord Game Server Command Interface is completed, merged, and tagged.
 
 ## Completed v1.3.0 Capability
 
@@ -48,7 +48,7 @@ Live verification passed with Discord and the optional 7 Days to Die Provider bo
 
 ## Release Verification
 
-The release candidate must pass:
+The v1.3.0 release passed:
 
 ```powershell
 npm.cmd ci
@@ -57,13 +57,14 @@ npm.cmd test
 npm.cmd run lint
 ```
 
-Version values must match in:
+Final v1.3.0 verification results:
 
-- `package.json`
-- `package-lock.json`
-- `config/core/app.json`
-- `docs/Project-Status.md`
-- `docs/Roadmap.md`
+- 0 production vulnerabilities
+- 370 tests passed
+- 0 failed tests
+- ESLint passed
+- GitHub Actions passed on Node.js 22
+- Version values matched in `package.json`, `package-lock.json`, `config/core/app.json`, `docs/Project-Status.md`, and `docs/Roadmap.md`
 
 ## v1.3.0 Boundaries
 
@@ -93,6 +94,12 @@ The release does not include:
 - Discord roles are not yet translated into RSF settings permissions.
 - Secrets cannot be edited through the settings system.
 - Cross-platform identity, clustering, remote databases, and multi-community administration remain future work.
+
+## v1.3.0 Release Record
+
+- Release pull request: `#43`
+- Release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
+- Annotated tag: `v1.3.0`
 
 ## Previous Release Record
 
