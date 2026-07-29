@@ -8,7 +8,7 @@ v1.2.0
 
 v1.3.0 - Discord Game Server Command Interface
 
-Status: In progress; Phases 1 through 5 are complete and Phase 6 is next.
+Status: In progress; Phases 1 through 6 are complete and Phase 7 is next.
 
 ## Milestone Goal
 
@@ -68,6 +68,15 @@ The Discord Provider owns slash-command definitions, Discord permission checks, 
 - Returned a safe success or failure acknowledgement without exposing Telnet output.
 - Added deterministic tests without Discord login, Telnet sockets, credentials, or a live game server.
 
+## Verified Phase 6 Failure Formatting
+
+- Added one Discord-side remote-command execution wrapper for all remote `/game` operations.
+- Distinguished timeout, disconnect, generic command failure, malformed result, and thrown execution errors.
+- Returned stable user-facing messages without exposing raw Telnet output, credentials, socket details, IP addresses, or internal error text.
+- Preserved deferred ephemeral interaction behavior for remote commands.
+- Kept failure ownership boundaries intact: the 7 Days to Die Provider produces command outcomes while the Discord Provider formats them for staff.
+- Added deterministic coverage for every supported failure outcome.
+
 ## Planned Phases
 
 1. Completed: define the Discord permission and Provider-resolution boundary.
@@ -75,8 +84,8 @@ The Discord Provider owns slash-command definitions, Discord permission checks, 
 3. Completed: add `/game time` through `gettime`.
 4. Completed: add `/game players` through `listplayers`.
 5. Completed: add `/game say` through the verified `say` command path.
-6. Next: consolidate response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
-7. Add final command registration and interaction coverage.
+6. Completed: consolidate response formatting and safe handling for unavailable Providers, timeouts, failures, and malformed results.
+7. Next: add final command registration and interaction coverage.
 8. Perform live Discord-to-game verification.
 9. Complete regression, documentation, version synchronization, and v1.3.0 release closure.
 
