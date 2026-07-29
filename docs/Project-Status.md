@@ -6,9 +6,64 @@ v1.3.0
 
 ## Current Milestone
 
-No implementation milestone is currently selected.
+v1.4.0 - Hosted Player Administration
 
-v1.3.0 - Discord Game Server Command Interface is completed, merged, and tagged.
+Status: Selected; Phase 1 is next.
+
+## Milestone Goal
+
+Add a narrow, authorized Discord interface for administering individual players on the hosted 7 Days to Die server without exposing arbitrary console execution.
+
+The milestone will build on the existing `/game` command family, `ManageGuild` authorization, focused game Provider resolver, immutable command-result boundary, and single-active-command enforcement.
+
+## Planned Command Family
+
+The intended command family is:
+
+- `/game kick`
+- `/game ban`
+- `/game unban`
+- `/game whitelist add`
+- `/game whitelist remove`
+
+Exact options, player identifiers, server command shapes, success evidence, failure evidence, and response parsing must be proven before each operation is implemented. Names and identifiers must not be guessed from undocumented server behavior.
+
+## Architecture Boundary
+
+The Discord Provider will own slash-command definitions, Discord authorization, interaction handling, input validation, response deferral, and safe user-facing formatting.
+
+The 7 Days to Die Provider will retain ownership of Telnet communication, fixed command construction, command execution, response completion, event separation, timeout behavior, connection failures, and single-active-command enforcement.
+
+No arbitrary console command entry will be exposed. Commands will receive only the existing frozen `executeCommand` service boundary. No Module is introduced for direct game-platform administration unless reusable cross-platform business policy is proven later.
+
+## Planned Phases
+
+1. Capture and sanitize live evidence for supported player-administration commands, identifiers, success responses, failure responses, and completion boundaries.
+2. Add Provider-side deterministic completion coverage for the first approved player-administration operation.
+3. Add shared Discord-side player target validation and safe administration result formatting.
+4. Add `/game kick` through one fixed, evidence-backed server command.
+5. Add `/game ban` through one fixed, evidence-backed server command.
+6. Add `/game unban` through one fixed, evidence-backed server command.
+7. Add whitelist add and remove operations only after their exact server behavior is proven.
+8. Add registration, interaction, authorization, privacy, and regression coverage for the completed command family.
+9. Complete live Discord-to-game verification, documentation synchronization, version synchronization, release notes, and v1.4.0 release closure.
+
+## v1.4.0 Safety Boundaries
+
+The milestone will not include:
+
+- Arbitrary console command execution
+- Free-form Telnet command input
+- Discord-to-game identity linking
+- Automatic resolution of ambiguous player names
+- Continuous Discord and in-game chat bridging
+- Economy-backed game purchases or rewards
+- Command queues or multiple simultaneous game commands
+- Multiple game servers
+- Automatic game-server startup or process supervision
+- Public Telnet exposure
+
+Administrative actions must fail safely when a player target is missing, ambiguous, malformed, not found, already banned, not banned, or otherwise rejected by the server. Discord responses must not expose raw Telnet output, credentials, IP addresses, platform identifiers, positions, health values, socket details, or internal error text.
 
 ## Completed v1.3.0 Capability
 
@@ -46,40 +101,6 @@ Live verification passed with Discord and the optional 7 Days to Die Provider bo
 - Server logs confirmed fixed execution of `gettime`, `listplayers`, and the quoted `say` command.
 - A second suitable Discord account was unavailable for a live negative-permission test; deterministic automated tests verify rejection without `ManageGuild`.
 
-## Release Verification
-
-The v1.3.0 release passed:
-
-```powershell
-npm.cmd ci
-npm.cmd audit --omit=dev --audit-level=high
-npm.cmd test
-npm.cmd run lint
-```
-
-Final v1.3.0 verification results:
-
-- 0 production vulnerabilities
-- 370 tests passed
-- 0 failed tests
-- ESLint passed
-- GitHub Actions passed on Node.js 22
-- Version values matched in `package.json`, `package-lock.json`, `config/core/app.json`, `docs/Project-Status.md`, and `docs/Roadmap.md`
-
-## v1.3.0 Boundaries
-
-The release does not include:
-
-- Arbitrary console command execution
-- Hosted-player ban, kick, whitelist, or other player-administration workflows
-- Cross-platform player identity linking
-- Continuous Discord and in-game chat bridging
-- Economy-backed game purchases or rewards
-- Command queues or multiple simultaneous game commands
-- Multiple game servers
-- Automatic game-server startup or process supervision
-- Public Telnet exposure
-
 ## Current Production Boundaries
 
 - RSF supports a single-process SQLite deployment.
@@ -87,7 +108,8 @@ The release does not include:
 - The Discord Provider requires valid production credentials and network access.
 - The optional 7 Days to Die Provider supports one active command at a time through raw Telnet.
 - Raw Telnet is unencrypted and must remain on loopback, LAN, VPN, or another protected private path.
-- Hosted player moderation, continuous chat bridging, Economy-backed in-game purchases, command queues, and multiple game servers are not implemented.
+- Hosted player administration remains unimplemented until v1.4.0 phases are completed and verified.
+- Continuous chat bridging, Economy-backed in-game purchases, command queues, and multiple game servers are not implemented.
 - The Website Provider and Website authentication remain disabled by default.
 - Website sessions and pending OAuth attempts remain in memory and are lost on restart.
 - Settings have no Discord or Website editing interface.

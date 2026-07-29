@@ -4,9 +4,9 @@
 
 **Repository Version:** v1.3.0
 
-**Current Milestone:** No implementation milestone selected
+**Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** v1.3.0 completed, merged, and tagged
+**Status:** Selected; Phase 1 is next
 
 ## Completed Milestones
 
@@ -25,6 +25,67 @@
 - v1.1.0 - Administration and Configuration Foundation
 - v1.2.0 - 7 Days to Die Command Execution Foundation
 - v1.3.0 - Discord Game Server Command Interface
+
+## v1.4.0 - Hosted Player Administration
+
+### Goal
+
+Provide a narrow Discord interface for administering individual players on the hosted 7 Days to Die server while preserving the existing Provider boundary and preventing arbitrary console access.
+
+### Intended Command Family
+
+- `/game kick`
+- `/game ban`
+- `/game unban`
+- `/game whitelist add`
+- `/game whitelist remove`
+
+These command names describe the intended user-facing capability. Exact Discord options and exact server command forms remain unapproved until live server evidence proves the supported identifiers, syntax, completion lines, success responses, and rejection responses.
+
+### Architecture Boundary
+
+The Discord Provider owns slash-command definitions, Discord authorization, input validation, interaction handling, reply deferral, safe result parsing, and user-facing wording.
+
+The 7 Days to Die Provider owns fixed command construction, Telnet communication, command execution, completion detection, response and event separation, timeout and connection failures, and single-active-command enforcement.
+
+No arbitrary console entry is exposed. Discord commands resolve only the existing frozen `executeCommand` boundary. Direct platform administration does not introduce a Module unless reusable cross-platform policy is later proven.
+
+### Planned Phases
+
+1. Capture sanitized live command evidence for kick, ban, unban, and whitelist behavior.
+2. Approve exact player identifiers, fixed command shapes, success evidence, failure evidence, and completion rules for the first operation.
+3. Add Provider-side deterministic completion coverage for the first approved operation.
+4. Add shared Discord-side player-target validation and privacy-safe administration result formatting.
+5. Add `/game kick` through one fixed, evidence-backed operation.
+6. Add `/game ban` through one fixed, evidence-backed operation.
+7. Add `/game unban` through one fixed, evidence-backed operation.
+8. Add whitelist add and remove only after both operations are independently proven.
+9. Add serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
+10. Complete live Discord-to-game verification.
+11. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
+
+### Safety and Privacy Requirements
+
+- Administrative actions remain guild-only and permission-gated.
+- Player targets must be exact and unambiguous before execution.
+- Ambiguous names must not be guessed or automatically resolved.
+- Fixed operations must reject command-shaping characters and malformed identifiers before Provider execution.
+- Discord must not receive raw Telnet output, credentials, IP addresses, platform identifiers, positions, health values, socket details, or internal error text.
+- Timeout, disconnect, not-found, already-banned, not-banned, invalid-target, and generic server rejection outcomes must fail safely.
+- Raw Telnet remains restricted to loopback, LAN, VPN, or another protected private path.
+
+### Outside v1.4.0
+
+- Arbitrary console command execution
+- Free-form Telnet command input
+- Cross-platform identity linking
+- Automatic fuzzy player matching
+- Continuous Discord and in-game chat bridging
+- Economy-backed game purchases or rewards
+- Command queues or multiple simultaneous game commands
+- Multiple game servers
+- Automatic game-server startup or process supervision
+- Public Telnet exposure
 
 ## v1.3.0 - Discord Game Server Command Interface
 
@@ -93,7 +154,7 @@ No Module is introduced for these direct platform operations.
 
 ## Future Direction
 
-A future milestone must be explicitly selected before implementation begins. Candidate directions include hosted game-server player administration, continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
+After v1.4.0, candidate directions include continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
 
 Every future milestone must preserve the established architecture:
 
