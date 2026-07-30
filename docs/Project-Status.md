@@ -8,7 +8,7 @@ v1.3.0
 
 v1.4.0 - Hosted Player Administration
 
-Status: In progress; Phase 7 is in progress.
+Status: In progress; Phase 8 is in progress.
 
 ## Milestone Goal
 
@@ -62,28 +62,48 @@ Added deterministic Provider completion for verified `ban add` success and inval
 
 Added guild-only `/game ban` with required durable user ID, positive duration, verified duration-unit choice, bounded reason, and bounded display name. It validates before Provider resolution, executes only the approved fixed command, defers an ephemeral response, and never copies platform IDs or raw Telnet output into Discord.
 
+### Phase 7 - Hosted Player Unban
+
+Added guild-only `/game unban display-name:<exact text>` through the approved exact active-ban lookup contract.
+
+The workflow validates an exact display name, reads `ban list`, requires exactly one matching active entry, removes the exact stored UserID, reads `ban list` again, and reports success only when that stored UserID is absent. The success-looking removal line is treated as command completion only and never as sufficient proof of unban.
+
+Parser, registration, dispatch, ambiguity, malformed-output, failed-verification, and privacy coverage are implemented. PR #52 merged the verified workflow into `main`.
+
 ## Current Phase
 
-Phase 7 implements `/game unban` through the approved exact stored-UserID lookup and post-removal verification contract.
+Phase 8 adds evidence-backed Provider completion for individual whitelist add and remove operations.
 
-The Provider now has deterministic completion for the verified `ban remove <stored UserID>` response line. This confirms command completion only; the Discord workflow must still execute a second `ban list` and prove that the matching entry disappeared before reporting success.
+Live evidence against 7 Days to Die V3.1.0 b13 proved:
+
+- durable individual targets use one combined `Steam_<id>` or `EOS_<id>` argument
+- add uses `whitelist add <durable user id> <display name>`
+- remove uses `whitelist remove <durable user id>`
+- add completes on `<stored user id> added to whitelist.`
+- remove completes on `<stored user id> removed from the whitelist.`
+- missing remove completes on `<stored user id> was not on the whitelist.`
+- first add activates whitelist-only mode
+- final removal disables whitelist-only mode before printing the removal-success line
+- duplicate add prints the same success line without creating a duplicate row
+- entries persist across a normal server restart
+- reload, path, login, authentication, performance, entity, inventory, and stack-trace lines are unrelated noise
+
+This phase adds deterministic Provider completion and focused tests only. Discord whitelist subcommands remain future work.
 
 ## Next Step
 
-Add the Discord `/game unban` workflow:
+After Provider completion CI passes and the pull request is merged:
 
-1. Validate an exact display name.
-2. Read `ban list`.
-3. Resolve exactly one matching active entry and its stored UserID.
-4. Execute `ban remove <exact stored UserID>`.
-5. Read `ban list` again.
-6. Report success only when the entry is absent.
+1. Define Discord-side whitelist target and display-name validation.
+2. Define privacy-safe add, remove, already-present, missing, timeout, malformed-result, and thrown-error formatting.
+3. Add `/game whitelist add` and `/game whitelist remove` through the existing `ManageGuild` and Provider resolver boundaries.
+4. Preserve ephemeral responses and avoid echoing platform identifiers in ordinary results.
 
 ## Remaining Planned Phases
 
-1. Complete `/game unban` registration, dispatch, validation, privacy, and failure coverage.
-2. Add whitelist operations only after independent evidence.
-3. Add final registration, dispatch, authorization, privacy, and regression coverage.
+1. Complete the Provider whitelist-completion phase.
+2. Add Discord whitelist validation, formatting, registration, dispatch, authorization, and privacy coverage.
+3. Add final serialized registration, malformed-input, privacy, and regression coverage.
 4. Complete live Discord-to-game verification.
 5. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
 
@@ -91,7 +111,9 @@ Add the Discord `/game unban` workflow:
 
 The milestone does not include arbitrary console execution, free-form Telnet input, cross-platform identity linking, fuzzy player matching, continuous chat bridging, Economy-backed game effects, command queues, multiple servers, process supervision, or public Telnet exposure.
 
-Administrative actions must fail safely for missing, ambiguous, malformed, offline, rejected, already-banned, or not-banned targets. Ordinary Discord responses must not expose raw Telnet output, credentials, IP addresses, positions, health values, platform identifiers, socket details, or internal errors.
+Administrative actions must fail safely for missing, ambiguous, malformed, offline, rejected, already-banned, not-banned, already-whitelisted, or not-whitelisted targets. Ordinary Discord responses must not expose raw Telnet output, credentials, IP addresses, positions, health values, platform identifiers, socket details, or internal errors.
+
+An explicitly authorized staff lookup or administration workflow may display requested Steam or EOS identifiers when operationally necessary. That visibility must remain permission-gated, purpose-limited, and private or ephemeral. It must not expose raw login or server-console output.
 
 ## Current Discord Game Capability
 
@@ -103,6 +125,7 @@ The guild-only `/game` family includes:
 - `/game say message:<text>`
 - `/game kick entity-id:<id> reason:<text>`
 - `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
+- `/game unban display-name:<exact text>`
 
 It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a frozen `executeCommand` service from the framework-loaded `7 Days to Die` Provider.
 
@@ -111,7 +134,8 @@ It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a
 - RSF supports a single-process SQLite deployment.
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
-- Verified durable ban is available through Discord; unban, whitelist, and cross-platform identity linking remain incomplete.
+- Verified durable ban and unban are available through Discord.
+- Individual whitelist server contracts are proven, while Discord-accessible whitelist operations remain incomplete.
 - Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
 ## v1.3.0 Release Record

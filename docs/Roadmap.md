@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** In progress; Phase 7 is next
+**Status:** In progress; Phase 8 is in progress
 
 ## Completed Milestones
 
@@ -58,31 +58,45 @@ No arbitrary console entry is exposed. Discord commands resolve only the frozen 
 4. Added reusable Discord-side entity-ID and reason validation plus privacy-safe kick result formatting.
 5. Added `/game kick entity-id:<id> reason:<text>` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
 6. Captured exact ban and unban evidence, added deterministic Provider completion for `ban add`, and added `/game ban` through the approved fixed contract.
+7. Added deterministic `ban remove` completion and `/game unban display-name:<exact text>` through exact active-ban lookup, exact stored-UserID removal, and required post-removal `ban list` verification.
 
-Phase 6 verifies:
+Phase 7 verifies:
 
-- combined durable identifiers such as `Steam_<id>` and `EOS_<id>`
-- exact positive duration and one of minutes, hours, days, weeks, months, or years
-- fixed `ban add <user id> <duration> <unit> "<reason>" "<display name>"` construction
-- Steam or EOS-normalized success lines
-- duplicate active-ban refresh behavior
-- validation before Provider resolution
-- ephemeral deferred replies
-- privacy-safe success, invalid-target, timeout, malformed-result, and thrown-error handling
-- registration and dispatch through the existing `/game` command
+- exact case-sensitive display-name matching against the active `ban list`
+- exactly one matching active row before removal
+- removal by the exact stored UserID returned by the server
+- a second `ban list` proving that stored UserID is absent
+- the success-looking removal line is command completion only
+- malformed, missing, ambiguous, failed-removal, and failed-verification outcomes fail safely
+- ordinary Discord responses do not expose stored platform identifiers or raw Telnet output
+- registration and dispatch remain inside the existing `/game` command
 
 ### Current Phase
 
-7. Add `/game unban` using exact active UserID resolution from `ban list` and a required post-removal `ban list` verification.
+8. Add deterministic Provider completion for evidence-backed individual whitelist add and remove operations.
 
-The server's `removed from ban list` response is not sufficient proof because it may be printed for an identifier that did not match the stored active entry.
+Phase 8 evidence verifies:
+
+- combined durable identifiers such as `Steam_<id>` and `EOS_<id>` are one command argument
+- `whitelist add <durable user id> <display name>`
+- `whitelist remove <durable user id>`
+- add success on `<stored user id> added to whitelist.`
+- remove success on `<stored user id> removed from the whitelist.`
+- missing removal on `<stored user id> was not on the whitelist.`
+- first-entry activation and final-entry deactivation are separate mode lines
+- final-entry deactivation appears before the removal-success line
+- duplicate add does not create a duplicate row
+- entries persist across a normal server restart
+- reload, local path, login, authentication, performance, entity, inventory, disconnect, and stack-trace output are unrelated noise
+
+This phase does not expose Discord whitelist subcommands.
 
 ### Remaining Phases
 
-8. Add whitelist add and remove only after both operations are independently proven.
-9. Add final serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
-10. Complete live Discord-to-game verification.
-11. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
+9. Add Discord-side whitelist validation, privacy-safe formatting, and `/game whitelist add` and `/game whitelist remove` through the existing authorization and Provider boundaries.
+10. Add final serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
+11. Complete live Discord-to-game verification.
+12. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
 
 ### Verified Kick Contract
 
@@ -137,7 +151,59 @@ Success:
 <stored user id> banned until YYYY-MM-DD HH:MM:SS, reason: <reason>.
 ```
 
-The stored identifier may remain Steam-backed or normalize to EOS. Discord never receives the raw stored identifier.
+The stored identifier may remain Steam-backed or normalize to EOS. Ordinary Discord responses never receive the raw stored identifier.
+
+### Verified Unban Contract
+
+Discord operation:
+
+```text
+/game unban display-name:<exact text>
+```
+
+Provider execution sequence:
+
+```text
+ban list
+ban remove <exact stored UserID>
+ban list
+```
+
+Success requires the second `ban list` to prove that the exact stored UserID is absent.
+
+### Verified Individual Whitelist Contract
+
+Provider add:
+
+```text
+whitelist add <Steam_...|EOS_...> <display name>
+```
+
+Provider remove:
+
+```text
+whitelist remove <Steam_...|EOS_...>
+```
+
+Add completion:
+
+```text
+<stored user id> added to whitelist.
+```
+
+Remove completion:
+
+```text
+<stored user id> removed from the whitelist.
+```
+
+Missing remove completion:
+
+```text
+<stored user id> was not on the whitelist.
+```
+
+Discord command registration and user-facing result contracts remain incomplete.
 
 ### Safety and Privacy Requirements
 
@@ -145,9 +211,10 @@ The stored identifier may remain Steam-backed or normalize to EOS. Discord never
 - Targets must be exact and unambiguous.
 - Ambiguous names must not be guessed.
 - Fixed operations reject command-shaping characters and malformed identifiers before Provider execution.
-- Discord must not receive raw Telnet output, credentials, IP addresses, positions, health values, socket details, platform identifiers, or internal errors.
+- Discord must not receive raw Telnet output, credentials, IP addresses, positions, health values, socket details, platform identifiers, or internal errors through ordinary responses.
 - Platform identifiers may be stored internally when durable administration requires them.
-- Timeout, disconnect, not-found, already-banned, not-banned, invalid-target, and server rejection outcomes fail safely.
+- An explicitly authorized staff lookup or administration workflow may display requested Steam or EOS identifiers when operationally necessary, permission-gated, purpose-limited, and private or ephemeral.
+- Timeout, disconnect, not-found, already-banned, not-banned, already-whitelisted, not-whitelisted, invalid-target, and server rejection outcomes fail safely.
 - Raw Telnet remains on loopback, LAN, VPN, or another protected path.
 
 ### Outside v1.4.0

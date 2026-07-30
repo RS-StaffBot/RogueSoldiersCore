@@ -16,6 +16,12 @@ const BAN_ADD_INVALID_TARGET_PATTERN =
     /^"[^"]+" is not a valid entity id, player name or user id\.$/u;
 const BAN_REMOVE_SUCCESS_PATTERN =
     /^\S+ removed from ban list\.$/u;
+const WHITELIST_ADD_SUCCESS_PATTERN =
+    /^\S+ added to whitelist\.$/u;
+const WHITELIST_REMOVE_SUCCESS_PATTERN =
+    /^\S+ removed from the whitelist\.$/u;
+const WHITELIST_REMOVE_NOT_FOUND_PATTERN =
+    /^\S+ was not on the whitelist\.$/u;
 
 class SevenDaysToDieCommandCompletionRules {
 
@@ -99,6 +105,29 @@ class SevenDaysToDieCommandCompletionRules {
                 );
             }
 
+            if (
+                commandName === "whitelist" &&
+                commandAction === "add" &&
+                WHITELIST_ADD_SUCCESS_PATTERN.test(latestLine)
+            ) {
+                return this.complete(
+                    SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+                );
+            }
+
+            if (
+                commandName === "whitelist" &&
+                commandAction === "remove" &&
+                (
+                    WHITELIST_REMOVE_SUCCESS_PATTERN.test(latestLine) ||
+                    WHITELIST_REMOVE_NOT_FOUND_PATTERN.test(latestLine)
+                )
+            ) {
+                return this.complete(
+                    SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+                );
+            }
+
             if (commandName === "say" && sayMessage !== null) {
                 const expectedSuffix = `: ${sayMessage}`;
 
@@ -127,7 +156,6 @@ class SevenDaysToDieCommandCompletionRules {
 
             return this.pending();
         };
-
     }
 
     complete(completionReason) {
