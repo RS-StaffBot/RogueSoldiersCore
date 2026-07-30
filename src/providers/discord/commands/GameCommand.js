@@ -77,7 +77,11 @@ class GameCommand extends BaseCommand {
         if (
             !gameAdministrationResultFormatter ||
             typeof gameAdministrationResultFormatter.formatKick !== "function" ||
-            typeof gameAdministrationResultFormatter.formatBan !== "function"
+            typeof gameAdministrationResultFormatter.formatBan !== "function" ||
+            typeof gameAdministrationResultFormatter.formatWhitelistAdd !==
+                "function" ||
+            typeof gameAdministrationResultFormatter.formatWhitelistRemove !==
+                "function"
         ) {
             throw new Error(
                 "Discord game administration result formatter boundary is invalid."
@@ -227,6 +231,63 @@ class GameCommand extends BaseCommand {
                                 .setMaxLength(40)
                         )
                 )
+                .addSubcommandGroup(group =>
+                    group
+                        .setName("whitelist")
+                        .setDescription(
+                            "Manages individual game server whitelist entries."
+                        )
+                        .addSubcommand(subcommand =>
+                            subcommand
+                                .setName("add")
+                                .setDescription(
+                                    "Adds one durable player account to the whitelist."
+                                )
+                                .addStringOption(option =>
+                                    option
+                                        .setName("user-id")
+                                        .setDescription(
+                                            "The exact combined Steam_ or EOS_ player ID."
+                                        )
+                                        .setRequired(true)
+                                )
+                                .addStringOption(option =>
+                                    option
+                                        .setName("display-name")
+                                        .setDescription(
+                                            "The player name stored with the whitelist entry."
+                                        )
+                                        .setRequired(true)
+                                        .setMinLength(1)
+                                        .setMaxLength(40)
+                                )
+                        )
+                        .addSubcommand(subcommand =>
+                            subcommand
+                                .setName("remove")
+                                .setDescription(
+                                    "Removes one durable player account from the whitelist."
+                                )
+                                .addStringOption(option =>
+                                    option
+                                        .setName("user-id")
+                                        .setDescription(
+                                            "The exact combined Steam_ or EOS_ player ID."
+                                        )
+                                        .setRequired(true)
+                                )
+                                .addStringOption(option =>
+                                    option
+                                        .setName("display-name")
+                                        .setDescription(
+                                            "The player name used in the private staff result."
+                                        )
+                                        .setRequired(true)
+                                        .setMinLength(1)
+                                        .setMaxLength(40)
+                                )
+                        )
+                )
         );
 
         this.gameAdministrationResultFormatter =
@@ -262,6 +323,22 @@ class GameCommand extends BaseCommand {
         }
 
         const subcommand = interaction.options.getSubcommand(true);
+        const subcommandGroup =
+            typeof interaction.options.getSubcommandGroup === "function"
+                ? interaction.options.getSubcommandGroup(false)
+                : null;
+
+        if (subcommandGroup === "whitelist") {
+            if (subcommand === "add") {
+                await this.executeWhitelistAdd(interaction);
+                return;
+            }
+
+            if (subcommand === "remove") {
+                await this.executeWhitelistRemove(interaction);
+                return;
+            }
+        }
 
         if (subcommand === "status") {
             await this.executeStatus(interaction);
@@ -634,6 +711,98 @@ class GameCommand extends BaseCommand {
         await interaction.editReply({
             content: `Unbanned ${displayName.value} from the game server.`
         });
+    }
+
+    async executeWhitelistAdd(interaction) {
+        const userId = this.gamePlayerTargetValidator.validateDurableUserId(
+            interaction.options.getString("user-id", true)
+        );
+        const displayName = this.gamePlayerTargetValidator.validateDisplayName(
+            interaction.options.getString("display-name", true)
+        );
+
+        if (!userId.valid || !displayName.valid) {
+            const validation = userId.valid ? displayName : userId;
+            await interaction.reply({
+                content: validation.message,
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const resolution = this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
+            `whitelist add ${userId.value} ${displayName.value}`
+        );
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const formatted =
+            this.gameAdministrationResultFormatter.formatWhitelistAdd(
+                execution.result,
+                displayName.value
+            );
+        await interaction.editReply({ content: formatted.message });
+    }
+
+    async executeWhitelistRemove(interaction) {
+        const userId = this.gamePlayerTargetValidator.validateDurableUserId(
+            interaction.options.getString("user-id", true)
+        );
+        const displayName = this.gamePlayerTargetValidator.validateDisplayName(
+            interaction.options.getString("display-name", true)
+        );
+
+        if (!userId.valid || !displayName.valid) {
+            const validation = userId.valid ? displayName : userId;
+            await interaction.reply({
+                content: validation.message,
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const resolution = this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
+            `whitelist remove ${userId.value}`
+        );
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const formatted =
+            this.gameAdministrationResultFormatter.formatWhitelistRemove(
+                execution.result,
+                displayName.value
+            );
+        await interaction.editReply({ content: formatted.message });
     }
 
     async executeRemoteCommand(service, command) {
