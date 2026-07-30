@@ -4,6 +4,12 @@ const KICK_INVALID_TARGET_PATTERN =
 const BAN_SUCCESS_PATTERN =
     /^(?:Steam_[1-9]\d{0,19}|EOS_[A-Za-z0-9]{16,64}) banned until \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}, reason: .+\.$/u;
 const BAN_INVALID_TARGET_PATTERN = KICK_INVALID_TARGET_PATTERN;
+const WHITELIST_ADD_SUCCESS_PATTERN =
+    /^(?:Steam_[1-9]\d{0,19}|EOS_[A-Za-z0-9]{16,64}) added to whitelist\.$/u;
+const WHITELIST_REMOVE_SUCCESS_PATTERN =
+    /^(?:Steam_[1-9]\d{0,19}|EOS_[A-Za-z0-9]{16,64}) removed from the whitelist\.$/u;
+const WHITELIST_REMOVE_NOT_FOUND_PATTERN =
+    /^(?:Steam_[1-9]\d{0,19}|EOS_[A-Za-z0-9]{16,64}) was not on the whitelist\.$/u;
 
 class DiscordGameAdministrationResultFormatter {
 
@@ -85,6 +91,73 @@ class DiscordGameAdministrationResultFormatter {
 
         return this.failure(
             "The game server returned an unrecognized ban response."
+        );
+
+    }
+
+    formatWhitelistAdd(result, displayName) {
+
+        if (!result || !Array.isArray(result.responseLines)) {
+            return this.failure(
+                "The game server returned an invalid whitelist-add response."
+            );
+        }
+
+        const success = result.responseLines.some(line =>
+            typeof line === "string" &&
+            WHITELIST_ADD_SUCCESS_PATTERN.test(line)
+        );
+
+        if (success) {
+            return Object.freeze({
+                message: `Added ${displayName} to the game server whitelist.`,
+                outcome: "WHITELISTED",
+                success: true
+            });
+        }
+
+        return this.failure(
+            "The game server returned an unrecognized whitelist-add response."
+        );
+
+    }
+
+    formatWhitelistRemove(result, displayName) {
+
+        if (!result || !Array.isArray(result.responseLines)) {
+            return this.failure(
+                "The game server returned an invalid whitelist-remove response."
+            );
+        }
+
+        const success = result.responseLines.some(line =>
+            typeof line === "string" &&
+            WHITELIST_REMOVE_SUCCESS_PATTERN.test(line)
+        );
+
+        if (success) {
+            return Object.freeze({
+                message: `Removed ${displayName} from the game server whitelist.`,
+                outcome: "REMOVED_FROM_WHITELIST",
+                success: true
+            });
+        }
+
+        const notFound = result.responseLines.some(line =>
+            typeof line === "string" &&
+            WHITELIST_REMOVE_NOT_FOUND_PATTERN.test(line)
+        );
+
+        if (notFound) {
+            return Object.freeze({
+                message: `${displayName} is not on the game server whitelist.`,
+                outcome: "NOT_WHITELISTED",
+                success: false
+            });
+        }
+
+        return this.failure(
+            "The game server returned an unrecognized whitelist-remove response."
         );
 
     }
