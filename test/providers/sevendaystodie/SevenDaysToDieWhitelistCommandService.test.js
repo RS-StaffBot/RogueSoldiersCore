@@ -63,7 +63,8 @@ test("completes whitelist add on the verified success line", () => {
 
     assert.deepEqual(decider({
         latestLine:
-            `2026-07-30T19:15:16 INF Executing command 'whitelist add' by Telnet`
+            "2026-07-30T19:15:16 INF Executing command " +
+            "'whitelist add' by Telnet"
     }), { completed: false });
     assertMatched(decider({
         latestLine: `${TEST_USER_ID} added to whitelist.`
