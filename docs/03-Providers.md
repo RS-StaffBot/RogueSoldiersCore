@@ -48,6 +48,7 @@ The guild-only `/game` family requires `ManageGuild` and includes:
 - `/game say message:<text>`
 - `/game kick entity-id:<id> reason:<text>`
 - `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
+- `/game unban display-name:<exact text>`
 
 The Discord Provider owns command definitions, authorization, input validation, response deferral, safe result parsing, and user-facing formatting.
 
@@ -64,6 +65,8 @@ ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
 ```
 
 A successful Discord response uses the validated display name and duration but never exposes the submitted or server-normalized platform identifier.
+
+`/game unban` validates an exact display name, reads `ban list`, requires exactly one active row with that display name, removes the row by its exact stored UserID, reads `ban list` again, and reports success only after that stored UserID is absent. The success-looking `removed from ban list` line is treated as command completion only, not as verification.
 
 ## 7 Days to Die Provider
 
@@ -104,6 +107,7 @@ Evidence-backed deterministic completion exists for:
 - `help`
 - `kick`
 - `ban add`
+- `ban remove`
 - Invalid or unknown commands
 
 Verified `kick` completion uses either:
@@ -126,9 +130,17 @@ Verified `ban add` completion uses either:
 
 or the same verified invalid-target line.
 
+Verified `ban remove` completion uses:
+
+```text
+<stored UserID> removed from ban list.
+```
+
+That line confirms only that the command completed. A verified unban still requires a later `ban list` showing the exact stored UserID is absent.
+
 The command service completes on the verified terminal line. Later disconnect events, server administration reload messages, cleanup warnings, EOS errors, and engine stack traces are not included in the completed command result.
 
-Unverified multiline output uses a bounded inactivity fallback after meaningful output begins.
+Unverified multiline output, including `ban list`, uses a bounded inactivity fallback after meaningful output begins.
 
 Command results and failure contracts are immutable and defensive. Supported outcomes cover success, timeout, disconnect, write failure, completion-decision failure, size truncation, and generic execution failure.
 
@@ -157,6 +169,7 @@ The Discord Provider currently uses the command service for:
 - quoted `say` through `/game say`
 - fixed online `kick` through `/game kick`
 - fixed durable `ban add` through `/game ban`
+- `ban list`, exact `ban remove`, and verified `ban list` through `/game unban`
 
 `/game status` inspects Provider availability without executing a remote command.
 
@@ -171,7 +184,7 @@ Telnet passwords remain environment-only and outside tracked JSON.
 The current Provider and Discord integration do not include:
 
 - Arbitrary console execution
-- Discord-accessible unban or whitelist workflows
+- Discord-accessible whitelist workflows
 - Cross-platform identity linking
 - Continuous Discord and in-game chat bridging
 - Economy-backed in-game purchases or rewards
