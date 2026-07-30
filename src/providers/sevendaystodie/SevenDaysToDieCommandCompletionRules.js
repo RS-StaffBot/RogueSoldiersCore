@@ -10,6 +10,10 @@ const HELP_DESCRIPTION_PATTERN = /^Description:\s+.+$/u;
 const KICK_SUCCESS_PATTERN = /^Kicking Player .+: .+$/u;
 const KICK_INVALID_TARGET_PATTERN =
     /^"[^"]+" is not a valid entity id, player name or user id\.$/u;
+const BAN_ADD_SUCCESS_PATTERN =
+    /^\S+ banned until \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}, reason: .+\.$/u;
+const BAN_ADD_INVALID_TARGET_PATTERN =
+    /^"[^"]+" is not a valid entity id, player name or user id\.$/u;
 
 class SevenDaysToDieCommandCompletionRules {
 
@@ -18,7 +22,9 @@ class SevenDaysToDieCommandCompletionRules {
         this.validateCommand(command);
 
         const normalizedCommand = command.toLowerCase();
-        const commandName = normalizedCommand.split(/\s+/u)[0];
+        const commandParts = normalizedCommand.split(/\s+/u);
+        const commandName = commandParts[0];
+        const commandAction = commandParts[1] ?? null;
         const sayMessage = commandName === "say"
             ? this.extractSayMessage(command)
             : null;
@@ -61,6 +67,19 @@ class SevenDaysToDieCommandCompletionRules {
                 (
                     KICK_SUCCESS_PATTERN.test(latestLine) ||
                     KICK_INVALID_TARGET_PATTERN.test(latestLine)
+                )
+            ) {
+                return this.complete(
+                    SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+                );
+            }
+
+            if (
+                commandName === "ban" &&
+                commandAction === "add" &&
+                (
+                    BAN_ADD_SUCCESS_PATTERN.test(latestLine) ||
+                    BAN_ADD_INVALID_TARGET_PATTERN.test(latestLine)
                 )
             ) {
                 return this.complete(
