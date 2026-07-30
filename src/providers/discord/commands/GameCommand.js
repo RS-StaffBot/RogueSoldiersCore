@@ -15,6 +15,14 @@ const DiscordGameServerProviderResolver = require(
 );
 
 const MAXIMUM_SAY_MESSAGE_LENGTH = 200;
+const BAN_UNIT_CHOICES = Object.freeze([
+    { name: "Minutes", value: "minutes" },
+    { name: "Hours", value: "hours" },
+    { name: "Days", value: "days" },
+    { name: "Weeks", value: "weeks" },
+    { name: "Months", value: "months" },
+    { name: "Years", value: "years" }
+]);
 
 class GameCommand extends BaseCommand {
 
@@ -50,6 +58,11 @@ class GameCommand extends BaseCommand {
             !gamePlayerTargetValidator ||
             typeof gamePlayerTargetValidator.validateOnlineEntityId !==
                 "function" ||
+            typeof gamePlayerTargetValidator.validateDurableUserId !==
+                "function" ||
+            typeof gamePlayerTargetValidator.validateDuration !== "function" ||
+            typeof gamePlayerTargetValidator.validateBanUnit !== "function" ||
+            typeof gamePlayerTargetValidator.validateDisplayName !== "function" ||
             typeof gamePlayerTargetValidator.validateReason !== "function"
         ) {
             throw new Error(
@@ -59,7 +72,8 @@ class GameCommand extends BaseCommand {
 
         if (
             !gameAdministrationResultFormatter ||
-            typeof gameAdministrationResultFormatter.formatKick !== "function"
+            typeof gameAdministrationResultFormatter.formatKick !== "function" ||
+            typeof gameAdministrationResultFormatter.formatBan !== "function"
         ) {
             throw new Error(
                 "Discord game administration result formatter boundary is invalid."
@@ -105,9 +119,7 @@ class GameCommand extends BaseCommand {
                         .addStringOption(option =>
                             option
                                 .setName("message")
-                                .setDescription(
-                                    "The message to send in game."
-                                )
+                                .setDescription("The message to send in game.")
                                 .setRequired(true)
                                 .setMinLength(1)
                                 .setMaxLength(MAXIMUM_SAY_MESSAGE_LENGTH)
@@ -136,14 +148,60 @@ class GameCommand extends BaseCommand {
                                 .setMaxLength(200)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("ban")
+                        .setDescription(
+                            "Bans a durable player account from the game server."
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("user-id")
+                                .setDescription(
+                                    "The exact combined Steam_ or EOS_ player ID."
+                                )
+                                .setRequired(true)
+                        )
+                        .addIntegerOption(option =>
+                            option
+                                .setName("duration")
+                                .setDescription("The positive ban duration.")
+                                .setRequired(true)
+                                .setMinValue(1)
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("unit")
+                                .setDescription("The ban duration unit.")
+                                .setRequired(true)
+                                .addChoices(...BAN_UNIT_CHOICES)
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("reason")
+                                .setDescription("The staff ban reason.")
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(200)
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("display-name")
+                                .setDescription(
+                                    "The player name shown in the server ban list."
+                                )
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(40)
+                        )
+                )
         );
 
         this.gameAdministrationResultFormatter =
             gameAdministrationResultFormatter;
         this.gameCommandAuthorizer = gameCommandAuthorizer;
         this.gamePlayerTargetValidator = gamePlayerTargetValidator;
-        this.gameServerProviderResolver =
-            gameServerProviderResolver;
+        this.gameServerProviderResolver = gameServerProviderResolver;
 
     }
 
@@ -197,6 +255,11 @@ class GameCommand extends BaseCommand {
             return;
         }
 
+        if (subcommand === "ban") {
+            await this.executeBan(interaction);
+            return;
+        }
+
         throw new Error(
             `Unsupported game command subcommand: ${subcommand}`
         );
@@ -204,21 +267,15 @@ class GameCommand extends BaseCommand {
     }
 
     async executeStatus(interaction) {
-
-        const resolution =
-            this.gameServerProviderResolver.resolve();
-
+        const resolution = this.gameServerProviderResolver.resolve();
         await interaction.reply({
             content: this.createStatusMessage(resolution),
             flags: MessageFlags.Ephemeral
         });
-
     }
 
     async executeTime(interaction) {
-
-        const resolution =
-            this.gameServerProviderResolver.resolve();
+        const resolution = this.gameServerProviderResolver.resolve();
 
         if (!this.isAvailableResolution(resolution)) {
             await interaction.reply({
@@ -228,10 +285,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral
-        });
-
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const execution = await this.executeRemoteCommand(
             resolution.service,
             "gettime"
@@ -243,19 +297,15 @@ class GameCommand extends BaseCommand {
         }
 
         const timeLine = this.findTimeLine(execution.result);
-
         await interaction.editReply({
             content: timeLine
                 ? `7 Days to Die time: ${timeLine}.`
                 : "Unable to read the current 7 Days to Die time."
         });
-
     }
 
     async executePlayers(interaction) {
-
-        const resolution =
-            this.gameServerProviderResolver.resolve();
+        const resolution = this.gameServerProviderResolver.resolve();
 
         if (!this.isAvailableResolution(resolution)) {
             await interaction.reply({
@@ -265,10 +315,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral
-        });
-
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const execution = await this.executeRemoteCommand(
             resolution.service,
             "listplayers"
@@ -280,15 +327,12 @@ class GameCommand extends BaseCommand {
         }
 
         const players = this.parsePlayers(execution.result);
-
         await interaction.editReply({
             content: this.createPlayersMessage(players)
         });
-
     }
 
     async executeSay(interaction) {
-
         const message = interaction.options.getString("message", true);
 
         if (!this.isValidSayMessage(message)) {
@@ -300,8 +344,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        const resolution =
-            this.gameServerProviderResolver.resolve();
+        const resolution = this.gameServerProviderResolver.resolve();
 
         if (!this.isAvailableResolution(resolution)) {
             await interaction.reply({
@@ -311,10 +354,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral
-        });
-
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const execution = await this.executeRemoteCommand(
             resolution.service,
             `say "${message}"`
@@ -325,11 +365,9 @@ class GameCommand extends BaseCommand {
                 ? "The message was sent to the 7 Days to Die server."
                 : execution.message
         });
-
     }
 
     async executeKick(interaction) {
-
         const entityId = this.gamePlayerTargetValidator
             .validateOnlineEntityId(
                 interaction.options.getString("entity-id", true)
@@ -355,8 +393,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        const resolution =
-            this.gameServerProviderResolver.resolve();
+        const resolution = this.gameServerProviderResolver.resolve();
 
         if (!this.isAvailableResolution(resolution)) {
             await interaction.reply({
@@ -366,10 +403,7 @@ class GameCommand extends BaseCommand {
             return;
         }
 
-        await interaction.deferReply({
-            flags: MessageFlags.Ephemeral
-        });
-
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const execution = await this.executeRemoteCommand(
             resolution.service,
             `kick ${entityId.value} "${reason.value}"`
@@ -384,13 +418,75 @@ class GameCommand extends BaseCommand {
             this.gameAdministrationResultFormatter.formatKick(
                 execution.result
             );
-
         await interaction.editReply({ content: formatted.message });
+    }
 
+    async executeBan(interaction) {
+        const userId = this.gamePlayerTargetValidator.validateDurableUserId(
+            interaction.options.getString("user-id", true)
+        );
+        const duration = this.gamePlayerTargetValidator.validateDuration(
+            interaction.options.getInteger("duration", true)
+        );
+        const unit = this.gamePlayerTargetValidator.validateBanUnit(
+            interaction.options.getString("unit", true)
+        );
+        const reason = this.gamePlayerTargetValidator.validateReason(
+            interaction.options.getString("reason", true)
+        );
+        const displayName = this.gamePlayerTargetValidator.validateDisplayName(
+            interaction.options.getString("display-name", true)
+        );
+
+        for (const validation of [
+            userId,
+            duration,
+            unit,
+            reason,
+            displayName
+        ]) {
+            if (!validation.valid) {
+                await interaction.reply({
+                    content: validation.message,
+                    flags: MessageFlags.Ephemeral
+                });
+                return;
+            }
+        }
+
+        const resolution = this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
+            `ban add ${userId.value} ${duration.value} ${unit.value} ` +
+            `"${reason.value}" "${displayName.value}"`
+        );
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const formatted =
+            this.gameAdministrationResultFormatter.formatBan(
+                execution.result,
+                displayName.value,
+                duration.value,
+                unit.value
+            );
+        await interaction.editReply({ content: formatted.message });
     }
 
     async executeRemoteCommand(service, command) {
-
         try {
             const result = await service.executeCommand(command);
 
@@ -401,10 +497,7 @@ class GameCommand extends BaseCommand {
             }
 
             if (result.status === undefined || result.status === "SUCCESS") {
-                return Object.freeze({
-                    success: true,
-                    result
-                });
+                return Object.freeze({ success: true, result });
             }
 
             if (result.status === "TIMEOUT") {
@@ -427,7 +520,6 @@ class GameCommand extends BaseCommand {
                 "The game server command could not be completed."
             );
         }
-
     }
 
     createExecutionFailure(message) {
@@ -458,7 +550,6 @@ class GameCommand extends BaseCommand {
     }
 
     findTimeLine(result) {
-
         if (!result || !Array.isArray(result.responseLines)) {
             return null;
         }
@@ -467,11 +558,9 @@ class GameCommand extends BaseCommand {
             typeof line === "string" &&
             /^Day \d+, \d{2}:\d{2}$/u.test(line)
         ) || null;
-
     }
 
     parsePlayers(result) {
-
         if (!result || !Array.isArray(result.responseLines)) {
             return null;
         }
@@ -506,11 +595,9 @@ class GameCommand extends BaseCommand {
             names: Object.freeze([...names]),
             total
         });
-
     }
 
     createPlayersMessage(players) {
-
         if (!players) {
             return "Unable to read the current 7 Days to Die player list.";
         }
@@ -520,11 +607,9 @@ class GameCommand extends BaseCommand {
         }
 
         return `Players online (${players.total}): ${players.names.join(", ")}`;
-
     }
 
     createStatusMessage(resolution) {
-
         if (
             resolution &&
             resolution.status ===
@@ -551,7 +636,6 @@ class GameCommand extends BaseCommand {
         }
 
         return "7 Days to Die server control is unavailable.";
-
     }
 
 }
