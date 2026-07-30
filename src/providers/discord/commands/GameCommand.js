@@ -7,6 +7,9 @@ const BaseCommand = require("./BaseCommand");
 const DiscordGameAdministrationResultFormatter = require(
     "../services/DiscordGameAdministrationResultFormatter"
 );
+const DiscordGameBanListParser = require(
+    "../services/DiscordGameBanListParser"
+);
 const DiscordGamePlayerTargetValidator = require(
     "../services/DiscordGamePlayerTargetValidator"
 );
@@ -29,6 +32,7 @@ class GameCommand extends BaseCommand {
     constructor({
         gameAdministrationResultFormatter =
         new DiscordGameAdministrationResultFormatter(),
+        gameBanListParser = new DiscordGameBanListParser(),
         gameCommandAuthorizer,
         gamePlayerTargetValidator =
         new DiscordGamePlayerTargetValidator(),
@@ -77,6 +81,17 @@ class GameCommand extends BaseCommand {
         ) {
             throw new Error(
                 "Discord game administration result formatter boundary is invalid."
+            );
+        }
+
+        if (
+            !gameBanListParser ||
+            typeof gameBanListParser.parse !== "function" ||
+            typeof gameBanListParser.findUniqueByDisplayName !== "function" ||
+            typeof gameBanListParser.containsUserId !== "function"
+        ) {
+            throw new Error(
+                "Discord game ban list parser boundary is invalid."
             );
         }
 
@@ -195,10 +210,28 @@ class GameCommand extends BaseCommand {
                                 .setMaxLength(40)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("unban")
+                        .setDescription(
+                            "Removes one exact active player ban."
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("display-name")
+                                .setDescription(
+                                    "The exact player name shown in the ban list."
+                                )
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(40)
+                        )
+                )
         );
 
         this.gameAdministrationResultFormatter =
             gameAdministrationResultFormatter;
+        this.gameBanListParser = gameBanListParser;
         this.gameCommandAuthorizer = gameCommandAuthorizer;
         this.gamePlayerTargetValidator = gamePlayerTargetValidator;
         this.gameServerProviderResolver = gameServerProviderResolver;
@@ -257,6 +290,11 @@ class GameCommand extends BaseCommand {
 
         if (subcommand === "ban") {
             await this.executeBan(interaction);
+            return;
+        }
+
+        if (subcommand === "unban") {
+            await this.executeUnban(interaction);
             return;
         }
 
@@ -484,6 +522,118 @@ class GameCommand extends BaseCommand {
                 unit.value
             );
         await interaction.editReply({ content: formatted.message });
+    }
+
+    async executeUnban(interaction) {
+        const displayName = this.gamePlayerTargetValidator.validateDisplayName(
+            interaction.options.getString("display-name", true)
+        );
+
+        if (!displayName.valid) {
+            await interaction.reply({
+                content: displayName.message,
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const resolution = this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const beforeExecution = await this.executeRemoteCommand(
+            resolution.service,
+            "ban list"
+        );
+
+        if (!beforeExecution.success) {
+            await interaction.editReply({ content: beforeExecution.message });
+            return;
+        }
+
+        const beforeList = this.gameBanListParser.parse(
+            beforeExecution.result
+        );
+
+        if (!beforeList) {
+            await interaction.editReply({
+                content: "The game server returned an invalid ban list."
+            });
+            return;
+        }
+
+        const match = this.gameBanListParser.findUniqueByDisplayName(
+            beforeList,
+            displayName.value
+        );
+
+        if (match.status === "NOT_FOUND") {
+            await interaction.editReply({
+                content: "No active ban was found for that exact display name."
+            });
+            return;
+        }
+
+        if (match.status === "AMBIGUOUS") {
+            await interaction.editReply({
+                content:
+                    "More than one active ban uses that display name. Resolve it through the server console."
+            });
+            return;
+        }
+
+        const removalExecution = await this.executeRemoteCommand(
+            resolution.service,
+            `ban remove ${match.entry.userId}`
+        );
+
+        if (!removalExecution.success) {
+            await interaction.editReply({ content: removalExecution.message });
+            return;
+        }
+
+        const afterExecution = await this.executeRemoteCommand(
+            resolution.service,
+            "ban list"
+        );
+
+        if (!afterExecution.success) {
+            await interaction.editReply({ content: afterExecution.message });
+            return;
+        }
+
+        const afterList = this.gameBanListParser.parse(afterExecution.result);
+
+        if (!afterList) {
+            await interaction.editReply({
+                content: "The game server could not verify the unban."
+            });
+            return;
+        }
+
+        if (
+            this.gameBanListParser.containsUserId(
+                afterList,
+                match.entry.userId
+            )
+        ) {
+            await interaction.editReply({
+                content: "The game server did not verify that the ban was removed."
+            });
+            return;
+        }
+
+        await interaction.editReply({
+            content: `Unbanned ${displayName.value} from the game server.`
+        });
     }
 
     async executeRemoteCommand(service, command) {
