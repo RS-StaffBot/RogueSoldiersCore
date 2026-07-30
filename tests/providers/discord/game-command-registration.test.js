@@ -16,6 +16,8 @@ const InteractionHandler = require(
     "../../../src/providers/discord/handlers/InteractionHandler"
 );
 
+const STORED_ID = "EOS_0002c60901644d5dbbe98aa9575f6d65";
+
 function createAuthorizer() {
     return {
         getRequiredPermission() {
@@ -28,6 +30,8 @@ function createAuthorizer() {
 }
 
 function createResolver(executions) {
+    let banListCalls = 0;
+
     return {
         resolve() {
             return {
@@ -68,6 +72,33 @@ function createResolver(executions) {
                                 responseLines: [
                                     "Steam_76561198324839127 banned until " +
                                     "2026-07-30 18:00:00, reason: Rule violation."
+                                ]
+                            };
+                        }
+
+                        if (command === "ban list") {
+                            banListCalls += 1;
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    "Ban list entries:",
+                                    "  Banned until - UserID (name) - Reason",
+                                    ...(banListCalls === 1
+                                        ? [
+                                            "  2026-07-30 18:00:00 - " +
+                                            STORED_ID +
+                                            " (TestPlayer) - Rule violation"
+                                        ]
+                                        : [])
+                                ]
+                            };
+                        }
+
+                        if (command.startsWith("ban remove ")) {
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    `${STORED_ID} removed from ban list.`
                                 ]
                             };
                         }
@@ -161,7 +192,7 @@ test("registers the complete guild-only game command definition", () => {
     );
     assert.deepEqual(
         definition.options.map(option => option.name),
-        ["status", "time", "players", "say", "kick", "ban"]
+        ["status", "time", "players", "say", "kick", "ban", "unban"]
     );
 
     const say = definition.options.find(option => option.name === "say");
@@ -190,6 +221,12 @@ test("registers the complete guild-only game command definition", () => {
     assert.deepEqual(
         ban.options.map(option => option.name),
         ["user-id", "duration", "unit", "reason", "display-name"]
+    );
+
+    const unban = definition.options.find(option => option.name === "unban");
+    assert.deepEqual(
+        unban.options.map(option => option.name),
+        ["display-name"]
     );
 });
 
@@ -254,12 +291,23 @@ test("dispatches every game subcommand through the registered command", async ()
         content: "Banned TestPlayer from the game server for 3 minutes."
     }]);
 
+    const unban = createInteraction("unban", {
+        "display-name": "TestPlayer"
+    });
+    await dispatchInteraction(unban);
+    assert.deepEqual(unban.edits, [{
+        content: "Unbanned TestPlayer from the game server."
+    }]);
+
     assert.deepEqual(executions, [
         "gettime",
         "listplayers",
         "say \"Welcome to Rogue Soldiers!\"",
         "kick 171 \"Rule violation\"",
         "ban add Steam_76561198324839127 3 minutes " +
-        "\"Rule violation\" \"TestPlayer\""
+        "\"Rule violation\" \"TestPlayer\"",
+        "ban list",
+        `ban remove ${STORED_ID}`,
+        "ban list"
     ]);
 });
