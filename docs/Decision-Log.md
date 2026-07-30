@@ -88,3 +88,21 @@ SQLite is authoritative for production Economy accounts, balances, transaction h
 The Economy Module retains input validation, transfer policy and authorization, balance calculations, transaction construction, public records, and public errors. The store owns durable rows, parameterized queries, transaction boundaries, deterministic ordering, restart recovery, and durable transaction sequence allocation.
 
 Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction. A rolled-back operation does not consume the next successful public transaction ID.
+
+## Staff Platform Identifier Visibility
+
+### Decision
+
+Steam and EOS player identifiers are private operational data by default, but they are not categorically hidden from authorized staff.
+
+An explicitly authorized staff lookup or administration workflow may return a requested player's Steam ID, EOS ID, or both when those identifiers are operationally necessary. The workflow must be permission-gated, scoped to the requested player and purpose, and use an ephemeral or equivalently private response where the platform supports it.
+
+Ordinary command success and failure responses continue to avoid echoing submitted or server-normalized platform identifiers unless the approved staff workflow specifically requires that disclosure.
+
+### Guardrails
+
+- Platform identifiers must not be exposed publicly or to ordinary members.
+- Raw login, authentication, Telnet, socket, configuration, and server-console output must never be returned merely to reveal an identifier.
+- Staff visibility requires an explicit command or workflow contract rather than incidental leakage from another operation.
+- Only the identifiers and player context required for the approved staff purpose may be returned.
+- IP addresses, credentials, positions, health, inventory, internal errors, and unrelated player identifiers remain private even when a platform identifier is authorized for staff viewing.
