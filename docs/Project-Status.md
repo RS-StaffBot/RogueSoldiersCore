@@ -8,7 +8,7 @@ v1.3.0
 
 v1.4.0 - Hosted Player Administration
 
-Status: In progress; Phase 7 is next.
+Status: In progress; Phase 7 is in progress.
 
 ## Milestone Goal
 
@@ -62,13 +62,26 @@ Added deterministic Provider completion for verified `ban add` success and inval
 
 Added guild-only `/game ban` with required durable user ID, positive duration, verified duration-unit choice, bounded reason, and bounded display name. It validates before Provider resolution, executes only the approved fixed command, defers an ephemeral response, and never copies platform IDs or raw Telnet output into Discord.
 
-## Next Phase
+## Current Phase
 
-Phase 7 uses the approved exact stored-UserID lookup and post-removal verification contract to implement `/game unban` safely.
+Phase 7 implements `/game unban` through the approved exact stored-UserID lookup and post-removal verification contract.
+
+The Provider now has deterministic completion for the verified `ban remove <stored UserID>` response line. This confirms command completion only; the Discord workflow must still execute a second `ban list` and prove that the matching entry disappeared before reporting success.
+
+## Next Step
+
+Add the Discord `/game unban` workflow:
+
+1. Validate an exact display name.
+2. Read `ban list`.
+3. Resolve exactly one matching active entry and its stored UserID.
+4. Execute `ban remove <exact stored UserID>`.
+5. Read `ban list` again.
+6. Report success only when the entry is absent.
 
 ## Remaining Planned Phases
 
-1. Add `/game unban` with `ban list` resolution and post-removal verification.
+1. Complete `/game unban` registration, dispatch, validation, privacy, and failure coverage.
 2. Add whitelist operations only after independent evidence.
 3. Add final registration, dispatch, authorization, privacy, and regression coverage.
 4. Complete live Discord-to-game verification.
