@@ -8,7 +8,7 @@ v1.3.0
 
 v1.4.0 - Hosted Player Administration
 
-Status: In progress; Phase 8 is in progress.
+Status: In progress; Phase 10 is in progress.
 
 ## Milestone Goal
 
@@ -70,9 +70,7 @@ The workflow validates an exact display name, reads `ban list`, requires exactly
 
 Parser, registration, dispatch, ambiguity, malformed-output, failed-verification, and privacy coverage are implemented. PR #52 merged the verified workflow into `main`.
 
-## Current Phase
-
-Phase 8 adds evidence-backed Provider completion for individual whitelist add and remove operations.
+### Phase 8 - Whitelist Provider Completion
 
 Live evidence against 7 Days to Die V3.1.0 b13 proved:
 
@@ -88,24 +86,38 @@ Live evidence against 7 Days to Die V3.1.0 b13 proved:
 - entries persist across a normal server restart
 - reload, path, login, authentication, performance, entity, inventory, and stack-trace lines are unrelated noise
 
-This phase adds deterministic Provider completion and focused tests only. Discord whitelist subcommands remain future work.
+PR #53 added deterministic Provider completion and focused command-service tests.
+
+### Phase 9 - Whitelist Validation and Formatting
+
+PR #54 added coverage for the existing durable Steam/EOS identifier validation and bounded display-name validation. It also added privacy-safe whitelist add, remove, missing-entry, malformed-result, timeout, and raw-output protection contracts.
+
+Ordinary responses never copy platform identifiers, IP addresses, configuration paths, or raw server output. Explicitly authorized staff identifier workflows remain separately permission-gated and private or ephemeral.
+
+## Current Phase
+
+Phase 10 registers and dispatches the individual whitelist operations inside the existing guild-only `/game` command family:
+
+```text
+/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>
+/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>
+```
+
+The Discord Provider validates every option before Provider resolution, executes only the fixed evidence-backed command shapes, defers ephemeral replies, and uses the privacy-safe formatter boundary. The display name on remove is used only for the private staff-facing result and is not sent to the game server.
 
 ## Next Step
 
-After Provider completion CI passes and the pull request is merged:
+After Phase 10 CI passes and the pull request is merged:
 
-1. Define Discord-side whitelist target and display-name validation.
-2. Define privacy-safe add, remove, already-present, missing, timeout, malformed-result, and thrown-error formatting.
-3. Add `/game whitelist add` and `/game whitelist remove` through the existing `ManageGuild` and Provider resolver boundaries.
-4. Preserve ephemeral responses and avoid echoing platform identifiers in ordinary results.
+1. Complete live Discord-to-game verification for whitelist add and remove.
+2. Add any narrowly required regression fixes found by live verification.
+3. Synchronize final milestone documentation and versions, add release notes, run final regression, and close v1.4.0.
 
 ## Remaining Planned Phases
 
-1. Complete the Provider whitelist-completion phase.
-2. Add Discord whitelist validation, formatting, registration, dispatch, authorization, and privacy coverage.
-3. Add final serialized registration, malformed-input, privacy, and regression coverage.
-4. Complete live Discord-to-game verification.
-5. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
+1. Complete Discord whitelist registration, dispatch, validation, authorization, timeout, malformed-input, privacy, and regression coverage.
+2. Complete live Discord-to-game verification.
+3. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
 
 ## v1.4.0 Safety Boundaries
 
@@ -126,6 +138,8 @@ The guild-only `/game` family includes:
 - `/game kick entity-id:<id> reason:<text>`
 - `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
 - `/game unban display-name:<exact text>`
+- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
+- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
 
 It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a frozen `executeCommand` service from the framework-loaded `7 Days to Die` Provider.
 
@@ -135,7 +149,7 @@ It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
 - Verified durable ban and unban are available through Discord.
-- Individual whitelist server contracts are proven, while Discord-accessible whitelist operations remain incomplete.
+- Individual whitelist server contracts, Discord validation, privacy-safe formatting, registration, and dispatch are implemented pending live Discord-to-game verification.
 - Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
 ## v1.3.0 Release Record
