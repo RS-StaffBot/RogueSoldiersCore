@@ -14,6 +14,8 @@ const BAN_ADD_SUCCESS_PATTERN =
     /^\S+ banned until \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}, reason: .+\.$/u;
 const BAN_ADD_INVALID_TARGET_PATTERN =
     /^"[^"]+" is not a valid entity id, player name or user id\.$/u;
+const BAN_REMOVE_SUCCESS_PATTERN =
+    /^\S+ removed from ban list\.$/u;
 
 class SevenDaysToDieCommandCompletionRules {
 
@@ -81,6 +83,16 @@ class SevenDaysToDieCommandCompletionRules {
                     BAN_ADD_SUCCESS_PATTERN.test(latestLine) ||
                     BAN_ADD_INVALID_TARGET_PATTERN.test(latestLine)
                 )
+            ) {
+                return this.complete(
+                    SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+                );
+            }
+
+            if (
+                commandName === "ban" &&
+                commandAction === "remove" &&
+                BAN_REMOVE_SUCCESS_PATTERN.test(latestLine)
             ) {
                 return this.complete(
                     SevenDaysToDieCommandCompletionReason.MATCHED_RULE
