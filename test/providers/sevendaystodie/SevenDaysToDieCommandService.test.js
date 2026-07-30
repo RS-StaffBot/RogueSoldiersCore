@@ -79,6 +79,70 @@ test("executes gettime and returns separated immutable output", async () => {
 
 });
 
+test("completes kick before disconnect cleanup output", async () => {
+
+    const { service, socket } = createService();
+    const resultPromise = service.executeCommand(
+        "kick 171 \"RSF evidence test\""
+    );
+
+    assert.deepEqual(socket.writes, [
+        "kick 171 \"RSF evidence test\"\r\n"
+    ]);
+
+    socket.emit("data", Buffer.from(
+        "2026-07-29T19:44:15 INF Executing command " +
+        "'kick 171 \"RSF evidence test\"' by Telnet\r\n" +
+        "Kicking Player TestPlayer: RSF evidence test\r\n" +
+        "2026-07-29T19:44:15 INF PlayerDisconnected EntityID=171\r\n" +
+        "2026-07-29T19:44:16 WRN DisconnectClient: Player not found\r\n" +
+        "UnityEngine.StackTraceUtility:ExtractStackTrace ()\r\n"
+    ));
+
+    const result = await resultPromise;
+
+    assert.equal(result.status, SevenDaysToDieCommandStatus.SUCCESS);
+    assert.equal(
+        result.completionReason,
+        SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    );
+    assert.deepEqual(result.responseLines, [
+        "2026-07-29T19:44:15 INF Executing command " +
+        "'kick 171 \"RSF evidence test\"' by Telnet",
+        "Kicking Player TestPlayer: RSF evidence test"
+    ]);
+    assert.deepEqual(result.eventLines, []);
+
+});
+
+test("completes kick on invalid offline entity target", async () => {
+
+    const { service, socket } = createService();
+    const resultPromise = service.executeCommand(
+        "kick 171 \"RSF stale entity evidence test\""
+    );
+
+    socket.emit("data", Buffer.from(
+        "2026-07-29T20:29:40 INF Executing command " +
+        "'kick 171 \"RSF stale entity evidence test\"' by Telnet\r\n" +
+        "\"171\" is not a valid entity id, player name or user id.\r\n"
+    ));
+
+    const result = await resultPromise;
+
+    assert.equal(result.status, SevenDaysToDieCommandStatus.SUCCESS);
+    assert.equal(
+        result.completionReason,
+        SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    );
+    assert.deepEqual(result.responseLines, [
+        "2026-07-29T20:29:40 INF Executing command " +
+        "'kick 171 \"RSF stale entity evidence test\"' by Telnet",
+        "\"171\" is not a valid entity id, player name or user id."
+    ]);
+
+});
+
 test("keeps matching say chat with the command response", async () => {
 
     const { service, socket } = createService();
