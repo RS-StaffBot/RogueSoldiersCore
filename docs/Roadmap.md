@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** Selected; Phase 1 is next
+**Status:** In progress; Phase 4 is next
 
 ## Completed Milestones
 
@@ -50,19 +50,56 @@ The 7 Days to Die Provider owns fixed command construction, Telnet communication
 
 No arbitrary console entry is exposed. Discord commands resolve only the existing frozen `executeCommand` boundary. Direct platform administration does not introduce a Module unless reusable cross-platform policy is later proven.
 
-### Planned Phases
+### Completed Phases
 
-1. Capture sanitized live command evidence for kick, ban, unban, and whitelist behavior.
-2. Approve exact player identifiers, fixed command shapes, success evidence, failure evidence, and completion rules for the first operation.
-3. Add Provider-side deterministic completion coverage for the first approved operation.
-4. Add shared Discord-side player-target validation and privacy-safe administration result formatting.
-5. Add `/game kick` through one fixed, evidence-backed operation.
-6. Add `/game ban` through one fixed, evidence-backed operation.
-7. Add `/game unban` through one fixed, evidence-backed operation.
+1. Captured live command evidence for kick behavior, online player identifiers, success output, invalid-target output, restart persistence, and disconnect cleanup noise.
+2. Approved online entity ID resolution and the fixed `kick <entity id> "<reason>"` operation for the first administration command.
+3. Added Provider-side deterministic completion for verified kick success and invalid-target rejection, including regression coverage proving later disconnect warnings and stack traces are excluded.
+
+### Current Phase
+
+4. Add shared Discord-side online-player target validation and privacy-safe administration result formatting.
+
+This phase will establish reusable Discord-side validation and formatting without registering `/game kick` yet.
+
+### Remaining Phases
+
+5. Add `/game kick` through the approved fixed operation.
+6. Capture and approve exact live evidence for ban behavior, then add `/game ban` through one fixed operation.
+7. Capture and approve exact live evidence for unban behavior, then add `/game unban` through one fixed operation.
 8. Add whitelist add and remove only after both operations are independently proven.
 9. Add serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
 10. Complete live Discord-to-game verification.
 11. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
+
+### Verified Kick Contract
+
+Online discovery evidence:
+
+```text
+id=<entity id>, <player name>
+Total of <count> in the game
+```
+
+Approved execution shape:
+
+```text
+kick <online entity id> "<validated reason>"
+```
+
+Verified success terminal line:
+
+```text
+Kicking Player <name>: <reason>
+```
+
+Verified offline or invalid target terminal line:
+
+```text
+"<target>" is not a valid entity id, player name or user id.
+```
+
+Entity IDs remain associated with saved players across normal reconnects and a clean server restart, but the server accepts them as kick targets only while the player is currently online. Steam and EOS identifiers remain the durable account identifiers for future offline administration and cross-server identity work.
 
 ### Safety and Privacy Requirements
 
@@ -70,7 +107,8 @@ No arbitrary console entry is exposed. Discord commands resolve only the existin
 - Player targets must be exact and unambiguous before execution.
 - Ambiguous names must not be guessed or automatically resolved.
 - Fixed operations must reject command-shaping characters and malformed identifiers before Provider execution.
-- Discord must not receive raw Telnet output, credentials, IP addresses, platform identifiers, positions, health values, socket details, or internal error text.
+- Discord must not receive raw Telnet output, credentials, IP addresses, positions, health values, socket details, or internal error text.
+- Platform identifiers may be stored and used internally when required for durable game administration, but should not be included in ordinary Discord responses.
 - Timeout, disconnect, not-found, already-banned, not-banned, invalid-target, and generic server rejection outcomes must fail safely.
 - Raw Telnet remains restricted to loopback, LAN, VPN, or another protected private path.
 
@@ -104,7 +142,7 @@ Provide a narrow Discord slash-command interface over the completed 7 Days to Di
 
 ### Architecture Boundary
 
-The Discord Provider owns slash-command definitions, Discord permissions, input validation, interaction handling, reply deferral, result formatting, safe error wording, and narrow game Provider resolution.
+The Discord Provider owns Discord command definitions, permissions, input validation, interaction handling, reply deferral, result formatting, safe error wording, and narrow game Provider resolution.
 
 The 7 Days to Die Provider retains ownership of Telnet communication, command execution, completion detection, response and event separation, timeout and connection failures, and single-active-command enforcement.
 
@@ -140,13 +178,13 @@ No Module is introduced for these direct platform operations.
 
 ### Outside v1.3.0
 
-- Arbitrary console command execution
+- Arbitrary console execution
 - Hosted-player administration
 - Cross-platform player identity linking
 - Continuous Discord and in-game chat bridging
-- Economy-backed game purchases or rewards
+- Economy-backed in-game purchases or rewards
 - Command queues
-- Multiple simultaneous game commands
+- Multiple simultaneous commands
 - Multiple game servers
 - Automatic game-server startup or process supervision
 - Public Telnet exposure
