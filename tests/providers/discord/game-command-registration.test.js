@@ -62,6 +62,16 @@ function createResolver(executions) {
                             };
                         }
 
+                        if (command.startsWith("ban add ")) {
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    "Steam_76561198324839127 banned until " +
+                                    "2026-07-30 18:00:00, reason: Rule violation."
+                                ]
+                            };
+                        }
+
                         return {
                             status: "SUCCESS",
                             responseLines: []
@@ -99,6 +109,10 @@ function createInteraction(subcommand, values = {}) {
             getSubcommand(required) {
                 assert.equal(required, true);
                 return subcommand;
+            },
+            getInteger(name, required) {
+                assert.equal(required, true);
+                return values[name];
             },
             getString(name, required) {
                 assert.equal(required, true);
@@ -147,7 +161,7 @@ test("registers the complete guild-only game command definition", () => {
     );
     assert.deepEqual(
         definition.options.map(option => option.name),
-        ["status", "time", "players", "say", "kick"]
+        ["status", "time", "players", "say", "kick", "ban"]
     );
 
     const say = definition.options.find(option => option.name === "say");
@@ -170,6 +184,12 @@ test("registers the complete guild-only game command definition", () => {
     assert.deepEqual(
         kick.options.map(option => option.name),
         ["entity-id", "reason"]
+    );
+
+    const ban = definition.options.find(option => option.name === "ban");
+    assert.deepEqual(
+        ban.options.map(option => option.name),
+        ["user-id", "duration", "unit", "reason", "display-name"]
     );
 });
 
@@ -222,10 +242,24 @@ test("dispatches every game subcommand through the registered command", async ()
         content: "Kicked TestPlayer from the game server."
     }]);
 
+    const ban = createInteraction("ban", {
+        "display-name": "TestPlayer",
+        duration: 3,
+        reason: "Rule violation",
+        unit: "minutes",
+        "user-id": "Steam_76561198324839127"
+    });
+    await dispatchInteraction(ban);
+    assert.deepEqual(ban.edits, [{
+        content: "Banned TestPlayer from the game server for 3 minutes."
+    }]);
+
     assert.deepEqual(executions, [
         "gettime",
         "listplayers",
         "say \"Welcome to Rogue Soldiers!\"",
-        "kick 171 \"Rule violation\""
+        "kick 171 \"Rule violation\"",
+        "ban add Steam_76561198324839127 3 minutes " +
+        "\"Rule violation\" \"TestPlayer\""
     ]);
 });
