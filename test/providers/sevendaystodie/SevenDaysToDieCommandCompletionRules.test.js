@@ -59,6 +59,59 @@ test("completes listplayers and lp on the total line", () => {
 
 });
 
+test("completes kick on the verified success line", () => {
+
+    const pending = decide(
+        "kick 171 \"RSF evidence test\"",
+        [
+            "2026-07-29T19:44:15 INF Executing command " +
+            "'kick 171 \"RSF evidence test\"' by Terminal Window"
+        ]
+    );
+    const complete = decide(
+        "kick 171 \"RSF evidence test\"",
+        ["Kicking Player TestPlayer: RSF evidence test"]
+    );
+
+    assert.deepEqual(pending, { completed: false });
+    assert.deepEqual(complete, {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("completes kick on the verified invalid-target rejection", () => {
+
+    const complete = decide(
+        "kick 171 \"RSF stale entity evidence test\"",
+        ["\"171\" is not a valid entity id, player name or user id."]
+    );
+
+    assert.deepEqual(complete, {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("does not complete kick on later disconnect cleanup noise", () => {
+
+    const pending = decide(
+        "kick 171 \"RSF evidence test\"",
+        [
+            "2026-07-29T19:44:15 INF PlayerDisconnected EntityID=171",
+            "2026-07-29T19:44:16 WRN DisconnectClient: Player not found",
+            "UnityEngine.StackTraceUtility:ExtractStackTrace ()"
+        ]
+    );
+
+    assert.deepEqual(pending, { completed: false });
+
+});
+
 test("completes say only on the matching non-player chat event", () => {
 
     const rules = new SevenDaysToDieCommandCompletionRules();
