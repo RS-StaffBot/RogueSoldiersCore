@@ -76,7 +76,7 @@ test("defines the game time subcommand", () => {
 
     assert.deepEqual(
         data.options.map(option => option.name),
-        ["status", "time", "players", "say", "kick", "ban"]
+        ["status", "time", "players", "say", "kick", "ban", "unban"]
     );
 });
 
