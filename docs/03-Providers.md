@@ -47,14 +47,23 @@ The guild-only `/game` family requires `ManageGuild` and includes:
 - `/game players`
 - `/game say message:<text>`
 - `/game kick entity-id:<id> reason:<text>`
+- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
 
 The Discord Provider owns command definitions, authorization, input validation, response deferral, safe result parsing, and user-facing formatting.
 
 Commands resolve the framework-loaded `7 Days to Die` Provider through a focused resolver. Successful resolution returns only a frozen service exposing `executeCommand`. Commands do not receive Provider Manager, Registry, Telnet, socket, configuration, or credential internals.
 
-Remote operations use stable Discord-side handling for timeout, disconnect, generic execution failure, malformed results, and thrown errors. Raw Telnet output, credentials, IP addresses, positions, health values, socket details, and internal errors are not exposed to Discord.
+Remote operations use stable Discord-side handling for timeout, disconnect, generic execution failure, malformed results, and thrown errors. Raw Telnet output, credentials, IP addresses, positions, health values, socket details, platform identifiers, and internal errors are not exposed to Discord.
 
 `/game kick` validates an exact positive online entity ID and a bounded reason before Provider resolution. It constructs only the fixed `kick <entity id> "<reason>"` command and uses `DiscordGameAdministrationResultFormatter` for privacy-safe success and not-found messages.
+
+`/game ban` validates a combined Steam or EOS identifier, a positive duration, one of the verified duration units, a bounded reason, and a bounded display name before Provider resolution. It constructs only:
+
+```text
+ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
+```
+
+A successful Discord response uses the validated display name and duration but never exposes the submitted or server-normalized platform identifier.
 
 ## 7 Days to Die Provider
 
@@ -94,6 +103,7 @@ Evidence-backed deterministic completion exists for:
 - `say`
 - `help`
 - `kick`
+- `ban add`
 - Invalid or unknown commands
 
 Verified `kick` completion uses either:
@@ -108,7 +118,15 @@ or:
 "<target>" is not a valid entity id, player name or user id.
 ```
 
-The command service completes on the verified terminal line. Later disconnect events, cleanup warnings, and engine stack traces are not included in the completed command result.
+Verified `ban add` completion uses either:
+
+```text
+<Steam_...|EOS_...> banned until YYYY-MM-DD HH:MM:SS, reason: <reason>.
+```
+
+or the same verified invalid-target line.
+
+The command service completes on the verified terminal line. Later disconnect events, server administration reload messages, cleanup warnings, EOS errors, and engine stack traces are not included in the completed command result.
 
 Unverified multiline output uses a bounded inactivity fallback after meaningful output begins.
 
@@ -126,7 +144,9 @@ id=<entity id>, <player name>
 
 The entity ID remained associated with the same saved player across reconnects and a clean server restart, but the server accepted it as a kick target only while the player was online. It is therefore an online administration target, not a globally durable account identity.
 
-Steam and EOS identifiers remain the durable game-account identifiers for future offline ban, whitelist, cross-server, and identity-linking work.
+Steam and EOS combined identifiers are durable game-account targets for ban and future whitelist operations. A submitted Steam identifier may be normalized to EOS when the server resolves an online player.
+
+Duplicate active bans refresh the existing expiry. Expired temporary bans disappear automatically.
 
 ### Discord Operations
 
@@ -136,6 +156,7 @@ The Discord Provider currently uses the command service for:
 - `listplayers` through `/game players`
 - quoted `say` through `/game say`
 - fixed online `kick` through `/game kick`
+- fixed durable `ban add` through `/game ban`
 
 `/game status` inspects Provider availability without executing a remote command.
 
@@ -150,7 +171,7 @@ Telnet passwords remain environment-only and outside tracked JSON.
 The current Provider and Discord integration do not include:
 
 - Arbitrary console execution
-- Discord-accessible ban, unban, whitelist, or other durable player administration workflows
+- Discord-accessible unban or whitelist workflows
 - Cross-platform identity linking
 - Continuous Discord and in-game chat bridging
 - Economy-backed in-game purchases or rewards
