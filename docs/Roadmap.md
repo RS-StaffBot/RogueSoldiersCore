@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** In progress; Phase 6 is next
+**Status:** In progress; Phase 7 is next
 
 ## Completed Milestones
 
@@ -57,26 +57,28 @@ No arbitrary console entry is exposed. Discord commands resolve only the frozen 
 3. Added deterministic Provider completion for kick success and invalid-target rejection.
 4. Added reusable Discord-side entity-ID and reason validation plus privacy-safe kick result formatting.
 5. Added `/game kick entity-id:<id> reason:<text>` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
+6. Captured exact ban and unban evidence, added deterministic Provider completion for `ban add`, and added `/game ban` through the approved fixed contract.
 
-Phase 5 specifically verifies:
+Phase 6 verifies:
 
-- guild-only `ManageGuild` authorization
-- required exact entity-ID and reason options
+- combined durable identifiers such as `Steam_<id>` and `EOS_<id>`
+- exact positive duration and one of minutes, hours, days, weeks, months, or years
+- fixed `ban add <user id> <duration> <unit> "<reason>" "<display name>"` construction
+- Steam or EOS-normalized success lines
+- duplicate active-ban refresh behavior
 - validation before Provider resolution
-- fixed `kick <entity id> "<reason>"` construction
 - ephemeral deferred replies
-- safe success, not-found, timeout, and malformed-result handling
+- privacy-safe success, invalid-target, timeout, malformed-result, and thrown-error handling
 - registration and dispatch through the existing `/game` command
 
 ### Current Phase
 
-6. Capture and approve exact live ban evidence before implementing `/game ban`.
+7. Add `/game unban` using exact active UserID resolution from `ban list` and a required post-removal `ban list` verification.
 
-Evidence must prove the durable identifier form, exact duration syntax, success response, duplicate/already-banned response, invalid-target response, list behavior, and deterministic completion boundary.
+The server's `removed from ban list` response is not sufficient proof because it may be printed for an identifier that did not match the stored active entry.
 
 ### Remaining Phases
 
-7. Capture and approve exact unban evidence, then add `/game unban`.
 8. Add whitelist add and remove only after both operations are independently proven.
 9. Add final serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
 10. Complete live Discord-to-game verification.
@@ -115,7 +117,27 @@ Offline or invalid target:
 "<target>" is not a valid entity id, player name or user id.
 ```
 
-Entity IDs are online administration targets. Steam and EOS identifiers remain the durable account identifiers for future offline and cross-server administration.
+### Verified Ban Contract
+
+Discord operation:
+
+```text
+/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>
+```
+
+Provider execution:
+
+```text
+ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
+```
+
+Success:
+
+```text
+<stored user id> banned until YYYY-MM-DD HH:MM:SS, reason: <reason>.
+```
+
+The stored identifier may remain Steam-backed or normalize to EOS. Discord never receives the raw stored identifier.
 
 ### Safety and Privacy Requirements
 
@@ -124,7 +146,7 @@ Entity IDs are online administration targets. Steam and EOS identifiers remain t
 - Ambiguous names must not be guessed.
 - Fixed operations reject command-shaping characters and malformed identifiers before Provider execution.
 - Discord must not receive raw Telnet output, credentials, IP addresses, positions, health values, socket details, platform identifiers, or internal errors.
-- Platform identifiers may be stored internally when future durable administration requires them.
+- Platform identifiers may be stored internally when durable administration requires them.
 - Timeout, disconnect, not-found, already-banned, not-banned, invalid-target, and server rejection outcomes fail safely.
 - Raw Telnet remains on loopback, LAN, VPN, or another protected path.
 
