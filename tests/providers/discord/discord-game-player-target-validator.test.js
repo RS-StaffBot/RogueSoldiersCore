@@ -6,6 +6,13 @@ const DiscordGamePlayerTargetValidator = require(
     "DiscordGamePlayerTargetValidator"
 );
 
+function assertInvalid(result) {
+    assert.equal(result.valid, false);
+    assert.equal(result.value, null);
+    assert.equal(typeof result.message, "string");
+    assert.equal(Object.isFrozen(result), true);
+}
+
 test("accepts positive safe online entity IDs", () => {
     const validator = new DiscordGamePlayerTargetValidator();
 
@@ -30,12 +37,69 @@ test("rejects malformed and unsafe entity IDs", () => {
     ];
 
     for (const value of invalidValues) {
-        const result = validator.validateOnlineEntityId(value);
+        assertInvalid(validator.validateOnlineEntityId(value));
+    }
+});
 
-        assert.equal(result.valid, false);
-        assert.equal(result.value, null);
-        assert.equal(typeof result.message, "string");
+test("accepts durable Steam and EOS user IDs", () => {
+    const validator = new DiscordGamePlayerTargetValidator();
+
+    for (const value of [
+        "Steam_76561198324839127",
+        "EOS_0002c60901644d5dbbe98aa9575f6d65"
+    ]) {
+        const result = validator.validateDurableUserId(value);
+
+        assert.deepEqual(result, {
+            valid: true,
+            value
+        });
         assert.equal(Object.isFrozen(result), true);
+    }
+});
+
+test("rejects malformed or command-shaped durable user IDs", () => {
+    const validator = new DiscordGamePlayerTargetValidator();
+
+    for (const value of [
+        null,
+        "",
+        "Steam_0",
+        "Steam_76561198324839127 ",
+        "EOS_short",
+        "EOS_0002c60901644d5dbbe98aa9575f6d65\nwhitelist list",
+        "76561198324839127"
+    ]) {
+        assertInvalid(validator.validateDurableUserId(value));
+    }
+});
+
+test("accepts bounded display names", () => {
+    const validator = new DiscordGamePlayerTargetValidator();
+
+    const result = validator.validateDisplayName("RubbaDuckie");
+
+    assert.deepEqual(result, {
+        valid: true,
+        value: "RubbaDuckie"
+    });
+    assert.equal(Object.isFrozen(result), true);
+});
+
+test("rejects malformed or command-shaped display names", () => {
+    const validator = new DiscordGamePlayerTargetValidator();
+
+    for (const value of [
+        null,
+        "",
+        " leading",
+        "trailing ",
+        "contains \"quotes\"",
+        "contains\\backslash",
+        "line\nbreak",
+        "a".repeat(41)
+    ]) {
+        assertInvalid(validator.validateDisplayName(value));
     }
 });
 
@@ -67,9 +131,7 @@ test("rejects command-shaping and malformed kick reasons", () => {
     for (const value of invalidValues) {
         const result = validator.validateReason(value);
 
-        assert.equal(result.valid, false);
-        assert.equal(result.value, null);
+        assertInvalid(result);
         assert.match(result.message, /reason must be 1-200 characters/u);
-        assert.equal(Object.isFrozen(result), true);
     }
 });
