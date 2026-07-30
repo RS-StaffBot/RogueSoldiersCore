@@ -112,6 +112,79 @@ test("does not complete kick on later disconnect cleanup noise", () => {
 
 });
 
+test("completes ban add on verified Steam or EOS success lines", () => {
+
+    for (const responseLine of [
+        "Steam_76561198324839127 banned until " +
+            "2026-07-29 22:31:50, reason: RSF evidence test.",
+        "EOS_0002c60901644d5dbbe98aa9575f6d65 banned until " +
+            "2026-07-29 21:49:54, reason: RSF evidence test."
+    ]) {
+        const complete = decide(
+            "ban add Steam_76561198324839127 3 minutes " +
+                "\"RSF evidence test\" \"RubbaDuckie\"",
+            [responseLine]
+        );
+
+        assert.deepEqual(complete, {
+            completed: true,
+            completionReason:
+                SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+        });
+    }
+
+});
+
+test("completes ban add on verified invalid-target rejection", () => {
+
+    const complete = decide(
+        "ban add MissingPlayer 3 minutes \"RSF evidence test\"",
+        [
+            "\"MissingPlayer\" is not a valid entity id, player name or " +
+            "user id."
+        ]
+    );
+
+    assert.deepEqual(complete, {
+        completed: true,
+        completionReason:
+            SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+    });
+
+});
+
+test("does not complete ban add on kick, reload, or disconnect noise", () => {
+
+    const pending = decide(
+        "ban add Steam_76561198324839127 3 minutes " +
+            "\"RSF evidence test\" \"RubbaDuckie\"",
+        [
+            "Kicking player (Banned until: 2026-07-29 22:31:50, " +
+                "reason: RSF evidence test): EntityID=171",
+            "2026-07-29T22:28:50 INF Reloading serveradmin.xml",
+            "2026-07-29T22:28:50 INF PlayerDisconnected EntityID=171",
+            "UnityEngine.StackTraceUtility:ExtractStackTrace ()"
+        ]
+    );
+
+    assert.deepEqual(pending, { completed: false });
+
+});
+
+test("does not apply ban add completion rules to ban remove", () => {
+
+    const pending = decide(
+        "ban remove Steam_76561198324839127",
+        [
+            "Steam_76561198324839127 banned until " +
+            "2026-07-29 22:31:50, reason: RSF evidence test."
+        ]
+    );
+
+    assert.deepEqual(pending, { completed: false });
+
+});
+
 test("completes say only on the matching non-player chat event", () => {
 
     const rules = new SevenDaysToDieCommandCompletionRules();
@@ -124,7 +197,6 @@ test("completes say only on the matching non-player chat event", () => {
             "2026-07-27T22:13:43 INF Chat (from '-non-player-', " +
             "entity id '-1', to 'Global'): different message"
     }), { completed: false });
-
     assert.deepEqual(decider({
         latestLine:
             "2026-07-27T22:13:43 INF Chat (from '-non-player-', " +
