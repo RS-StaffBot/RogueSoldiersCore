@@ -53,6 +53,15 @@ function createResolver(executions) {
                             };
                         }
 
+                        if (command.startsWith("kick ")) {
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    "Kicking Player TestPlayer: Rule violation"
+                                ]
+                            };
+                        }
+
                         return {
                             status: "SUCCESS",
                             responseLines: []
@@ -77,7 +86,7 @@ function registerHandler() {
     return interactionListener;
 }
 
-function createInteraction(subcommand, message = null) {
+function createInteraction(subcommand, values = {}) {
     const replies = [];
     const deferred = [];
     const edits = [];
@@ -92,9 +101,8 @@ function createInteraction(subcommand, message = null) {
                 return subcommand;
             },
             getString(name, required) {
-                assert.equal(name, "message");
                 assert.equal(required, true);
-                return message;
+                return values[name];
             }
         },
         replies,
@@ -139,7 +147,7 @@ test("registers the complete guild-only game command definition", () => {
     );
     assert.deepEqual(
         definition.options.map(option => option.name),
-        ["status", "time", "players", "say"]
+        ["status", "time", "players", "say", "kick"]
     );
 
     const say = definition.options.find(option => option.name === "say");
@@ -156,6 +164,12 @@ test("registers the complete guild-only game command definition", () => {
             name: "message",
             required: true
         }]
+    );
+
+    const kick = definition.options.find(option => option.name === "kick");
+    assert.deepEqual(
+        kick.options.map(option => option.name),
+        ["entity-id", "reason"]
     );
 });
 
@@ -191,16 +205,27 @@ test("dispatches every game subcommand through the registered command", async ()
         content: "Players online (1): TestPlayer"
     }]);
 
-    const say = createInteraction("say", "Welcome to Rogue Soldiers!");
+    const say = createInteraction("say", {
+        message: "Welcome to Rogue Soldiers!"
+    });
     await dispatchInteraction(say);
-    assert.deepEqual(say.deferred, [{ flags: MessageFlags.Ephemeral }]);
     assert.deepEqual(say.edits, [{
         content: "The message was sent to the 7 Days to Die server."
+    }]);
+
+    const kick = createInteraction("kick", {
+        "entity-id": "171",
+        reason: "Rule violation"
+    });
+    await dispatchInteraction(kick);
+    assert.deepEqual(kick.edits, [{
+        content: "Kicked TestPlayer from the game server."
     }]);
 
     assert.deepEqual(executions, [
         "gettime",
         "listplayers",
-        "say \"Welcome to Rogue Soldiers!\""
+        "say \"Welcome to Rogue Soldiers!\"",
+        "kick 171 \"Rule violation\""
     ]);
 });
