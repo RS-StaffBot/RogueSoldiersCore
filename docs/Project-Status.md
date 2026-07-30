@@ -8,7 +8,7 @@ v1.3.0
 
 v1.4.0 - Hosted Player Administration
 
-Status: In progress; Phase 5 is next.
+Status: In progress; Phase 6 is next.
 
 ## Milestone Goal
 
@@ -69,34 +69,33 @@ Kicking Player <name>: <reason>
 
 ### Phase 4 - Discord Validation and Safe Formatting
 
-Added `DiscordGamePlayerTargetValidator` for reusable Discord-side validation of:
+Added `DiscordGamePlayerTargetValidator` for positive safe-integer online entity IDs and bounded kick reasons. Added `DiscordGameAdministrationResultFormatter` for privacy-safe success, not-found, malformed, and unrecognized kick outcomes.
 
-- positive safe-integer online entity IDs
-- kick reasons bounded to 1-200 characters
-- rejection of leading or trailing whitespace, quotes, backslashes, and control characters
+### Phase 5 - Discord `/game kick`
 
-Added `DiscordGameAdministrationResultFormatter` for privacy-safe kick outcomes:
+Added guild-only `/game kick entity-id:<id> reason:<text>` through the existing `ManageGuild` boundary.
 
-- verified success becomes `Kicked <name> from the game server.`
-- invalid or offline targets become a stable not-found message
-- malformed or unrecognized output fails safely
-- raw Telnet lines, IP addresses, platform identifiers, socket details, and stack traces are never copied into Discord messages
+Verified behavior:
 
-The new services are tested independently. `/game kick` is not yet registered or exposed.
+- validates the exact online entity ID and reason before Provider resolution
+- executes only `kick <entity id> "<reason>"`
+- defers an ephemeral Discord response before remote execution
+- reuses the shared timeout, disconnect, generic failure, and thrown-error formatting
+- formats verified success and offline/not-found results without raw Telnet output
+- registers and dispatches through the existing `/game` command path
 
 ## Next Phase
 
-Phase 5 adds `/game kick` through the approved fixed server operation using the Phase 4 validation and formatting services.
+Phase 6 captures and approves exact live ban evidence before `/game ban` is implemented.
 
 ## Remaining Planned Phases
 
-1. Add `/game kick` through the approved fixed operation.
-2. Capture and approve exact ban evidence, then add `/game ban`.
-3. Capture and approve exact unban evidence, then add `/game unban`.
-4. Add whitelist operations only after independent evidence.
-5. Add final registration, dispatch, authorization, privacy, and regression coverage.
-6. Complete live Discord-to-game verification.
-7. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
+1. Capture and approve exact ban evidence, then add `/game ban`.
+2. Capture and approve exact unban evidence, then add `/game unban`.
+3. Add whitelist operations only after independent evidence.
+4. Add final registration, dispatch, authorization, privacy, and regression coverage.
+5. Complete live Discord-to-game verification.
+6. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
 
 ## v1.4.0 Safety Boundaries
 
@@ -104,14 +103,15 @@ The milestone does not include arbitrary console execution, free-form Telnet inp
 
 Administrative actions must fail safely for missing, ambiguous, malformed, offline, rejected, already-banned, or not-banned targets. Ordinary Discord responses must not expose raw Telnet output, credentials, IP addresses, positions, health values, platform identifiers, socket details, or internal errors.
 
-## Completed v1.3.0 Capability
+## Current Discord Game Capability
 
-The guild-only `/game` family currently includes:
+The guild-only `/game` family includes:
 
 - `/game status`
 - `/game time`
 - `/game players`
-- `/game say <message>`
+- `/game say message:<text>`
+- `/game kick entity-id:<id> reason:<text>`
 
 It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a frozen `executeCommand` service from the framework-loaded `7 Days to Die` Provider.
 
@@ -120,8 +120,8 @@ It requires Discord `ManageGuild`, uses ephemeral responses, and resolves only a
 - RSF supports a single-process SQLite deployment.
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
-- Hosted player administration remains unavailable through Discord until the remaining v1.4.0 phases pass.
-- Continuous chat bridging, Economy-backed game effects, command queues, multiple game servers, and cross-platform identity remain future work.
+- Durable offline ban, unban, whitelist, and cross-platform identity workflows remain unimplemented.
+- Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
 ## v1.3.0 Release Record
 

@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** In progress; Phase 5 is next
+**Status:** In progress; Phase 6 is next
 
 ## Completed Milestones
 
@@ -56,24 +56,26 @@ No arbitrary console entry is exposed. Discord commands resolve only the frozen 
 2. Approved online entity ID resolution and `kick <entity id> "<reason>"`.
 3. Added deterministic Provider completion for kick success and invalid-target rejection.
 4. Added reusable Discord-side entity-ID and reason validation plus privacy-safe kick result formatting.
+5. Added `/game kick entity-id:<id> reason:<text>` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
 
-Phase 4 specifically added:
+Phase 5 specifically verifies:
 
-- positive safe-integer entity-ID validation
-- 1-200 character reason validation
-- command-shaping and control-character rejection
-- stable success, not-found, malformed, and unrecognized-result outcomes
-- tests proving raw Telnet and cleanup details are not copied into Discord messages
+- guild-only `ManageGuild` authorization
+- required exact entity-ID and reason options
+- validation before Provider resolution
+- fixed `kick <entity id> "<reason>"` construction
+- ephemeral deferred replies
+- safe success, not-found, timeout, and malformed-result handling
+- registration and dispatch through the existing `/game` command
 
 ### Current Phase
 
-5. Add `/game kick` through the approved fixed operation.
+6. Capture and approve exact live ban evidence before implementing `/game ban`.
 
-The command must reuse `ManageGuild`, the existing game Provider resolver and remote execution wrapper, `DiscordGamePlayerTargetValidator`, and `DiscordGameAdministrationResultFormatter`.
+Evidence must prove the durable identifier form, exact duration syntax, success response, duplicate/already-banned response, invalid-target response, list behavior, and deterministic completion boundary.
 
 ### Remaining Phases
 
-6. Capture and approve exact ban evidence, then add `/game ban`.
 7. Capture and approve exact unban evidence, then add `/game unban`.
 8. Add whitelist add and remove only after both operations are independently proven.
 9. Add final serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
@@ -89,7 +91,13 @@ id=<entity id>, <player name>
 Total of <count> in the game
 ```
 
-Execution:
+Discord operation:
+
+```text
+/game kick entity-id:<online entity id> reason:<validated reason>
+```
+
+Provider execution:
 
 ```text
 kick <online entity id> "<validated reason>"

@@ -4,6 +4,12 @@ const {
 } = require("discord.js");
 
 const BaseCommand = require("./BaseCommand");
+const DiscordGameAdministrationResultFormatter = require(
+    "../services/DiscordGameAdministrationResultFormatter"
+);
+const DiscordGamePlayerTargetValidator = require(
+    "../services/DiscordGamePlayerTargetValidator"
+);
 const DiscordGameServerProviderResolver = require(
     "../services/DiscordGameServerProviderResolver"
 );
@@ -13,7 +19,11 @@ const MAXIMUM_SAY_MESSAGE_LENGTH = 200;
 class GameCommand extends BaseCommand {
 
     constructor({
+        gameAdministrationResultFormatter =
+        new DiscordGameAdministrationResultFormatter(),
         gameCommandAuthorizer,
+        gamePlayerTargetValidator =
+        new DiscordGamePlayerTargetValidator(),
         gameServerProviderResolver
     } = {}) {
 
@@ -33,6 +43,26 @@ class GameCommand extends BaseCommand {
         ) {
             throw new Error(
                 "Discord game server Provider resolver boundary is invalid."
+            );
+        }
+
+        if (
+            !gamePlayerTargetValidator ||
+            typeof gamePlayerTargetValidator.validateOnlineEntityId !==
+                "function" ||
+            typeof gamePlayerTargetValidator.validateReason !== "function"
+        ) {
+            throw new Error(
+                "Discord game player target validator boundary is invalid."
+            );
+        }
+
+        if (
+            !gameAdministrationResultFormatter ||
+            typeof gameAdministrationResultFormatter.formatKick !== "function"
+        ) {
+            throw new Error(
+                "Discord game administration result formatter boundary is invalid."
             );
         }
 
@@ -83,9 +113,35 @@ class GameCommand extends BaseCommand {
                                 .setMaxLength(MAXIMUM_SAY_MESSAGE_LENGTH)
                         )
                 )
+                .addSubcommand(subcommand =>
+                    subcommand
+                        .setName("kick")
+                        .setDescription(
+                            "Kicks an online player from the game server."
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("entity-id")
+                                .setDescription(
+                                    "The exact online entity ID from /game players."
+                                )
+                                .setRequired(true)
+                        )
+                        .addStringOption(option =>
+                            option
+                                .setName("reason")
+                                .setDescription("The staff kick reason.")
+                                .setRequired(true)
+                                .setMinLength(1)
+                                .setMaxLength(200)
+                        )
+                )
         );
 
+        this.gameAdministrationResultFormatter =
+            gameAdministrationResultFormatter;
         this.gameCommandAuthorizer = gameCommandAuthorizer;
+        this.gamePlayerTargetValidator = gamePlayerTargetValidator;
         this.gameServerProviderResolver =
             gameServerProviderResolver;
 
@@ -133,6 +189,11 @@ class GameCommand extends BaseCommand {
 
         if (subcommand === "say") {
             await this.executeSay(interaction);
+            return;
+        }
+
+        if (subcommand === "kick") {
+            await this.executeKick(interaction);
             return;
         }
 
@@ -264,6 +325,67 @@ class GameCommand extends BaseCommand {
                 ? "The message was sent to the 7 Days to Die server."
                 : execution.message
         });
+
+    }
+
+    async executeKick(interaction) {
+
+        const entityId = this.gamePlayerTargetValidator
+            .validateOnlineEntityId(
+                interaction.options.getString("entity-id", true)
+            );
+
+        if (!entityId.valid) {
+            await interaction.reply({
+                content: entityId.message,
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const reason = this.gamePlayerTargetValidator.validateReason(
+            interaction.options.getString("reason", true)
+        );
+
+        if (!reason.valid) {
+            await interaction.reply({
+                content: reason.message,
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        const resolution =
+            this.gameServerProviderResolver.resolve();
+
+        if (!this.isAvailableResolution(resolution)) {
+            await interaction.reply({
+                content: this.createStatusMessage(resolution),
+                flags: MessageFlags.Ephemeral
+            });
+            return;
+        }
+
+        await interaction.deferReply({
+            flags: MessageFlags.Ephemeral
+        });
+
+        const execution = await this.executeRemoteCommand(
+            resolution.service,
+            `kick ${entityId.value} "${reason.value}"`
+        );
+
+        if (!execution.success) {
+            await interaction.editReply({ content: execution.message });
+            return;
+        }
+
+        const formatted =
+            this.gameAdministrationResultFormatter.formatKick(
+                execution.result
+            );
+
+        await interaction.editReply({ content: formatted.message });
 
     }
 

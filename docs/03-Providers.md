@@ -46,6 +46,7 @@ The guild-only `/game` family requires `ManageGuild` and includes:
 - `/game time`
 - `/game players`
 - `/game say message:<text>`
+- `/game kick entity-id:<id> reason:<text>`
 
 The Discord Provider owns command definitions, authorization, input validation, response deferral, safe result parsing, and user-facing formatting.
 
@@ -53,7 +54,7 @@ Commands resolve the framework-loaded `7 Days to Die` Provider through a focused
 
 Remote operations use stable Discord-side handling for timeout, disconnect, generic execution failure, malformed results, and thrown errors. Raw Telnet output, credentials, IP addresses, positions, health values, socket details, and internal errors are not exposed to Discord.
 
-Hosted-player administration is not yet registered through Discord. The first approved future operation is online kick after shared Discord-side validation and result formatting are implemented.
+`/game kick` validates an exact positive online entity ID and a bounded reason before Provider resolution. It constructs only the fixed `kick <entity id> "<reason>"` command and uses `DiscordGameAdministrationResultFormatter` for privacy-safe success and not-found messages.
 
 ## 7 Days to Die Provider
 
@@ -134,10 +135,9 @@ The Discord Provider currently uses the command service for:
 - `gettime` through `/game time`
 - `listplayers` through `/game players`
 - quoted `say` through `/game say`
+- fixed online `kick` through `/game kick`
 
 `/game status` inspects Provider availability without executing a remote command.
-
-The Provider has deterministic kick completion support, but `/game kick` is not yet registered or available through Discord.
 
 ### Security Boundary
 
@@ -150,7 +150,7 @@ Telnet passwords remain environment-only and outside tracked JSON.
 The current Provider and Discord integration do not include:
 
 - Arbitrary console execution
-- Discord-accessible hosted-player ban, kick, whitelist, or other administration workflows
+- Discord-accessible ban, unban, whitelist, or other durable player administration workflows
 - Cross-platform identity linking
 - Continuous Discord and in-game chat bridging
 - Economy-backed in-game purchases or rewards
