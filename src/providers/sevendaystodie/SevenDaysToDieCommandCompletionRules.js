@@ -7,6 +7,9 @@ const INVALID_COMMAND_PATTERN =
 const GET_TIME_PATTERN = /^Day \d+, \d{2}:\d{2}$/u;
 const LIST_PLAYERS_PATTERN = /^Total of \d+ in the game$/u;
 const HELP_DESCRIPTION_PATTERN = /^Description:\s+.+$/u;
+const KICK_SUCCESS_PATTERN = /^Kicking Player .+: .+$/u;
+const KICK_INVALID_TARGET_PATTERN =
+    /^"[^"]+" is not a valid entity id, player name or user id\.$/u;
 
 class SevenDaysToDieCommandCompletionRules {
 
@@ -47,6 +50,18 @@ class SevenDaysToDieCommandCompletionRules {
             if (
                 (commandName === "listplayers" || commandName === "lp") &&
                 LIST_PLAYERS_PATTERN.test(latestLine)
+            ) {
+                return this.complete(
+                    SevenDaysToDieCommandCompletionReason.MATCHED_RULE
+                );
+            }
+
+            if (
+                commandName === "kick" &&
+                (
+                    KICK_SUCCESS_PATTERN.test(latestLine) ||
+                    KICK_INVALID_TARGET_PATTERN.test(latestLine)
+                )
             ) {
                 return this.complete(
                     SevenDaysToDieCommandCompletionReason.MATCHED_RULE
