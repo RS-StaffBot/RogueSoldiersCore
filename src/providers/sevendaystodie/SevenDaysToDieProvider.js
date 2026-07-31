@@ -3,6 +3,9 @@ const ComponentState = require("../../core/ComponentState");
 const SevenDaysToDieCommandService = require(
     "./SevenDaysToDieCommandService"
 );
+const SevenDaysToDieIdentityProofCollector = require(
+    "./identity/SevenDaysToDieIdentityProofCollector"
+);
 
 class SevenDaysToDieProvider extends BaseProvider {
 
@@ -10,7 +13,8 @@ class SevenDaysToDieProvider extends BaseProvider {
         client,
         commandService = null,
         configuration,
-        environment = process.env
+        environment = process.env,
+        identityProofCollector = null
     } = {}) {
 
         super("7 Days to Die");
@@ -19,6 +23,7 @@ class SevenDaysToDieProvider extends BaseProvider {
         this.commandService = commandService;
         this.configuration = configuration;
         this.environment = environment;
+        this.identityProofCollector = identityProofCollector;
         this.connectionAttempted = false;
         this.connectionOptions = null;
 
@@ -46,7 +51,15 @@ class SevenDaysToDieProvider extends BaseProvider {
                 });
             }
 
+            if (this.identityProofCollector === null) {
+                this.identityProofCollector =
+                    new SevenDaysToDieIdentityProofCollector({
+                        client: this.client
+                    });
+            }
+
             this.validateCommandService();
+            this.validateIdentityProofCollector();
             super.initialize();
             return this.getStatus();
 
@@ -139,7 +152,53 @@ class SevenDaysToDieProvider extends BaseProvider {
             ));
         }
 
+        if (this.identityProofCollector.isCollecting()) {
+            return Promise.reject(new Error(
+                "7 Days to Die identity proof collection is active."
+            ));
+        }
+
         return this.commandService.executeCommand(command, options);
+
+    }
+
+    collectIdentityProof({
+        challenge,
+        gameUserId
+    } = {}) {
+
+        if (this.state !== ComponentState.RUNNING) {
+            return Promise.reject(new Error(
+                "7 Days to Die Provider must be running before identity proof collection."
+            ));
+        }
+
+        if (this.isCommandExecutionActive()) {
+            return Promise.reject(new Error(
+                "7 Days to Die command execution is active."
+            ));
+        }
+
+        return this.identityProofCollector.collect({
+            challenge,
+            gameUserId
+        });
+
+    }
+
+    isCommandExecutionActive() {
+
+        if (
+            typeof this.commandService.isCommandActive ===
+            "function"
+        ) {
+            return this.commandService.isCommandActive();
+        }
+
+        return (
+            this.commandService.activeCommand !== null &&
+            this.commandService.activeCommand !== undefined
+        );
 
     }
 
@@ -189,6 +248,20 @@ class SevenDaysToDieProvider extends BaseProvider {
         ) {
             throw new Error(
                 "7 Days to Die command service must provide execution."
+            );
+        }
+
+    }
+
+    validateIdentityProofCollector() {
+
+        if (
+            !this.identityProofCollector ||
+            typeof this.identityProofCollector.collect !== "function" ||
+            typeof this.identityProofCollector.isCollecting !== "function"
+        ) {
+            throw new Error(
+                "7 Days to Die identity proof collector is invalid."
             );
         }
 
