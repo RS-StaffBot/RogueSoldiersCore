@@ -21,7 +21,7 @@ class CommandLoader {
         identityModuleResolver
     } = {}) {
 
-        return [
+        const commands = [
             new BanCommand(),
             new BalanceCommand(),
             new DailyCommand(),
@@ -29,8 +29,16 @@ class CommandLoader {
                 gameCommandAuthorizer,
                 gameServerProviderResolver
             }),
-            new HelpCommand(),
-            new IdentityCommand({ identityModuleResolver }),
+            new HelpCommand()
+        ];
+
+        if (identityModuleResolver !== undefined) {
+            commands.push(
+                new IdentityCommand({ identityModuleResolver })
+            );
+        }
+
+        commands.push(
             new KickCommand(),
             new LeaderboardCommand(),
             new PingCommand(),
@@ -39,7 +47,9 @@ class CommandLoader {
             new TimeoutCommand(),
             new UntimeoutCommand(),
             new WarnCommand()
-        ];
+        );
+
+        return commands;
 
     }
 
