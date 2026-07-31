@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Status:** Phases 1-3 completed; Phase 4 is next
+**Status:** Phases 1-4 and Phase 5A completed; Provider proof collection is next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 ## v1.5.0 - Player Identity Linking Foundation
 
-Status: In progress; Phases 1-3 completed
+Status: In progress; Phases 1-4 and Phase 5A completed
 
 ### Goal
 
@@ -47,14 +47,15 @@ The Identity Module owns:
 - uniqueness and conflict rules
 - authorization decisions
 - verification and revocation state
-- immutable public records
+- private owner status
+- immutable records
 - narrow persistence contracts
 
 Core owns migration coordination and database lifecycle. Module-specific stores own durable rows and transactions.
 
 The Discord Provider owns Discord commands, Discord identity translation, platform authorization, interaction handling, and private response formatting.
 
-The 7 Days to Die Provider owns game-protocol evidence and verified durable player identifiers. It does not own Discord-to-game identity business records.
+The 7 Days to Die Provider owns game-protocol evidence and sanitized durable-player proof evidence. It does not own Discord-to-game identity records.
 
 Shared contains reusable identity permissions proven necessary across Module and Provider boundaries.
 
@@ -64,10 +65,10 @@ Shared contains reusable identity permissions proven necessary across Module and
 - Ordinary public responses must not expose platform identifiers or raw server output.
 - Explicit staff visibility must be permission-gated, purpose-limited, and private or ephemeral.
 - One durable game identity must not be linked to conflicting Discord members.
-- Display names are not sufficient proof of identity.
+- Display names and online entity IDs are not sufficient proof of identity.
 - Fuzzy matching and automatic account merging are prohibited.
 - Ambiguous ownership or verification must fail closed.
-- Providers must not expose raw Telnet, socket, configuration, credential, path, IP, position, health, inventory, or internal-error details to the Module or Discord users.
+- Providers must not expose raw Telnet, socket, configuration, credential, path, IP, position, health, inventory, or internal-error details.
 
 ### Completed Phases
 
@@ -85,7 +86,7 @@ Implemented and tested:
 - atomic revoke-and-pend replacement semantics
 - private-by-default identifier visibility
 - reusable identity permissions
-- narrow future persistence contract
+- narrow persistence contract
 
 #### Phase 2 - Immutable Records and In-Memory Store
 
@@ -113,44 +114,64 @@ Implemented and tested:
 - restart recovery
 - synchronized global migration ordering
 
-### Remaining Planned Phases
+#### Phase 4 - Fail-Closed 7DTD Proof Contract
 
-4. Define the verified 7 Days to Die identity-proof workflow using evidence-backed fixed operations only.
-5. Add Discord member self-link and private status workflows through the Identity Module.
-6. Add explicit staff lookup, conflict resolution, replacement, and revocation workflows with narrow permissions and ephemeral output.
-7. Complete registration, dispatch, privacy, malformed-input, authorization, persistence, and regression coverage.
-8. Complete live Discord-to-game verification and apply only evidence-backed corrections.
-9. Synchronize documentation and versions, add release notes, run final validation, and close v1.5.0.
+Completed through pull request `#63`.
 
-Phase order may be narrowed when repository inspection proves a smaller safe sequence. No command name or verification mechanism is final until its contract is reviewed and tested.
+Implemented and tested:
 
-### Phase 4
+- short-lived in-game challenge requirement
+- one exact durable Steam/EOS and challenge match
+- allowed evidence fields `gameUserId`, `challenge`, and `observedAt`
+- five-minute evidence lifetime
+- immediate temporary-evidence disposal requirement
+- fail-closed handling for missing, stale, malformed, future, and ambiguous evidence
+- explicit rejection of display-name and entity-ID matching as proof
 
-Objective: define the smallest safe 7 Days to Die identity-proof contract before any Discord linking command becomes operational.
+The current `listplayers` and `listplayerids` evidence is insufficient because it does not bind a durable identifier to an ownership action.
+
+#### Phase 5A - Identity Module and Private Owner Status
+
+Completed through pull request `#64`.
+
+Implemented and tested:
+
+- framework-loaded `Identity` Module
+- in-memory direct-construction store
+- SQLite store injection through `ModuleLoader`
+- durable-state validation during initialization
+- frozen private owner-status results
+- approved status and timestamp fields only
+- no Discord, Steam, or EOS identifiers in ordinary owner status
+
+### Remaining Planned Work
+
+1. Add an evidence-backed 7 Days to Die Provider proof-collection prerequisite.
+2. Add a private Discord owner-status command through the Identity Module.
+3. Add self-link creation and verification only after the Provider proof path is operational.
+4. Add explicit staff lookup, conflict resolution, replacement, and revocation workflows with narrow permissions and ephemeral output.
+5. Complete registration, dispatch, privacy, malformed-input, authorization, persistence, and regression coverage.
+6. Complete live Discord-to-game verification and apply only evidence-backed corrections.
+7. Synchronize documentation and versions, add release notes, run final validation, and close v1.5.0.
+
+Phase order may be narrowed when repository inspection proves a smaller safe sequence. No self-link command may create a pending or verified record without the merged proof contract and an operational evidence collector.
+
+### Next Phase
+
+Objective: define and test the smallest safe 7 Days to Die proof-collection boundary.
 
 Required decisions and tests:
 
-- exact fixed Provider operation used to obtain proof evidence
-- exact sanitized evidence fields allowed across the Provider boundary
-- deterministic matching rules for one durable game identity
-- behavior for missing, ambiguous, malformed, stale, or conflicting evidence
-- how the requesting Discord member participates in the proof without trusting display names alone
-- whether proof requires a short-lived challenge, an in-game action, or another evidence-backed operation
-- retention and disposal rules for temporary proof evidence
-- privacy-safe failure types and messages
-- single-active-command and timeout behavior during proof collection
+- exact fixed Provider operation or event shape used to obtain proof evidence
+- exact durable Steam/EOS identifier and short-lived challenge observed together
+- deterministic completion or event-correlation rules
+- sanitized output limited to `gameUserId`, `challenge`, and `observedAt`
+- rejection of unrelated chat, display names, entity IDs, duplicate matches, malformed lines, stale evidence, and raw output
+- retention and disposal of temporary evidence
+- single-active-command and timeout behavior
+- unavailable, disconnected, and malformed Provider outcomes
 
-Required repository review:
-
-- current 7 Days to Die command execution and completion contracts
-- player-list and durable-ID parsing behavior
-- unsolicited event separation
-- fixed-command authorization boundaries
-- Provider resolver injection
-- raw-output sanitization and privacy-safe formatting
-- Identity Module store and status contracts from Phases 1-3
-
-Phase 4 must end with focused automated contract tests. It must not add a partially verified self-link command, expose raw Telnet output, or trust display-name matching.
+The phase must end with focused automated tests. It must not add a partially verifiable self-link command, expose raw Telnet output, or trust display-name matching.
 
 ### Outside v1.5.0
 
@@ -168,10 +189,6 @@ Phase 4 must end with focused automated contract tests. It must not add a partia
 
 Status: Completed and tagged
 
-### Goal
-
-Provide a narrow Discord interface for administering individual players on the hosted 7 Days to Die server while preserving the existing Provider boundary and preventing arbitrary console access.
-
 ### Implemented Command Family
 
 - `/game kick entity-id:<id> reason:<text>`
@@ -179,14 +196,6 @@ Provide a narrow Discord interface for administering individual players on the h
 - `/game unban display-name:<exact text>`
 - `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
 - `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
-
-### Completed Phases
-
-1. Captured live kick evidence and approved the fixed online kick contract.
-2. Added deterministic kick completion, validation, privacy-safe formatting, registration, and dispatch.
-3. Captured ban and unban evidence and added fixed ban plus verified unban workflows.
-4. Captured individual whitelist evidence and added deterministic completion, validation, formatting, registration, and dispatch.
-5. Completed live Discord-to-game whitelist verification and final release synchronization.
 
 ### Release Record
 
