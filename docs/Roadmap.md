@@ -4,9 +4,11 @@
 
 **Repository Version:** v1.4.0
 
-**Current Milestone:** v1.4.0 - Hosted Player Administration
+**Latest Completed Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** Release candidate; implementation and live verification complete
+**Status:** Completed and tagged
+
+**Next Milestone:** Not yet selected
 
 ## Completed Milestones
 
@@ -25,8 +27,11 @@
 - v1.1.0 - Administration and Configuration Foundation
 - v1.2.0 - 7 Days to Die Command Execution Foundation
 - v1.3.0 - Discord Game Server Command Interface
+- v1.4.0 - Hosted Player Administration
 
 ## v1.4.0 - Hosted Player Administration
+
+Status: Completed and tagged
 
 ### Goal
 
@@ -61,7 +66,7 @@ No arbitrary console entry is exposed. Discord commands resolve only the frozen 
 9. Added Discord-side durable-ID and display-name validation plus privacy-safe whitelist formatting.
 10. Registered and dispatched `/game whitelist add` and `/game whitelist remove` with complete command-definition and interaction regression coverage.
 11. Completed live Discord-to-game verification for whitelist add, duplicate add, remove, missing remove, and final clean state.
-12. Synchronized versions and source-of-truth documentation and added v1.4.0 release notes.
+12. Synchronized versions and source-of-truth documentation, added v1.4.0 release notes, passed final validation, merged PR #56, and created the annotated `v1.4.0` tag.
 
 ### Verified Hosted Player Contracts
 
@@ -126,16 +131,12 @@ Live verification against 7 Days to Die V3.1.0 b13 confirmed:
 - Automatic process supervision
 - Public Telnet exposure
 
-### Release Closing
+### Release Record
 
-The release pull request must pass:
-
-- production dependency audit
-- complete Node test suite
-- ESLint validation
-- `git diff --check`
-
-The annotated `v1.4.0` tag must be created only after the release pull request merges.
+- Release pull request: `#56`
+- Release merge commit: `8d9b7c9b50bdff7cab612e3905da7606c13f27e9`
+- Annotated tag: `v1.4.0`
+- Final validation: 0 production vulnerabilities, 435 passing tests, ESLint passing, and `git diff --check` clean
 
 ## v1.3.0 - Discord Game Server Command Interface
 
@@ -147,8 +148,20 @@ Status: Completed and tagged
 - Release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
 - Annotated tag: `v1.3.0`
 
-## Future Direction
+## Candidate Future Directions
 
-After v1.4.0, candidate directions include continuous chat integration, Economy-backed game rewards, cross-platform identity mapping, administration interfaces, Discord role translation, expanded Ticket workflows, and persistent Website sessions.
+No next milestone has been approved yet.
+
+Candidate planning directions include:
+
+- continuous Discord and in-game chat integration
+- Economy-backed game rewards or purchases
+- cross-platform identity mapping
+- administration interfaces and Discord role translation
+- expanded Ticket workflows
+- persistent Website sessions
+- game-server command queuing or multiple-server support
+
+These remain candidates rather than implementation commitments. The next milestone must be selected and scoped before implementation begins.
 
 Every future milestone must preserve the established Core, Provider, Module, and Shared ownership boundaries.
