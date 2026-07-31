@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Status:** Phases 1-4 and Phases 5A-5C completed; private Discord identity commands are next
+**Status:** Phases 1-4 and Phases 5A-5E completed; live end-to-end verification and release hardening are next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 ## v1.5.0 - Player Identity Linking Foundation
 
-Status: In progress; Phases 1-4 and Phases 5A-5C completed
+Status: In progress; Phases 1-4 and Phases 5A-5E completed
 
 ### Goal
 
@@ -173,35 +173,63 @@ Implemented and tested:
 - malformed, ambiguous, unsuccessful, and expanded proof objects rejected
 - replacement and relinking excluded
 
+#### Phase 5D - Private Discord Owner Status
+
+Completed through pull request `#69`.
+
+Implemented and tested:
+
+- guild-only `/identity status`
+- ephemeral owner-only responses
+- authenticated Discord member identity from the interaction
+- narrow Identity Module resolver
+- privacy-safe unlinked, pending, and verified status formatting
+- safe unavailable and malformed boundary behavior
+
+#### Phase 5E - Private Discord Self-Link
+
+Completed through pull request `#70`.
+
+Implemented and tested:
+
+- guild-only `/identity link user-id:<Steam_...|EOS_...>`
+- cryptographically random short-lived challenges
+- private five-minute in-game global-chat instructions
+- deferred ephemeral interaction handling
+- narrow proof Provider resolver
+- exact sanitized proof evaluation before persistence
+- first verified link creation only after exact proof
+- no platform-ID repetition in ordinary Discord output
+- fail-closed invalid-input, existing-link, unavailable, timeout, disconnect, malformed-proof, ambiguous-proof, and persistence-conflict behavior
+
 ### Remaining Planned Work
 
-1. Add private Discord `/identity status` and first-link workflows through the merged Module and Provider boundaries.
-2. Add explicit staff lookup, conflict resolution, replacement, and revocation workflows with narrow permissions and ephemeral output.
-3. Complete registration, dispatch, privacy, malformed-input, authorization, persistence, and regression coverage.
-4. Complete live Discord-to-game verification and apply only evidence-backed corrections.
-5. Synchronize documentation and versions, add release notes, run final validation, and close v1.5.0.
+1. Complete live Discord-to-7DTD first-link verification and apply only evidence-backed corrections.
+2. Verify restart persistence, ordinary status output, privacy boundaries, and normal command recovery after proof collection.
+3. Synchronize versions, release notes, source-of-truth documents, and dependency records where required.
+4. Run final audit, complete tests, lint, diff validation, and release checks.
+5. Open and validate the v1.5.0 release pull request, then tag the release after the user merges it.
 
-Phase order may be narrowed when repository inspection proves a smaller safe sequence. Replacement and revocation must remain explicit and must never occur silently during ordinary self-link creation.
+Replacement, relinking, unlinking, revocation, conflict resolution, and staff lookup remain separate explicit workflows. They are not required to close the first-link foundation unless live evidence identifies a blocking gap.
 
 ### Next Phase
 
-Objective: add the smallest private Discord identity command family through the merged proof collector, evaluator, and Identity Module mutation boundary.
+Objective: complete live end-to-end verification and release hardening for the merged private identity workflow.
 
-Required implementation and tests:
+Required verification:
 
-- guild-only `/identity status`
-- guild-only `/identity link user-id:<Steam_...|EOS_...>`
-- invoking Discord identity derived only from the interaction
-- cryptographically strong challenge generation inside the Discord Provider
-- private instruction to send the exact challenge through normal in-game global chat
-- deferred private interaction while waiting for Provider evidence
-- exact proof evaluation through `SevenDaysToDieIdentityProofEvaluator`
-- durable verified-link creation only after exact proof
-- safe already-linked, identity-conflict, timeout, unavailable-Provider, malformed-input, and generic-failure responses
-- no Steam/EOS identifier disclosure in ordinary status, success, or failure output
-- complete command-definition, registration, dispatch, and full-list regression coverage
+- live registration of `/identity status` and `/identity link`
+- ephemeral owner-only status behavior
+- private challenge instructions without repeating the submitted Steam/EOS ID
+- exact 7DTD global-chat challenge correlation
+- verified SQLite persistence through the Identity Module
+- verified status after linking and after framework restart
+- safe failure for wrong identity, timeout, unavailable Provider, and already-linked use where practical
+- no raw Telnet, platform identifiers, credentials, paths, socket details, or internal errors in ordinary output or logs
+- normal game-command execution after proof collection ends
+- complete automated regression coverage and final release validation
 
-The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, or Economy integration.
+The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, or multiple-server support.
 
 ### Outside v1.5.0
 
