@@ -6,17 +6,17 @@ v1.4.0
 
 ## Current Milestone
 
-v1.4.0 - Hosted Player Administration
+No new milestone has been selected.
 
-Status: Release candidate; implementation and live verification are complete.
+v1.4.0 - Hosted Player Administration is completed and tagged.
 
-## Milestone Goal
+## Latest Completed Milestone
 
-Add a narrow, authorized Discord interface for administering individual players on the hosted 7 Days to Die server without exposing arbitrary console execution.
+### v1.4.0 - Hosted Player Administration
 
-The milestone builds on the existing `/game` command family, `ManageGuild` authorization, focused game Provider resolver, immutable command-result boundary, and single-active-command enforcement.
+The milestone added a narrow, authorized Discord interface for administering individual players on the hosted 7 Days to Die server without exposing arbitrary console execution.
 
-## Completed Command Family
+Completed command family:
 
 - `/game kick entity-id:<id> reason:<text>`
 - `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
@@ -32,7 +32,7 @@ The 7 Days to Die Provider owns Telnet communication, command execution, determi
 
 No arbitrary console entry is exposed. Discord commands receive only the frozen `executeCommand` service boundary. Direct game-platform administration does not introduce a Module because no reusable cross-platform business policy has been proven.
 
-## Completed v1.4.0 Work
+## Verified v1.4.0 Behavior
 
 ### Hosted Player Kick
 
@@ -101,7 +101,7 @@ Verified whitelist outcomes:
 
 ## Safety and Privacy Boundaries
 
-The milestone does not include arbitrary console execution, free-form Telnet input, cross-platform identity linking, fuzzy player matching, continuous chat bridging, Economy-backed game effects, command queues, multiple servers, process supervision, or public Telnet exposure.
+The completed milestone does not include arbitrary console execution, free-form Telnet input, cross-platform identity linking, fuzzy player matching, continuous chat bridging, Economy-backed game effects, command queues, multiple servers, process supervision, or public Telnet exposure.
 
 Ordinary Discord responses must not expose raw Telnet output, credentials, IP addresses, positions, health values, platform identifiers, socket details, configuration paths, or internal errors.
 
@@ -115,21 +115,22 @@ An explicitly authorized staff lookup or administration workflow may display req
 - Kick, ban, verified unban, whitelist add, and whitelist remove are available through Discord.
 - Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
-## Release Closing Checklist
+## v1.4.0 Release Record
 
-- Hosted-player implementation complete
-- Automated regression coverage complete
-- Live Discord-to-game verification complete
-- Version synchronized to `1.4.0`
-- Release notes added
-- Final production audit, complete test suite, lint, and diff validation required before merge
-- Release tag must be created only after the release pull request merges
+- Release pull request: `#56`
+- Release merge commit: `8d9b7c9b50bdff7cab612e3905da7606c13f27e9`
+- Annotated tag: `v1.4.0`
+- Release validation: 0 production vulnerabilities, 435 passing tests, ESLint passing, and `git diff --check` clean
 
 ## Previous Release Record
 
 - v1.3.0 release pull request: `#43`
 - v1.3.0 release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
 - Annotated tag: `v1.3.0`
+
+## Next Step
+
+Select and approve the next milestone before implementation begins. Candidate directions remain planning topics until a milestone is explicitly chosen.
 
 ## Release Notes
 
