@@ -173,7 +173,7 @@ class SevenDaysToDieProvider extends BaseProvider {
             ));
         }
 
-        if (this.commandService.activeCommand !== null) {
+        if (this.isCommandExecutionActive()) {
             return Promise.reject(new Error(
                 "7 Days to Die command execution is active."
             ));
@@ -183,6 +183,22 @@ class SevenDaysToDieProvider extends BaseProvider {
             challenge,
             gameUserId
         });
+
+    }
+
+    isCommandExecutionActive() {
+
+        if (
+            typeof this.commandService.isCommandActive ===
+            "function"
+        ) {
+            return this.commandService.isCommandActive();
+        }
+
+        return (
+            this.commandService.activeCommand !== null &&
+            this.commandService.activeCommand !== undefined
+        );
 
     }
 
@@ -228,11 +244,10 @@ class SevenDaysToDieProvider extends BaseProvider {
 
         if (
             !this.commandService ||
-            typeof this.commandService.executeCommand !== "function" ||
-            !("activeCommand" in this.commandService)
+            typeof this.commandService.executeCommand !== "function"
         ) {
             throw new Error(
-                "7 Days to Die command service must provide execution state."
+                "7 Days to Die command service must provide execution."
             );
         }
 
