@@ -19,7 +19,8 @@ test("loads migrations in the verified global order", () => {
             "002_create_economy_ledger",
             "003_create_ticket_aggregate",
             "004_create_settings_overrides",
-            "005_create_settings_audit_history"
+            "005_create_settings_audit_history",
+            "006_create_identity_links"
         ]
     );
 
