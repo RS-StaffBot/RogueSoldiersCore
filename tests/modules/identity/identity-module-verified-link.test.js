@@ -141,7 +141,7 @@ test("rejects malformed identity and verification dates", () => {
             verification: VERIFIED_PROOF,
             verifiedAt: new Date("invalid")
         }),
-        /verification date is invalid/u
+        /creation date is invalid/u
     );
 
     assert.deepStrictEqual(identity.store.listLinks(), []);
