@@ -41,10 +41,26 @@ class ProviderLoader {
             );
         }
 
+        const websiteSettings = configuration.get(
+            "providers.website",
+            null
+        );
+
         if (
             !moduleManager ||
             typeof moduleManager.get !== "function"
         ) {
+            if (
+                websiteSettings &&
+                typeof websiteSettings === "object" &&
+                !Array.isArray(websiteSettings) &&
+                websiteSettings.enabled === true
+            ) {
+                throw new Error(
+                    "Website Module Manager boundary is invalid."
+                );
+            }
+
             throw new Error(
                 "Discord Identity Module Manager boundary is invalid."
             );
@@ -108,11 +124,6 @@ class ProviderLoader {
             }
 
         }
-
-        const websiteSettings = configuration.get(
-            "providers.website",
-            null
-        );
 
         if (websiteSettings === null) {
             return providers;
