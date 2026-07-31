@@ -41,10 +41,21 @@ class ProviderLoader {
             );
         }
 
+        if (
+            !moduleManager ||
+            typeof moduleManager.get !== "function"
+        ) {
+            throw new Error(
+                "Discord Identity Module Manager boundary is invalid."
+            );
+        }
+
         const providers = [
             new DiscordProvider({
                 resolveGameServerProvider: name =>
-                    providerManager.get(name)
+                    providerManager.get(name),
+                resolveIdentityModule: name =>
+                    moduleManager.get(name)
             })
         ];
         const gameSettings = configuration.get(
@@ -132,15 +143,6 @@ class ProviderLoader {
         if (typeof createWebsiteServer !== "function") {
             throw new Error(
                 "Website server factory must be a function."
-            );
-        }
-
-        if (
-            !moduleManager ||
-            typeof moduleManager.get !== "function"
-        ) {
-            throw new Error(
-                "Website Module Manager boundary is invalid."
             );
         }
 
