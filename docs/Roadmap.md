@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Status:** Planning approved; Phase 1 is next
+**Status:** Phases 1-3 completed; Phase 4 is next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 ## v1.5.0 - Player Identity Linking Foundation
 
-Status: Planning approved
+Status: In progress; Phases 1-3 completed
 
 ### Goal
 
@@ -39,11 +39,9 @@ Create a secure, platform-neutral identity-linking foundation that can associate
 
 The milestone establishes identity ownership and privacy boundaries. It does not deliver Economy purchases, rewards, statistics, or broad game automation.
 
-### Intended Architecture
+### Approved Architecture
 
-Identity linking introduces reusable cross-platform business policy, so the intended owner is a new Identity Module.
-
-The Identity Module will own:
+The Identity Module owns:
 
 - identity-link validation
 - uniqueness and conflict rules
@@ -52,13 +50,13 @@ The Identity Module will own:
 - immutable public records
 - narrow persistence contracts
 
-Core will own migration coordination and database lifecycle. A Module-specific store will own durable rows and transactions.
+Core owns migration coordination and database lifecycle. Module-specific stores own durable rows and transactions.
 
-The Discord Provider will own Discord commands, Discord identity translation, platform authorization, interaction handling, and private response formatting.
+The Discord Provider owns Discord commands, Discord identity translation, platform authorization, interaction handling, and private response formatting.
 
-The 7 Days to Die Provider will own game-protocol evidence and verified durable player identifiers. It will not own Discord-to-game identity business records.
+The 7 Days to Die Provider owns game-protocol evidence and verified durable player identifiers. It does not own Discord-to-game identity business records.
 
-Shared will receive reusable permissions or value contracts only when actual cross-layer use is proven.
+Shared contains reusable identity permissions proven necessary across Module and Provider boundaries.
 
 ### Privacy and Safety Requirements
 
@@ -71,11 +69,52 @@ Shared will receive reusable permissions or value contracts only when actual cro
 - Ambiguous ownership or verification must fail closed.
 - Providers must not expose raw Telnet, socket, configuration, credential, path, IP, position, health, inventory, or internal-error details to the Module or Discord users.
 
-### Planned Phases
+### Completed Phases
 
-1. Inspect current Module, permission, migration, SQLite store, and Provider-resolution patterns; define and test the identity domain contract.
-2. Implement immutable identity-link records, statuses, errors, validation, and in-memory store behavior.
-3. Add SQLite schema, transactional store behavior, restart recovery, uniqueness enforcement, and migration coverage.
+#### Phase 1 - Identity Domain Contract
+
+Completed through pull request `#59`.
+
+Implemented and tested:
+
+- canonical fields `discordUserId` and `gameUserId`
+- supported durable IDs `Steam_...` and `EOS_...`
+- one active link per Discord member
+- one active owner per game identity
+- pending, verified, and revoked states
+- atomic revoke-and-pend replacement semantics
+- private-by-default identifier visibility
+- reusable identity permissions
+- narrow future persistence contract
+
+#### Phase 2 - Immutable Records and In-Memory Store
+
+Completed through pull request `#60`.
+
+Implemented and tested:
+
+- frozen status and error contracts
+- immutable validated records
+- defensive in-memory storage
+- active identity uniqueness
+- stale-state detection
+- atomic replacement and rollback
+
+#### Phase 3 - SQLite Persistence
+
+Completed through pull request `#61`.
+
+Implemented and tested:
+
+- migration `006_create_identity_links`
+- SQLite identity-link store
+- partial unique indexes for active identities
+- transactional replacement and rollback
+- restart recovery
+- synchronized global migration ordering
+
+### Remaining Planned Phases
+
 4. Define the verified 7 Days to Die identity-proof workflow using evidence-backed fixed operations only.
 5. Add Discord member self-link and private status workflows through the Identity Module.
 6. Add explicit staff lookup, conflict resolution, replacement, and revocation workflows with narrow permissions and ephemeral output.
@@ -85,33 +124,33 @@ Shared will receive reusable permissions or value contracts only when actual cro
 
 Phase order may be narrowed when repository inspection proves a smaller safe sequence. No command name or verification mechanism is final until its contract is reviewed and tested.
 
-### Phase 1
+### Phase 4
 
-Objective: define the smallest complete identity-domain contract without exposing commands or persistence prematurely.
+Objective: define the smallest safe 7 Days to Die identity-proof contract before any Discord linking command becomes operational.
 
-Required decisions:
+Required decisions and tests:
 
-- canonical Discord member identity
-- supported durable game identifier forms
-- one-to-one or one-to-many link cardinality
-- uniqueness and conflict rules
-- pending, verified, revoked, and replacement semantics
-- actor permissions for create, confirm, view, replace, and revoke operations
-- ordinary-member and authorized-staff visibility
-- immutable defensive public results
-- narrow store methods and failure behavior
+- exact fixed Provider operation used to obtain proof evidence
+- exact sanitized evidence fields allowed across the Provider boundary
+- deterministic matching rules for one durable game identity
+- behavior for missing, ambiguous, malformed, stale, or conflicting evidence
+- how the requesting Discord member participates in the proof without trusting display names alone
+- whether proof requires a short-lived challenge, an in-game action, or another evidence-backed operation
+- retention and disposal rules for temporary proof evidence
+- privacy-safe failure types and messages
+- single-active-command and timeout behavior during proof collection
 
 Required repository review:
 
-- active Module construction and lifecycle patterns
-- Economy, Moderation, and Ticket record validation patterns
-- in-memory and SQLite store boundaries
-- migration naming and global ordering
-- Module permission identifiers and Discord translation
-- Discord command loading and resolver injection
-- 7 Days to Die durable-ID validators and privacy-safe formatters
+- current 7 Days to Die command execution and completion contracts
+- player-list and durable-ID parsing behavior
+- unsolicited event separation
+- fixed-command authorization boundaries
+- Provider resolver injection
+- raw-output sanitization and privacy-safe formatting
+- Identity Module store and status contracts from Phases 1-3
 
-Phase 1 must end with focused automated contract tests and synchronized planning documents. It must not create a partially operational linking command.
+Phase 4 must end with focused automated contract tests. It must not add a partially verified self-link command, expose raw Telnet output, or trust display-name matching.
 
 ### Outside v1.5.0
 
