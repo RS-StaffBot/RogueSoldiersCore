@@ -6,9 +6,69 @@ v1.4.0
 
 ## Current Milestone
 
-No new milestone has been selected.
+v1.5.0 - Player Identity Linking Foundation
 
-v1.4.0 - Hosted Player Administration is completed and tagged.
+Status: Planning approved; Phase 1 is next.
+
+## Milestone Goal
+
+Create a secure, platform-neutral foundation that can associate one Discord member with durable hosted-game identities without exposing identifiers publicly or coupling identity ownership to Discord or 7 Days to Die.
+
+The milestone establishes the trusted identity boundary required for future player-specific Economy rewards, game purchases, account history, staff administration, and other cross-platform workflows.
+
+## Architecture Boundary
+
+A new platform-neutral Identity Module is the intended owner of identity-link business rules, validation, authorization, conflict handling, lifecycle, and durable public records.
+
+Core remains responsible for database lifecycle and migrations. A Module-specific store will own identity persistence without exposing SQL or the Core database connection to Providers.
+
+The Discord Provider will own Discord command definitions, Discord authorization, interaction handling, private responses, and Discord identity translation.
+
+The 7 Days to Die Provider will continue to own game-server protocol behavior and evidence used to verify game identities. It will not own cross-platform identity records or Discord membership policy.
+
+Shared will receive reusable identity permissions or value contracts only when implementation proves actual cross-layer reuse.
+
+## Phase 1 Objective
+
+Inspect the current Module, SQLite store, migration, permission, and Provider-resolution patterns and define the smallest complete identity domain contract before implementing persistence or Discord commands.
+
+Phase 1 must decide and test:
+
+- the canonical Discord member identity input
+- supported durable game identifier forms
+- whether one Discord member may hold one or multiple game identities
+- uniqueness and conflict rules across members
+- verified, pending, revoked, and replaced state requirements
+- who may create, confirm, view, replace, or revoke a link
+- which identifier details ordinary members and authorized staff may see
+- immutable public snapshots and defensive validation requirements
+- the narrow store contract required for later SQLite persistence
+
+Phase 1 is a design-and-contract phase only. It must not expose an incomplete linking command or persist partially defined records.
+
+## Required Privacy and Safety Boundaries
+
+- Platform identifiers are private operational data by default.
+- Ordinary public Discord responses must not reveal Steam IDs, EOS IDs, raw Telnet output, IP addresses, positions, health, inventory, credentials, paths, socket details, or internal errors.
+- Authorized staff access must be explicit, permission-gated, purpose-limited, and private or ephemeral.
+- A Discord member must not be able to claim another member's already-linked durable game identity.
+- Display names alone are not sufficient proof of durable identity.
+- Automatic fuzzy matching is prohibited.
+- Raw game-server output must not become the Identity Module's public record format.
+- Identity linking must fail closed when ownership or verification is ambiguous.
+
+## Outside v1.5.0
+
+- Economy purchases or automatic reward delivery
+- Continuous Discord and in-game chat bridging
+- General player statistics or telemetry
+- Multiple game servers
+- Arbitrary console execution or free-form Telnet
+- Public identifier lookup
+- Automatic account merging
+- Fuzzy player matching
+- Website identity administration unless separately approved during the milestone
+- Generic identity support for unimplemented platforms
 
 ## Latest Completed Milestone
 
@@ -24,88 +84,11 @@ Completed command family:
 - `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
 - `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
 
-## Architecture Boundary
-
 The Discord Provider owns slash-command definitions, Discord authorization, interaction handling, input validation, response deferral, safe result parsing, and user-facing formatting.
 
 The 7 Days to Die Provider owns Telnet communication, command execution, deterministic completion rules, event separation, timeout behavior, connection failures, and single-active-command enforcement.
 
-No arbitrary console entry is exposed. Discord commands receive only the frozen `executeCommand` service boundary. Direct game-platform administration does not introduce a Module because no reusable cross-platform business policy has been proven.
-
-## Verified v1.4.0 Behavior
-
-### Hosted Player Kick
-
-Live evidence approved exact positive online entity IDs and the fixed command:
-
-```text
-kick <online entity id> "<validated reason>"
-```
-
-The Provider completes on verified kick success or invalid-target output. Discord validates before Provider resolution and returns privacy-safe ephemeral results.
-
-### Hosted Player Ban
-
-Live evidence approved durable combined identifiers using `Steam_<id>` or `EOS_<id>` and the fixed command:
-
-```text
-ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
-```
-
-A submitted Steam identifier may normalize to EOS in server output. Ordinary Discord responses never expose the submitted or normalized identifier.
-
-### Hosted Player Unban
-
-The workflow validates an exact display name, reads `ban list`, requires exactly one matching active entry, removes the exact stored UserID, reads `ban list` again, and reports success only when that stored UserID is absent.
-
-The success-looking `removed from ban list` line is command completion only and is not sufficient proof of unban.
-
-### Individual Whitelist Administration
-
-Live evidence approved:
-
-```text
-whitelist add <durable user id> <display name>
-whitelist remove <durable user id>
-```
-
-Verified behavior includes:
-
-- first add activates whitelist-only mode
-- duplicate add returns success without creating a duplicate row
-- final removal disables whitelist-only mode before the removal-success line
-- missing removal returns a deterministic not-whitelisted line
-- entries persist across a normal server restart
-- reload, path, login, authentication, performance, entity, inventory, and stack-trace lines are unrelated noise
-
-Discord registration, dispatch, validation, timeout handling, malformed-result handling, privacy-safe formatting, and regression coverage are implemented.
-
-## Live Verification
-
-Live Discord-to-game verification passed against 7 Days to Die V3.1.0 b13.
-
-Verified startup state:
-
-- Discord connected
-- 13 Discord commands loaded and registered
-- 7 Days to Die Provider `RUNNING`
-- framework startup successful
-
-Verified whitelist outcomes:
-
-- add succeeded through private Telnet
-- duplicate add left exactly one stored row
-- remove succeeded and disabled whitelist-only mode when removing the final entry
-- repeated remove returned a safe private not-whitelisted response
-- final whitelist state was empty
-
-## Safety and Privacy Boundaries
-
-The completed milestone does not include arbitrary console execution, free-form Telnet input, cross-platform identity linking, fuzzy player matching, continuous chat bridging, Economy-backed game effects, command queues, multiple servers, process supervision, or public Telnet exposure.
-
-Ordinary Discord responses must not expose raw Telnet output, credentials, IP addresses, positions, health values, platform identifiers, socket details, configuration paths, or internal errors.
-
-An explicitly authorized staff lookup or administration workflow may display requested Steam or EOS identifiers when operationally necessary. That visibility must remain permission-gated, purpose-limited, and private or ephemeral. It must not expose raw login or server-console output.
+Live verification passed against 7 Days to Die V3.1.0 b13 with Discord connected, 13 commands registered, the game Provider running, whitelist add and duplicate add succeeding, final removal disabling whitelist-only mode, missing removal returning safely, and the final whitelist state empty.
 
 ## Current Production Boundaries
 
@@ -113,6 +96,7 @@ An explicitly authorized staff lookup or administration workflow may display req
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
 - Kick, ban, verified unban, whitelist add, and whitelist remove are available through Discord.
+- Cross-platform identity linking is not yet implemented and is the active v1.5.0 milestone.
 - Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
 ## v1.4.0 Release Record
@@ -130,7 +114,7 @@ An explicitly authorized staff lookup or administration workflow may display req
 
 ## Next Step
 
-Select and approve the next milestone before implementation begins. Candidate directions remain planning topics until a milestone is explicitly chosen.
+Complete the Phase 1 repository inspection and identity-domain contract. Only after that contract is reviewed and merged should persistence or Discord linking commands begin.
 
 ## Release Notes
 

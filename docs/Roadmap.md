@@ -6,9 +6,9 @@
 
 **Latest Completed Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** Completed and tagged
+**Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Next Milestone:** Not yet selected
+**Status:** Planning approved; Phase 1 is next
 
 ## Completed Milestones
 
@@ -29,6 +29,102 @@
 - v1.3.0 - Discord Game Server Command Interface
 - v1.4.0 - Hosted Player Administration
 
+## v1.5.0 - Player Identity Linking Foundation
+
+Status: Planning approved
+
+### Goal
+
+Create a secure, platform-neutral identity-linking foundation that can associate Discord members with durable hosted-game identities for future player-specific workflows.
+
+The milestone establishes identity ownership and privacy boundaries. It does not deliver Economy purchases, rewards, statistics, or broad game automation.
+
+### Intended Architecture
+
+Identity linking introduces reusable cross-platform business policy, so the intended owner is a new Identity Module.
+
+The Identity Module will own:
+
+- identity-link validation
+- uniqueness and conflict rules
+- authorization decisions
+- verification and revocation state
+- immutable public records
+- narrow persistence contracts
+
+Core will own migration coordination and database lifecycle. A Module-specific store will own durable rows and transactions.
+
+The Discord Provider will own Discord commands, Discord identity translation, platform authorization, interaction handling, and private response formatting.
+
+The 7 Days to Die Provider will own game-protocol evidence and verified durable player identifiers. It will not own Discord-to-game identity business records.
+
+Shared will receive reusable permissions or value contracts only when actual cross-layer use is proven.
+
+### Privacy and Safety Requirements
+
+- Steam and EOS identifiers remain private operational data by default.
+- Ordinary public responses must not expose platform identifiers or raw server output.
+- Explicit staff visibility must be permission-gated, purpose-limited, and private or ephemeral.
+- One durable game identity must not be linked to conflicting Discord members.
+- Display names are not sufficient proof of identity.
+- Fuzzy matching and automatic account merging are prohibited.
+- Ambiguous ownership or verification must fail closed.
+- Providers must not expose raw Telnet, socket, configuration, credential, path, IP, position, health, inventory, or internal-error details to the Module or Discord users.
+
+### Planned Phases
+
+1. Inspect current Module, permission, migration, SQLite store, and Provider-resolution patterns; define and test the identity domain contract.
+2. Implement immutable identity-link records, statuses, errors, validation, and in-memory store behavior.
+3. Add SQLite schema, transactional store behavior, restart recovery, uniqueness enforcement, and migration coverage.
+4. Define the verified 7 Days to Die identity-proof workflow using evidence-backed fixed operations only.
+5. Add Discord member self-link and private status workflows through the Identity Module.
+6. Add explicit staff lookup, conflict resolution, replacement, and revocation workflows with narrow permissions and ephemeral output.
+7. Complete registration, dispatch, privacy, malformed-input, authorization, persistence, and regression coverage.
+8. Complete live Discord-to-game verification and apply only evidence-backed corrections.
+9. Synchronize documentation and versions, add release notes, run final validation, and close v1.5.0.
+
+Phase order may be narrowed when repository inspection proves a smaller safe sequence. No command name or verification mechanism is final until its contract is reviewed and tested.
+
+### Phase 1
+
+Objective: define the smallest complete identity-domain contract without exposing commands or persistence prematurely.
+
+Required decisions:
+
+- canonical Discord member identity
+- supported durable game identifier forms
+- one-to-one or one-to-many link cardinality
+- uniqueness and conflict rules
+- pending, verified, revoked, and replacement semantics
+- actor permissions for create, confirm, view, replace, and revoke operations
+- ordinary-member and authorized-staff visibility
+- immutable defensive public results
+- narrow store methods and failure behavior
+
+Required repository review:
+
+- active Module construction and lifecycle patterns
+- Economy, Moderation, and Ticket record validation patterns
+- in-memory and SQLite store boundaries
+- migration naming and global ordering
+- Module permission identifiers and Discord translation
+- Discord command loading and resolver injection
+- 7 Days to Die durable-ID validators and privacy-safe formatters
+
+Phase 1 must end with focused automated contract tests and synchronized planning documents. It must not create a partially operational linking command.
+
+### Outside v1.5.0
+
+- Economy purchases or automatic reward delivery
+- Continuous Discord and in-game chat bridging
+- General player statistics or telemetry
+- Multiple game servers
+- Arbitrary console execution or free-form Telnet
+- Public identifier lookup
+- Automatic account merging or fuzzy matching
+- Generic identity support for unimplemented platforms
+- Website identity administration unless explicitly approved during the milestone
+
 ## v1.4.0 - Hosted Player Administration
 
 Status: Completed and tagged
@@ -45,91 +141,13 @@ Provide a narrow Discord interface for administering individual players on the h
 - `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
 - `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
 
-### Architecture Boundary
-
-The Discord Provider owns command definitions, authorization, validation, interactions, reply deferral, safe result parsing, and user-facing wording.
-
-The 7 Days to Die Provider owns Telnet communication, command execution, completion detection, event separation, timeout and connection failures, and single-active-command enforcement.
-
-No arbitrary console entry is exposed. Discord commands resolve only the frozen `executeCommand` boundary. Direct platform administration does not introduce a Module unless reusable cross-platform policy is later proven.
-
 ### Completed Phases
 
-1. Captured live kick evidence, online identifiers, success and invalid-target output, restart behavior, and cleanup noise.
-2. Approved online entity ID resolution and `kick <entity id> "<reason>"`.
-3. Added deterministic Provider completion for kick success and invalid-target rejection.
-4. Added reusable Discord-side entity-ID and reason validation plus privacy-safe kick result formatting.
-5. Added `/game kick` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
-6. Captured exact ban and unban evidence, added deterministic Provider completion for `ban add`, and added `/game ban` through the approved fixed contract.
-7. Added deterministic `ban remove` completion and `/game unban` through exact active-ban lookup, exact stored-UserID removal, and required post-removal `ban list` verification.
-8. Added deterministic Provider completion for individual whitelist add, successful remove, and missing remove terminal lines.
-9. Added Discord-side durable-ID and display-name validation plus privacy-safe whitelist formatting.
-10. Registered and dispatched `/game whitelist add` and `/game whitelist remove` with complete command-definition and interaction regression coverage.
-11. Completed live Discord-to-game verification for whitelist add, duplicate add, remove, missing remove, and final clean state.
-12. Synchronized versions and source-of-truth documentation, added v1.4.0 release notes, passed final validation, merged PR #56, and created the annotated `v1.4.0` tag.
-
-### Verified Hosted Player Contracts
-
-Kick:
-
-```text
-kick <online entity id> "<validated reason>"
-```
-
-Ban:
-
-```text
-ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
-```
-
-Verified unban:
-
-```text
-ban list
-ban remove <exact stored UserID>
-ban list
-```
-
-Whitelist add and remove:
-
-```text
-whitelist add <Steam_...|EOS_...> <display name>
-whitelist remove <Steam_...|EOS_...>
-```
-
-### Live Verification Record
-
-Live verification against 7 Days to Die V3.1.0 b13 confirmed:
-
-- Discord connected and registered 13 commands
-- the 7 Days to Die Provider reported `RUNNING`
-- whitelist add executed through private Telnet
-- duplicate add left one whitelist row
-- final removal disabled whitelist-only mode
-- repeated removal produced a safe private not-whitelisted response
-- ordinary Discord responses did not expose identifiers, IP addresses, paths, or raw console output
-
-### Safety and Privacy Requirements
-
-- Administrative actions remain guild-only and require `ManageGuild`.
-- Targets are exact and must not be guessed.
-- Fixed operations reject malformed or command-shaping input before Provider execution.
-- Ordinary Discord responses do not receive raw Telnet output, credentials, IP addresses, positions, health values, socket details, platform identifiers, configuration paths, or internal errors.
-- An explicit authorized staff workflow may privately display requested Steam or EOS identifiers when operationally necessary.
-- Raw Telnet remains on loopback, LAN, VPN, or another protected path.
-
-### Outside v1.4.0
-
-- Arbitrary console execution
-- Free-form Telnet input
-- Cross-platform identity linking
-- Automatic fuzzy matching
-- Continuous chat bridging
-- Economy-backed game effects
-- Command queues or simultaneous commands
-- Multiple game servers
-- Automatic process supervision
-- Public Telnet exposure
+1. Captured live kick evidence and approved the fixed online kick contract.
+2. Added deterministic kick completion, validation, privacy-safe formatting, registration, and dispatch.
+3. Captured ban and unban evidence and added fixed ban plus verified unban workflows.
+4. Captured individual whitelist evidence and added deterministic completion, validation, formatting, registration, and dispatch.
+5. Completed live Discord-to-game whitelist verification and final release synchronization.
 
 ### Release Record
 
@@ -148,20 +166,8 @@ Status: Completed and tagged
 - Release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
 - Annotated tag: `v1.3.0`
 
-## Candidate Future Directions
+## Future Direction
 
-No next milestone has been approved yet.
+After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, and multiple-server support.
 
-Candidate planning directions include:
-
-- continuous Discord and in-game chat integration
-- Economy-backed game rewards or purchases
-- cross-platform identity mapping
-- administration interfaces and Discord role translation
-- expanded Ticket workflows
-- persistent Website sessions
-- game-server command queuing or multiple-server support
-
-These remain candidates rather than implementation commitments. The next milestone must be selected and scoped before implementation begins.
-
-Every future milestone must preserve the established Core, Provider, Module, and Shared ownership boundaries.
+Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, and fixed-command ownership boundaries.
