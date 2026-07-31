@@ -109,6 +109,34 @@ class IdentityModule extends BaseModule {
 
     }
 
+    validateVerification(verification) {
+
+        if (
+            !verification ||
+            typeof verification !== "object" ||
+            Array.isArray(verification)
+        ) {
+            throw new Error(
+                "Verified identity proof is required."
+            );
+        }
+
+        const keys = Object.keys(verification).sort();
+        const requiredKeys = ["outcome", "verified"];
+
+        if (
+            keys.length !== requiredKeys.length ||
+            keys.some((key, index) => key !== requiredKeys[index]) ||
+            verification.verified !== true ||
+            verification.outcome !== "VERIFIED"
+        ) {
+            throw new Error(
+                "Verified identity proof is required."
+            );
+        }
+
+    }
+
     createRecord(link) {
         return new IdentityLinkRecord({
             id: link.id,
@@ -153,6 +181,37 @@ class IdentityModule extends BaseModule {
             verifiedAt: link.verifiedAt,
             revokedAt: link.revokedAt
         });
+
+    }
+
+    recordVerifiedSelfLink({
+        discordUserId,
+        gameUserId,
+        verification,
+        verifiedAt = new Date()
+    } = {}) {
+
+        this.validateDiscordUserId(discordUserId);
+        this.validateVerification(verification);
+
+        const link = new IdentityLinkRecord({
+            id: "identity-link-pending",
+            discordUserId,
+            gameUserId,
+            status: IdentityLinkStatus.VERIFIED,
+            createdAt: verifiedAt,
+            verifiedAt
+        });
+        const storedLink = this.store.createLink({
+            discordUserId: link.discordUserId,
+            gameUserId: link.gameUserId,
+            status: link.status,
+            createdAt: link.createdAt,
+            verifiedAt: link.verifiedAt,
+            revokedAt: link.revokedAt
+        });
+
+        return this.createRecord(storedLink);
 
     }
 
