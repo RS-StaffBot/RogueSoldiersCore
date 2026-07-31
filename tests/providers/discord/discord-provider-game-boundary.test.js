@@ -10,6 +10,10 @@ const DiscordGameServerProviderResolver = require(
 const DiscordIdentityModuleResolver = require(
     "../../../src/providers/discord/services/DiscordIdentityModuleResolver"
 );
+const DiscordIdentityProofProviderResolver = require(
+    "../../../src/providers/discord/services/" +
+    "DiscordIdentityProofProviderResolver"
+);
 const DiscordProvider = require(
     "../../../src/providers/discord/DiscordProvider"
 );
@@ -36,6 +40,7 @@ test("passes focused game and identity boundaries to the command loader", () => 
         info() {}
     };
     const resolvedProvider = {
+        collectIdentityProof() {},
         executeCommand() {},
         name: "7 Days to Die",
         state: "RUNNING"
@@ -78,6 +83,11 @@ test("passes focused game and identity boundaries to the command loader", () => 
         true
     );
     assert.equal(
+        receivedOptions.identityProofProviderResolver instanceof
+            DiscordIdentityProofProviderResolver,
+        true
+    );
+    assert.equal(
         receivedOptions.gameServerProviderResolver.resolve().available,
         true
     );
@@ -85,10 +95,15 @@ test("passes focused game and identity boundaries to the command loader", () => 
         receivedOptions.identityModuleResolver.resolve().available,
         true
     );
+    assert.equal(
+        receivedOptions.identityProofProviderResolver.resolve().available,
+        true
+    );
     assert.deepEqual(Object.keys(receivedOptions), [
         "gameCommandAuthorizer",
         "gameServerProviderResolver",
-        "identityModuleResolver"
+        "identityModuleResolver",
+        "identityProofProviderResolver"
     ]);
 
 });
@@ -116,6 +131,14 @@ test("accepts injected game and identity command boundaries", () => {
             };
         }
     };
+    const identityProofProviderResolver = {
+        resolve() {
+            return {
+                available: false,
+                status: "PROVIDER_UNAVAILABLE"
+            };
+        }
+    };
     let receivedOptions;
     const provider = new DiscordProvider({
         commandLoader: {
@@ -133,6 +156,7 @@ test("accepts injected game and identity command boundaries", () => {
         gameCommandAuthorizer,
         gameServerProviderResolver,
         identityModuleResolver,
+        identityProofProviderResolver,
         logger: {
             info() {}
         }
@@ -151,6 +175,10 @@ test("accepts injected game and identity command boundaries", () => {
     assert.equal(
         receivedOptions.identityModuleResolver,
         identityModuleResolver
+    );
+    assert.equal(
+        receivedOptions.identityProofProviderResolver,
+        identityProofProviderResolver
     );
 
 });
