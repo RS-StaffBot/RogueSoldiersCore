@@ -18,8 +18,8 @@ class InMemoryIdentityStore {
         this.validateSequence(this.nextSequence);
 
         const storedLink = this.copyLink({
-            id: `identity-link-${this.nextSequence}`,
-            ...link
+            ...link,
+            id: `identity-link-${this.nextSequence}`
         });
 
         this.links.set(storedLink.id, storedLink);
