@@ -10,6 +10,9 @@ const EconomyMigrations = require(
 const TicketMigrations = require(
     "../../modules/tickets/persistence/TicketMigrations"
 );
+const IdentityMigrations = require(
+    "../../modules/identity/persistence/IdentityMigrations"
+);
 
 class DatabaseMigrationLoader {
 
@@ -19,7 +22,8 @@ class DatabaseMigrationLoader {
             ...ModerationMigrations,
             ...EconomyMigrations,
             ...TicketMigrations,
-            ...SettingsMigrations
+            ...SettingsMigrations,
+            ...IdentityMigrations
         ];
 
     }
