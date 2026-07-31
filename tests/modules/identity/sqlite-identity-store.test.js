@@ -54,8 +54,8 @@ test("loads identity migration after existing global migrations", () => {
     assert.deepEqual(
         migrations.map(migration => migration.id),
         [
-            "001_create_moderation_audit",
-            "002_create_economy_accounts",
+            "001_create_moderation_audit_records",
+            "002_create_economy_ledger",
             "003_create_ticket_aggregate",
             "004_create_settings_overrides",
             "005_create_settings_audit_history",
