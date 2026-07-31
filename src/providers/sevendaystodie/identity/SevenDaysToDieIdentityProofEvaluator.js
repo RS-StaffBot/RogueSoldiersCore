@@ -86,8 +86,8 @@ class SevenDaysToDieIdentityProofEvaluator {
     isSupportedGameUserId(gameUserId) {
         return (
             typeof gameUserId === "string" &&
-            IdentityLinkContract.gameIdentity
-                .supportedPrefixes.some(prefix =>
+            IdentityLinkContract.supportedGameIdentityPrefixes
+                .some(prefix =>
                     gameUserId.startsWith(prefix) &&
                     gameUserId.length > prefix.length &&
                     /^[A-Za-z0-9_]+$/u.test(gameUserId)
