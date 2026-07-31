@@ -7,11 +7,14 @@ const DiscordGameCommandAuthorizer = require(
 const DiscordGameServerProviderResolver = require(
     "../../../src/providers/discord/services/DiscordGameServerProviderResolver"
 );
+const DiscordIdentityModuleResolver = require(
+    "../../../src/providers/discord/services/DiscordIdentityModuleResolver"
+);
 const DiscordProvider = require(
     "../../../src/providers/discord/DiscordProvider"
 );
 
-test("passes focused game boundaries to the command loader", () => {
+test("passes focused game and identity boundaries to the command loader", () => {
 
     let receivedOptions;
     const commandLoader = {
@@ -37,6 +40,12 @@ test("passes focused game boundaries to the command loader", () => {
         name: "7 Days to Die",
         state: "RUNNING"
     };
+    const resolvedIdentityModule = {
+        getOwnStatus() {},
+        name: "Identity",
+        recordVerifiedSelfLink() {},
+        state: "RUNNING"
+    };
     const provider = new DiscordProvider({
         commandLoader,
         commandRegistry,
@@ -44,6 +53,10 @@ test("passes focused game boundaries to the command loader", () => {
         resolveGameServerProvider(name) {
             assert.equal(name, "7 Days to Die");
             return resolvedProvider;
+        },
+        resolveIdentityModule(name) {
+            assert.equal(name, "Identity");
+            return resolvedIdentityModule;
         }
     });
 
@@ -60,17 +73,27 @@ test("passes focused game boundaries to the command loader", () => {
         true
     );
     assert.equal(
+        receivedOptions.identityModuleResolver instanceof
+            DiscordIdentityModuleResolver,
+        true
+    );
+    assert.equal(
         receivedOptions.gameServerProviderResolver.resolve().available,
+        true
+    );
+    assert.equal(
+        receivedOptions.identityModuleResolver.resolve().available,
         true
     );
     assert.deepEqual(Object.keys(receivedOptions), [
         "gameCommandAuthorizer",
-        "gameServerProviderResolver"
+        "gameServerProviderResolver",
+        "identityModuleResolver"
     ]);
 
 });
 
-test("accepts injected game command boundaries", () => {
+test("accepts injected game and identity command boundaries", () => {
 
     const gameCommandAuthorizer = {
         isAuthorized() {
@@ -82,6 +105,14 @@ test("accepts injected game command boundaries", () => {
             return {
                 available: false,
                 status: "PROVIDER_UNAVAILABLE"
+            };
+        }
+    };
+    const identityModuleResolver = {
+        resolve() {
+            return {
+                available: false,
+                status: "MODULE_UNAVAILABLE"
             };
         }
     };
@@ -101,6 +132,7 @@ test("accepts injected game command boundaries", () => {
         },
         gameCommandAuthorizer,
         gameServerProviderResolver,
+        identityModuleResolver,
         logger: {
             info() {}
         }
@@ -115,6 +147,10 @@ test("accepts injected game command boundaries", () => {
     assert.equal(
         receivedOptions.gameServerProviderResolver,
         gameServerProviderResolver
+    );
+    assert.equal(
+        receivedOptions.identityModuleResolver,
+        identityModuleResolver
     );
 
 });

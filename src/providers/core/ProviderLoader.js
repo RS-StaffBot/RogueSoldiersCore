@@ -41,10 +41,37 @@ class ProviderLoader {
             );
         }
 
+        const websiteSettings = configuration.get(
+            "providers.website",
+            null
+        );
+
+        if (
+            !moduleManager ||
+            typeof moduleManager.get !== "function"
+        ) {
+            if (
+                websiteSettings &&
+                typeof websiteSettings === "object" &&
+                !Array.isArray(websiteSettings) &&
+                websiteSettings.enabled === true
+            ) {
+                throw new Error(
+                    "Website Module Manager boundary is invalid."
+                );
+            }
+
+            throw new Error(
+                "Discord Identity Module Manager boundary is invalid."
+            );
+        }
+
         const providers = [
             new DiscordProvider({
                 resolveGameServerProvider: name =>
-                    providerManager.get(name)
+                    providerManager.get(name),
+                resolveIdentityModule: name =>
+                    moduleManager.get(name)
             })
         ];
         const gameSettings = configuration.get(
@@ -98,11 +125,6 @@ class ProviderLoader {
 
         }
 
-        const websiteSettings = configuration.get(
-            "providers.website",
-            null
-        );
-
         if (websiteSettings === null) {
             return providers;
         }
@@ -132,15 +154,6 @@ class ProviderLoader {
         if (typeof createWebsiteServer !== "function") {
             throw new Error(
                 "Website server factory must be a function."
-            );
-        }
-
-        if (
-            !moduleManager ||
-            typeof moduleManager.get !== "function"
-        ) {
-            throw new Error(
-                "Website Module Manager boundary is invalid."
             );
         }
 

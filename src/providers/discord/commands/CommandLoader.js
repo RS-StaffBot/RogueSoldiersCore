@@ -3,6 +3,7 @@ const BalanceCommand = require("./BalanceCommand");
 const DailyCommand = require("./DailyCommand");
 const GameCommand = require("./GameCommand");
 const HelpCommand = require("./HelpCommand");
+const IdentityCommand = require("./IdentityCommand");
 const KickCommand = require("./KickCommand");
 const LeaderboardCommand = require("./LeaderboardCommand");
 const PingCommand = require("./PingCommand");
@@ -16,10 +17,11 @@ class CommandLoader {
 
     load({
         gameCommandAuthorizer,
-        gameServerProviderResolver
+        gameServerProviderResolver,
+        identityModuleResolver
     } = {}) {
 
-        return [
+        const commands = [
             new BanCommand(),
             new BalanceCommand(),
             new DailyCommand(),
@@ -27,7 +29,16 @@ class CommandLoader {
                 gameCommandAuthorizer,
                 gameServerProviderResolver
             }),
-            new HelpCommand(),
+            new HelpCommand()
+        ];
+
+        if (identityModuleResolver !== undefined) {
+            commands.push(
+                new IdentityCommand({ identityModuleResolver })
+            );
+        }
+
+        commands.push(
             new KickCommand(),
             new LeaderboardCommand(),
             new PingCommand(),
@@ -36,7 +47,9 @@ class CommandLoader {
             new TimeoutCommand(),
             new UntimeoutCommand(),
             new WarnCommand()
-        ];
+        );
+
+        return commands;
 
     }
 
