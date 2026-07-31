@@ -3,6 +3,7 @@ const BalanceCommand = require("./BalanceCommand");
 const DailyCommand = require("./DailyCommand");
 const GameCommand = require("./GameCommand");
 const HelpCommand = require("./HelpCommand");
+const IdentityCommand = require("./IdentityCommand");
 const KickCommand = require("./KickCommand");
 const LeaderboardCommand = require("./LeaderboardCommand");
 const PingCommand = require("./PingCommand");
@@ -16,7 +17,8 @@ class CommandLoader {
 
     load({
         gameCommandAuthorizer,
-        gameServerProviderResolver
+        gameServerProviderResolver,
+        identityModuleResolver
     } = {}) {
 
         return [
@@ -28,6 +30,7 @@ class CommandLoader {
                 gameServerProviderResolver
             }),
             new HelpCommand(),
+            new IdentityCommand({ identityModuleResolver }),
             new KickCommand(),
             new LeaderboardCommand(),
             new PingCommand(),
