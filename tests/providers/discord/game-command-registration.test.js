@@ -103,6 +103,24 @@ function createResolver(executions) {
                             };
                         }
 
+                        if (command.startsWith("whitelist add ")) {
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    `${STORED_ID} added to whitelist.`
+                                ]
+                            };
+                        }
+
+                        if (command.startsWith("whitelist remove ")) {
+                            return {
+                                status: "SUCCESS",
+                                responseLines: [
+                                    `${STORED_ID} removed from the whitelist.`
+                                ]
+                            };
+                        }
+
                         return {
                             status: "SUCCESS",
                             responseLines: []
@@ -127,7 +145,7 @@ function registerHandler() {
     return interactionListener;
 }
 
-function createInteraction(subcommand, values = {}) {
+function createInteraction(subcommand, values = {}, subcommandGroup = null) {
     const replies = [];
     const deferred = [];
     const edits = [];
@@ -140,6 +158,10 @@ function createInteraction(subcommand, values = {}) {
             getSubcommand(required) {
                 assert.equal(required, true);
                 return subcommand;
+            },
+            getSubcommandGroup(required) {
+                assert.equal(required, false);
+                return subcommandGroup;
             },
             getInteger(name, required) {
                 assert.equal(required, true);
@@ -192,7 +214,16 @@ test("registers the complete guild-only game command definition", () => {
     );
     assert.deepEqual(
         definition.options.map(option => option.name),
-        ["status", "time", "players", "say", "kick", "ban", "unban"]
+        [
+            "status",
+            "time",
+            "players",
+            "say",
+            "kick",
+            "ban",
+            "unban",
+            "whitelist"
+        ]
     );
 
     const say = definition.options.find(option => option.name === "say");
@@ -228,6 +259,20 @@ test("registers the complete guild-only game command definition", () => {
         unban.options.map(option => option.name),
         ["display-name"]
     );
+
+    const whitelist = definition.options.find(
+        option => option.name === "whitelist"
+    );
+    assert.deepEqual(
+        whitelist.options.map(option => option.name),
+        ["add", "remove"]
+    );
+    for (const action of whitelist.options) {
+        assert.deepEqual(
+            action.options.map(option => option.name),
+            ["user-id", "display-name"]
+        );
+    }
 });
 
 test("dispatches every game subcommand through the registered command", async () => {
@@ -299,6 +344,24 @@ test("dispatches every game subcommand through the registered command", async ()
         content: "Unbanned TestPlayer from the game server."
     }]);
 
+    const whitelistAdd = createInteraction("add", {
+        "display-name": "TestPlayer",
+        "user-id": STORED_ID
+    }, "whitelist");
+    await dispatchInteraction(whitelistAdd);
+    assert.deepEqual(whitelistAdd.edits, [{
+        content: "Added TestPlayer to the game server whitelist."
+    }]);
+
+    const whitelistRemove = createInteraction("remove", {
+        "display-name": "TestPlayer",
+        "user-id": STORED_ID
+    }, "whitelist");
+    await dispatchInteraction(whitelistRemove);
+    assert.deepEqual(whitelistRemove.edits, [{
+        content: "Removed TestPlayer from the game server whitelist."
+    }]);
+
     assert.deepEqual(executions, [
         "gettime",
         "listplayers",
@@ -308,6 +371,8 @@ test("dispatches every game subcommand through the registered command", async ()
         "\"Rule violation\" \"TestPlayer\"",
         "ban list",
         `ban remove ${STORED_ID}`,
-        "ban list"
+        "ban list",
+        `whitelist add ${STORED_ID} TestPlayer`,
+        `whitelist remove ${STORED_ID}`
     ]);
 });

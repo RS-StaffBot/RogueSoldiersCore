@@ -6,7 +6,7 @@
 
 **Current Milestone:** v1.4.0 - Hosted Player Administration
 
-**Status:** In progress; Phase 8 is in progress
+**Status:** In progress; Phase 10 is in progress
 
 ## Completed Milestones
 
@@ -59,6 +59,8 @@ No arbitrary console entry is exposed. Discord commands resolve only the frozen 
 5. Added `/game kick entity-id:<id> reason:<text>` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
 6. Captured exact ban and unban evidence, added deterministic Provider completion for `ban add`, and added `/game ban` through the approved fixed contract.
 7. Added deterministic `ban remove` completion and `/game unban display-name:<exact text>` through exact active-ban lookup, exact stored-UserID removal, and required post-removal `ban list` verification.
+8. Added deterministic Provider completion for evidence-backed individual whitelist add, successful remove, and missing remove terminal lines.
+9. Added Discord-side durable-ID and display-name validation coverage plus privacy-safe whitelist add, remove, missing-entry, malformed-result, and raw-output formatting.
 
 Phase 7 verifies:
 
@@ -70,10 +72,6 @@ Phase 7 verifies:
 - malformed, missing, ambiguous, failed-removal, and failed-verification outcomes fail safely
 - ordinary Discord responses do not expose stored platform identifiers or raw Telnet output
 - registration and dispatch remain inside the existing `/game` command
-
-### Current Phase
-
-8. Add deterministic Provider completion for evidence-backed individual whitelist add and remove operations.
 
 Phase 8 evidence verifies:
 
@@ -89,13 +87,26 @@ Phase 8 evidence verifies:
 - entries persist across a normal server restart
 - reload, local path, login, authentication, performance, entity, inventory, disconnect, and stack-trace output are unrelated noise
 
-This phase does not expose Discord whitelist subcommands.
+### Current Phase
+
+10. Register and dispatch `/game whitelist add` and `/game whitelist remove` through the existing authorization, Provider resolution, remote execution, validation, and formatting boundaries.
+
+Phase 10 requires:
+
+- one nested `whitelist` subcommand group under the existing guild-only `/game` command
+- required durable `user-id` and bounded `display-name` options for add and remove
+- all validation before Provider resolution
+- fixed execution of only `whitelist add <durable user id> <display name>` and `whitelist remove <durable user id>`
+- ephemeral deferred responses
+- safe timeout, disconnect, malformed-result, not-whitelisted, and success handling
+- no platform identifiers, IP addresses, configuration paths, or raw server output in ordinary Discord results
+- complete command-definition and interaction-dispatch regression coverage
+
+The remove display name is used only to produce a useful private staff result. It is not included in the server remove command.
 
 ### Remaining Phases
 
-9. Add Discord-side whitelist validation, privacy-safe formatting, and `/game whitelist add` and `/game whitelist remove` through the existing authorization and Provider boundaries.
-10. Add final serialized registration, dispatch, authorization, malformed-input, privacy, and regression coverage.
-11. Complete live Discord-to-game verification.
+11. Complete live Discord-to-game verification for whitelist add and remove and apply only evidence-backed corrections.
 12. Synchronize documentation and versions, add release notes, run final regression, and close v1.4.0.
 
 ### Verified Kick Contract
@@ -173,6 +184,18 @@ Success requires the second `ban list` to prove that the exact stored UserID is 
 
 ### Verified Individual Whitelist Contract
 
+Discord add:
+
+```text
+/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>
+```
+
+Discord remove:
+
+```text
+/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>
+```
+
 Provider add:
 
 ```text
@@ -203,7 +226,7 @@ Missing remove completion:
 <stored user id> was not on the whitelist.
 ```
 
-Discord command registration and user-facing result contracts remain incomplete.
+Ordinary Discord results use the validated display name and do not echo the durable platform identifier.
 
 ### Safety and Privacy Requirements
 
