@@ -48,6 +48,52 @@ The Discord Provider service that applies the fixed `ManageGuild` requirement to
 
 The Discord Provider service that resolves the framework-loaded `7 Days to Die` Provider and returns either a stable failure status or a frozen service exposing only `executeCommand`.
 
+## `/game` Command Family
+
+The guild-only Discord command family requiring `ManageGuild`:
+
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say message:<text>`
+- `/game kick entity-id:<id> reason:<text>`
+- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
+- `/game unban display-name:<exact text>`
+- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
+- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
+
+## Hosted Player Administration
+
+The v1.4.0 fixed Discord-to-game workflows for kicking an online player, adding a durable ban, verifying an unban, and adding or removing an individual whitelist entry.
+
+These workflows remain Provider-owned platform administration and do not introduce a Module because no reusable cross-platform business policy has been proven.
+
+## Online Entity ID
+
+A positive 7 Days to Die entity ID used as an exact kick target while a player is online. It is not treated as a globally durable game-account identity.
+
+## Durable User ID
+
+A single combined game-account identifier using either `Steam_<id>` or `EOS_<id>`. Durable IDs are used for ban and individual whitelist administration.
+
+## Verified Unban
+
+The workflow that reads `ban list`, requires exactly one exact display-name match, removes the returned stored UserID, and reads `ban list` again to prove that UserID is absent.
+
+A `removed from ban list` line confirms command completion only and is not sufficient verification.
+
+## Individual Whitelist Entry
+
+A durable Steam or EOS user identifier stored with a display name through the 7 Days to Die `whitelist` command.
+
+The first entry activates whitelist-only mode. Removing the final entry disables whitelist-only mode. Duplicate add may return success without creating a duplicate row.
+
+## Staff Platform Identifier Visibility
+
+The decision that authorized staff may receive a requested player's Steam ID, EOS ID, or both through an explicit permission-gated private workflow when operationally necessary.
+
+Ordinary command results do not expose those identifiers.
+
 ## Game Provider
 
 A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first implemented game Provider.
@@ -72,7 +118,7 @@ The Provider-owned service that executes one active command at a time, applies t
 
 The implemented evidence-backed rules that determine when a remote command response begins and completes and distinguish it from stale startup output and unsolicited console events.
 
-Verified deterministic completion exists for `gettime`, `listplayers`, `lp`, `say`, `help`, and invalid or unknown commands. Other meaningful multiline output uses bounded inactivity completion.
+Verified deterministic completion exists for `gettime`, `listplayers`, `lp`, `say`, `help`, `kick`, `ban add`, `ban remove`, `whitelist add`, `whitelist remove`, and invalid or unknown commands. Other meaningful multiline output uses bounded inactivity completion.
 
 ## Response-Start Gate
 
@@ -90,20 +136,9 @@ A defensive frozen result containing command status, completion reason, response
 
 Validated local configuration for the intended server deployment, including enabled state, private host, Telnet port, and connection timeout. Secrets remain environment-only.
 
-The current configuration loads the implemented command execution service when enabled; it is not a web administration interface.
-
 ## Raw Telnet
 
 The unencrypted administrative TCP transport used by the 7 Days to Die Provider. It must remain on loopback, LAN, VPN, or another protected private path and must not be exposed directly to the public internet.
-
-## `/game` Command Family
-
-The guild-only Discord command family requiring `ManageGuild`:
-
-- `/game status`
-- `/game time`
-- `/game players`
-- `/game say message:<text>`
 
 ## Website Provider
 
@@ -116,14 +151,6 @@ The Discord OAuth authorization-code flow with PKCE S256, one-time state, browse
 ## Website Session
 
 An opaque bounded in-memory session associated with a frozen Website identity. Website sessions are revoked on Provider shutdown or process restart and are not shared across processes.
-
-## In-Memory Session Limitation
-
-Website sessions and pending OAuth attempts are revoked on Provider shutdown or process restart and are not shared across processes.
-
-## Website Health
-
-The unauthenticated `GET /health` response that reports Website HTTP transport readiness only. It does not report authentication, Discord, Module, or database state.
 
 ## Registry
 
