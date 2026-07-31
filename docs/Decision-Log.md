@@ -27,18 +27,18 @@ Invalid enabled configuration fails before the Website listener starts. Secrets 
 
 `SevenDaysToDieCommandService` owns one active command at a time. A response-start gate excludes stale startup-banner output. Incoming console lines are classified and separated into active-command response lines and unsolicited event lines.
 
-Evidence-backed completion rules are implemented for `gettime`, `listplayers`, `lp`, `say`, `help`, and invalid or unknown commands. Other meaningful multiline output uses a bounded inactivity fallback.
+Evidence-backed deterministic completion is implemented for `gettime`, `listplayers`, `lp`, `say`, `help`, `kick`, `ban add`, `ban remove`, `whitelist add`, `whitelist remove`, and invalid or unknown commands. Other meaningful multiline output uses a bounded inactivity fallback.
 
 Command results, completion decisions, response arrays, event arrays, and failure contracts are immutable and defensive. Failure handling includes timeout, disconnect, write failure, completion-decision failure, size truncation, and generic execution failure.
 
-The command boundary was live verified against a running 7 Days to Die V3.1.0 b13 server. Discord-to-game operations were subsequently live verified for `/game time`, `/game players`, and `/game say`.
+The command boundary and hosted-player administration workflows were live verified against a running 7 Days to Die V3.1.0 b13 server.
 
 ### Guardrails
 
 - Raw Telnet remains private administrative transport on loopback, LAN, VPN, or another protected path.
 - Public Telnet exposure is prohibited.
 - One active command remains the supported concurrency boundary.
-- Arbitrary console execution, command queues, multiple servers, hosted-player administration, continuous chat bridging, and Economy-backed game effects remain outside the current implementation.
+- Arbitrary console execution, free-form Telnet input, command queues, multiple servers, continuous chat bridging, and Economy-backed game effects remain outside the implementation.
 - Telnet secrets remain outside tracked JSON.
 - Game protocol and command behavior remain Provider-owned.
 - Reusable authorization, Economy, Moderation, Ticket, identity, and transaction policy remains Module-owned where applicable.
@@ -47,19 +47,77 @@ The command boundary was live verified against a running 7 Days to Die V3.1.0 b1
 
 ### Decision
 
-The guild-only `/game` command family uses Discord `ManageGuild` as its fixed initial staff requirement.
+The guild-only `/game` command family uses Discord `ManageGuild` as its fixed staff requirement.
 
-The Discord Provider owns command definitions, Discord authorization, input validation, reply deferral, safe output parsing, and user-facing error formatting. The 7 Days to Die Provider owns remote execution outcomes.
+The Discord Provider owns command definitions, Discord authorization, input validation, reply deferral, safe output parsing, and user-facing formatting. The 7 Days to Die Provider owns remote execution outcomes.
 
-The implemented command family is `/game status`, `/game time`, `/game players`, and `/game say message:<text>`.
+The implemented command family is:
+
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say message:<text>`
+- `/game kick entity-id:<id> reason:<text>`
+- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
+- `/game unban display-name:<exact text>`
+- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
+- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
 
 ### Guardrails
 
 - Commands fail closed when the Provider is missing, not running, or exposes an invalid service boundary.
 - `/game status` does not execute a remote command.
 - Remote commands use only fixed operation paths.
-- `/game say` rejects command-shaping characters and control characters before Provider resolution.
-- Raw Provider and Telnet details are never returned to Discord.
+- Validation occurs before Provider resolution.
+- Raw Provider and Telnet details are never returned through ordinary Discord responses.
+- Hosted-player targets must be exact; fuzzy matching is not implemented.
+
+## Hosted Player Administration Contracts
+
+### Decision
+
+Hosted-player administration remains a Discord Provider to 7 Days to Die Provider operation and does not introduce a Module because no reusable cross-platform business policy has been proven.
+
+Approved fixed execution contracts are:
+
+```text
+kick <online entity id> "<validated reason>"
+ban add <durable user id> <duration> <unit> "<reason>" "<display name>"
+ban list
+ban remove <exact stored UserID>
+ban list
+whitelist add <durable user id> <display name>
+whitelist remove <durable user id>
+```
+
+Unban success requires the second `ban list` to prove that the exact stored UserID is absent. A success-looking `ban remove` line proves command completion only.
+
+Whitelist add and remove use deterministic completion. First-entry activation and final-entry deactivation are separate server mode lines. Duplicate add may return success but must not create a duplicate row.
+
+### Guardrails
+
+- Online entity IDs are kick targets only while the player is online.
+- Steam and EOS combined identifiers are durable administration targets.
+- Ordinary Discord results use validated display names and do not echo durable identifiers.
+- Whitelist groups, identity linking, fuzzy matching, and arbitrary console execution are excluded.
+
+## Staff Platform Identifier Visibility
+
+### Decision
+
+Steam and EOS player identifiers are private operational data by default, but they are not categorically hidden from authorized staff.
+
+An explicitly authorized staff lookup or administration workflow may return a requested player's Steam ID, EOS ID, or both when those identifiers are operationally necessary. The workflow must be permission-gated, scoped to the requested player and purpose, and use an ephemeral or equivalently private response where the platform supports it.
+
+Ordinary command success and failure responses continue to avoid echoing submitted or server-normalized platform identifiers unless the approved staff workflow specifically requires that disclosure.
+
+### Guardrails
+
+- Platform identifiers must not be exposed publicly or to ordinary members.
+- Raw login, authentication, Telnet, socket, configuration, and server-console output must never be returned merely to reveal an identifier.
+- Staff visibility requires an explicit command or workflow contract rather than incidental leakage from another operation.
+- Only the identifiers and player context required for the approved staff purpose may be returned.
+- IP addresses, credentials, positions, health, inventory, internal errors, and unrelated player identifiers remain private.
 
 ## Database Infrastructure Foundation
 
@@ -88,21 +146,3 @@ SQLite is authoritative for production Economy accounts, balances, transaction h
 The Economy Module retains input validation, transfer policy and authorization, balance calculations, transaction construction, public records, and public errors. The store owns durable rows, parameterized queries, transaction boundaries, deterministic ordering, restart recovery, and durable transaction sequence allocation.
 
 Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction. A rolled-back operation does not consume the next successful public transaction ID.
-
-## Staff Platform Identifier Visibility
-
-### Decision
-
-Steam and EOS player identifiers are private operational data by default, but they are not categorically hidden from authorized staff.
-
-An explicitly authorized staff lookup or administration workflow may return a requested player's Steam ID, EOS ID, or both when those identifiers are operationally necessary. The workflow must be permission-gated, scoped to the requested player and purpose, and use an ephemeral or equivalently private response where the platform supports it.
-
-Ordinary command success and failure responses continue to avoid echoing submitted or server-normalized platform identifiers unless the approved staff workflow specifically requires that disclosure.
-
-### Guardrails
-
-- Platform identifiers must not be exposed publicly or to ordinary members.
-- Raw login, authentication, Telnet, socket, configuration, and server-console output must never be returned merely to reveal an identifier.
-- Staff visibility requires an explicit command or workflow contract rather than incidental leakage from another operation.
-- Only the identifiers and player context required for the approved staff purpose may be returned.
-- IP addresses, credentials, positions, health, inventory, internal errors, and unrelated player identifiers remain private even when a platform identifier is authorized for staff viewing.
