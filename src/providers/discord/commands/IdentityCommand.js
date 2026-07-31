@@ -19,7 +19,7 @@ class IdentityCommand extends BaseCommand {
         clock = () => Date.now(),
         identityModuleResolver,
         identityProofEvaluator =
-            new SevenDaysToDieIdentityProofEvaluator(),
+        new SevenDaysToDieIdentityProofEvaluator(),
         identityProofProviderResolver = null
     } = {}) {
 
