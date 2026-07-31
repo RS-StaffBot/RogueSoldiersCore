@@ -17,6 +17,9 @@ const DiscordGameCommandAuthorizer = require(
 const DiscordGameServerProviderResolver = require(
     "./services/DiscordGameServerProviderResolver"
 );
+const DiscordIdentityModuleResolver = require(
+    "./services/DiscordIdentityModuleResolver"
+);
 
 class DiscordProvider extends BaseProvider {
 
@@ -29,9 +32,11 @@ class DiscordProvider extends BaseProvider {
         gameCommandAuthorizer =
         new DiscordGameCommandAuthorizer(),
         gameServerProviderResolver = null,
+        identityModuleResolver = null,
         interactionHandler = InteractionHandler,
         logger = Logger,
-        resolveGameServerProvider = () => undefined
+        resolveGameServerProvider = () => undefined,
+        resolveIdentityModule = () => undefined
     } = {}) {
 
         super("Discord");
@@ -46,6 +51,11 @@ class DiscordProvider extends BaseProvider {
             gameServerProviderResolver ||
             new DiscordGameServerProviderResolver({
                 resolveProvider: resolveGameServerProvider
+            });
+        this.identityModuleResolver =
+            identityModuleResolver ||
+            new DiscordIdentityModuleResolver({
+                resolveModule: resolveIdentityModule
             });
         this.interactionHandler = interactionHandler;
         this.logger = logger;
@@ -191,7 +201,9 @@ class DiscordProvider extends BaseProvider {
             gameCommandAuthorizer:
                 this.gameCommandAuthorizer,
             gameServerProviderResolver:
-                this.gameServerProviderResolver
+                this.gameServerProviderResolver,
+            identityModuleResolver:
+                this.identityModuleResolver
         });
         for (const command of commands) {
             this.commandRegistry.register(command);
