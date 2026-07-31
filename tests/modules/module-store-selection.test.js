@@ -18,6 +18,17 @@ const SqliteEconomyStore = require(
     "../../src/modules/economy/persistence/" +
     "SqliteEconomyStore"
 );
+const IdentityModule = require(
+    "../../src/modules/identity/IdentityModule"
+);
+const InMemoryIdentityStore = require(
+    "../../src/modules/identity/persistence/" +
+    "InMemoryIdentityStore"
+);
+const SqliteIdentityStore = require(
+    "../../src/modules/identity/persistence/" +
+    "SqliteIdentityStore"
+);
 const ModerationModule = require(
     "../../src/modules/moderation/ModerationModule"
 );
@@ -44,11 +55,16 @@ const SqliteTicketStore = require(
 test("direct Module construction selects in-memory stores", () => {
 
     const economy = new EconomyModule();
+    const identity = new IdentityModule();
     const moderation = new ModerationModule();
     const tickets = new TicketModule();
 
     assert.strictEqual(
         economy.store instanceof InMemoryEconomyStore,
+        true
+    );
+    assert.strictEqual(
+        identity.store instanceof InMemoryIdentityStore,
         true
     );
     assert.strictEqual(
@@ -92,6 +108,7 @@ test("ModuleLoader injects the requested SQLite store types", () => {
         [
             SettingsStore,
             SqliteEconomyStore,
+            SqliteIdentityStore,
             SqliteModerationStore,
             SqliteTicketStore
         ]
@@ -105,12 +122,16 @@ test("ModuleLoader injects the requested SQLite store types", () => {
         true
     );
     assert.strictEqual(
-        modules[1].store instanceof
+        modules[1].store instanceof SqliteIdentityStore,
+        true
+    );
+    assert.strictEqual(
+        modules[2].store instanceof
             SqliteModerationStore,
         true
     );
     assert.strictEqual(
-        modules[2].store instanceof SqliteTicketStore,
+        modules[3].store instanceof SqliteTicketStore,
         true
     );
 

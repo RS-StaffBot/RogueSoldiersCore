@@ -8,6 +8,10 @@ const EconomySettingsResolver = require(
 const SqliteEconomyStore = require(
     "../economy/persistence/SqliteEconomyStore"
 );
+const IdentityModule = require("../identity/IdentityModule");
+const SqliteIdentityStore = require(
+    "../identity/persistence/SqliteIdentityStore"
+);
 const ModerationModule = require("../moderation/ModerationModule");
 const SqliteModerationStore = require(
     "../moderation/persistence/SqliteModerationStore"
@@ -31,6 +35,11 @@ class ModuleLoader {
                 SqliteEconomyStore
             )
             : undefined;
+        const identityStore = database
+            ? database.createStore(
+                SqliteIdentityStore
+            )
+            : undefined;
         const moderationStore = database
             ? database.createStore(
                 SqliteModerationStore
@@ -51,6 +60,9 @@ class ModuleLoader {
             new EconomyModule({
                 ...economyOptions,
                 store: economyStore
+            }),
+            new IdentityModule({
+                store: identityStore
             }),
             new ModerationModule({
                 store: moderationStore
