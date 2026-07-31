@@ -8,7 +8,7 @@ v1.4.0
 
 v1.5.0 - Player Identity Linking Foundation
 
-Status: Planning approved; Phase 1 is next.
+Status: Phases 1-3 completed; Phase 4 is next.
 
 ## Milestone Goal
 
@@ -18,33 +18,79 @@ The milestone establishes the trusted identity boundary required for future play
 
 ## Architecture Boundary
 
-A new platform-neutral Identity Module is the intended owner of identity-link business rules, validation, authorization, conflict handling, lifecycle, and durable public records.
+The platform-neutral Identity Module is the intended owner of identity-link business rules, validation, authorization, conflict handling, lifecycle, and durable public records.
 
-Core remains responsible for database lifecycle and migrations. A Module-specific store will own identity persistence without exposing SQL or the Core database connection to Providers.
+Core remains responsible for database lifecycle and migrations. Module-specific stores own identity persistence without exposing SQL or the Core database connection to Providers.
 
-The Discord Provider will own Discord command definitions, Discord authorization, interaction handling, private responses, and Discord identity translation.
+The Discord Provider owns Discord command definitions, Discord authorization, interaction handling, private responses, and Discord identity translation.
 
-The 7 Days to Die Provider will continue to own game-server protocol behavior and evidence used to verify game identities. It will not own cross-platform identity records or Discord membership policy.
+The 7 Days to Die Provider owns game-server protocol behavior and evidence used to verify game identities. It does not own cross-platform identity records or Discord membership policy.
 
-Shared will receive reusable identity permissions or value contracts only when implementation proves actual cross-layer reuse.
+Shared contains the reusable identity permission contract required across Module and Provider boundaries.
 
-## Phase 1 Objective
+## Completed v1.5.0 Work
 
-Inspect the current Module, SQLite store, migration, permission, and Provider-resolution patterns and define the smallest complete identity domain contract before implementing persistence or Discord commands.
+### Phase 1 - Identity Domain Contract
 
-Phase 1 must decide and test:
+Completed and merged through pull request `#59`.
 
-- the canonical Discord member identity input
-- supported durable game identifier forms
-- whether one Discord member may hold one or multiple game identities
-- uniqueness and conflict rules across members
-- verified, pending, revoked, and replaced state requirements
-- who may create, confirm, view, replace, or revoke a link
-- which identifier details ordinary members and authorized staff may see
-- immutable public snapshots and defensive validation requirements
-- the narrow store contract required for later SQLite persistence
+Implemented and verified:
 
-Phase 1 is a design-and-contract phase only. It must not expose an incomplete linking command or persist partially defined records.
+- canonical Discord member identity field: `discordUserId`
+- durable game identity field: `gameUserId`
+- supported durable forms: `Steam_...` and `EOS_...`
+- one active link per Discord member
+- one active owner per durable game identity
+- pending, verified, and revoked states
+- atomic revoke-and-pend replacement semantics
+- private-by-default identifier visibility
+- purpose-limited reusable identity permissions
+- focused immutable contract tests
+
+### Phase 2 - Immutable Records and In-Memory Store
+
+Completed and merged through pull request `#60`.
+
+Implemented and verified:
+
+- frozen identity-link statuses
+- focused identity-link error codes
+- immutable validated identity-link records
+- defensive in-memory storage and retrieval
+- active Discord and game identity uniqueness enforcement
+- stale-state detection
+- atomic replacement with rollback
+
+### Phase 3 - SQLite Persistence
+
+Completed and merged through pull request `#61`.
+
+Implemented and verified:
+
+- migration `006_create_identity_links`
+- SQLite identity-link persistence
+- partial unique indexes for active Discord and game identities
+- defensive reads and ordered listing
+- transactional revoke-and-pend replacement
+- rollback on failed replacement
+- restart recovery
+- synchronized global migration-order coverage
+
+## Current Phase Objective
+
+Phase 4 must define the verified 7 Days to Die identity-proof workflow using evidence-backed fixed operations only.
+
+Phase 4 must determine and test:
+
+- the exact fixed Provider operation used to obtain durable identity evidence
+- which sanitized evidence fields cross the Provider boundary
+- how one exact durable game identity is selected
+- how ambiguous, missing, stale, or malformed evidence fails closed
+- how proof is associated with the requesting Discord member without trusting display names alone
+- what data is retained or discarded after verification
+- how raw Telnet output, unrelated player data, and internal errors remain private
+
+Phase 4 must not expose a self-link command until the proof contract is complete and tested.
 
 ## Required Privacy and Safety Boundaries
 
@@ -96,7 +142,8 @@ Live verification passed against 7 Days to Die V3.1.0 b13 with Discord connected
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
 - Kick, ban, verified unban, whitelist add, and whitelist remove are available through Discord.
-- Cross-platform identity linking is not yet implemented and is the active v1.5.0 milestone.
+- The v1.5 identity contract, immutable records, in-memory store, migration, and SQLite store are implemented.
+- Operational Discord-to-game identity verification and linking commands are not yet implemented.
 - Continuous chat bridging, Economy-backed game effects, command queues, and multiple game servers remain future work.
 
 ## v1.4.0 Release Record
@@ -114,7 +161,7 @@ Live verification passed against 7 Days to Die V3.1.0 b13 with Discord connected
 
 ## Next Step
 
-Complete the Phase 1 repository inspection and identity-domain contract. Only after that contract is reviewed and merged should persistence or Discord linking commands begin.
+Define and test the Phase 4 evidence-backed 7 Days to Die identity-proof contract. Do not add Discord self-link commands until that Provider evidence boundary is reviewed and merged.
 
 ## Release Notes
 
