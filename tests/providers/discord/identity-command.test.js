@@ -33,6 +33,11 @@ function createInteraction({
                         getOwnStatus(discordUserId) {
                             assert.strictEqual(discordUserId, userId);
                             return status;
+                        },
+                        recordVerifiedSelfLink() {
+                            throw new Error(
+                                "Status must not create identity links."
+                            );
                         }
                     }
                 };
@@ -41,7 +46,7 @@ function createInteraction({
     };
 }
 
-test("defines guild-only private identity status", () => {
+test("defines guild-only private identity commands", () => {
 
     const setup = createInteraction();
     const command = new IdentityCommand({
@@ -53,8 +58,16 @@ test("defines guild-only private identity status", () => {
     assert.strictEqual(definition.dm_permission, false);
     assert.deepStrictEqual(
         definition.options.map(option => option.name),
-        ["status"]
+        ["status", "link"]
     );
+    const link = definition.options.find(
+        option => option.name === "link"
+    );
+    assert.deepStrictEqual(
+        link.options.map(option => option.name),
+        ["user-id"]
+    );
+    assert.strictEqual(link.options[0].required, true);
 
 });
 
