@@ -18,7 +18,8 @@ class CommandLoader {
     load({
         gameCommandAuthorizer,
         gameServerProviderResolver,
-        identityModuleResolver
+        identityModuleResolver,
+        identityProofProviderResolver
     } = {}) {
 
         const commands = [
@@ -34,7 +35,10 @@ class CommandLoader {
 
         if (identityModuleResolver !== undefined) {
             commands.push(
-                new IdentityCommand({ identityModuleResolver })
+                new IdentityCommand({
+                    identityModuleResolver,
+                    identityProofProviderResolver
+                })
             );
         }
 
