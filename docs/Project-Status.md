@@ -8,7 +8,7 @@ v1.4.0
 
 v1.5.0 - Player Identity Linking Foundation
 
-Status: Phases 1-4 and Phase 5A completed; Provider proof collection is next.
+Status: Phases 1-4 and Phases 5A-5C completed; private Discord self-link and owner-status commands are next.
 
 ## Milestone Goal
 
@@ -18,11 +18,11 @@ The milestone establishes the trusted identity boundary required for future play
 
 ## Architecture Boundary
 
-The Identity Module owns identity-link business rules, validation, authorization, conflict handling, lifecycle, private owner status, and durable identity records.
+The Identity Module owns identity-link business rules, validation, authorization, conflict handling, lifecycle, private owner status, proof-gated verified-link mutation, and durable identity records.
 
 Core remains responsible for database lifecycle and migrations. Module-specific stores own identity persistence without exposing SQL or the Core database connection to Providers.
 
-The Discord Provider owns Discord command definitions, Discord authorization, interaction handling, private responses, and Discord identity translation.
+The Discord Provider owns Discord command definitions, Discord authorization, interaction handling, private responses, challenge generation, and Discord identity translation.
 
 The 7 Days to Die Provider owns game-server protocol behavior and sanitized evidence used to verify game identities. It does not own cross-platform identity records or Discord membership policy.
 
@@ -87,8 +87,6 @@ Implemented and verified:
 - rejection of missing, malformed, stale, future, and ambiguous evidence
 - explicit rejection of display names and online entity IDs as sufficient proof
 
-The existing `listplayers` and `listplayerids` operations do not expose a durable identifier together with an ownership action and therefore cannot securely prove identity ownership.
-
 ### Phase 5A - Identity Module and Private Owner Status
 
 Completed through pull request `#64`.
@@ -103,28 +101,59 @@ Implemented and verified:
 - ordinary status output limited to approved status and timestamp fields
 - no Steam, EOS, or Discord identifiers in owner-status results
 
-Pending-link creation remains unavailable until the 7 Days to Die Provider can collect evidence satisfying the Phase 4 contract.
+### Phase 5B - 7DTD Provider Proof Collection
+
+Completed through pull request `#66`.
+
+Implemented and verified:
+
+- parsing of the live global-chat event that contains durable Steam/EOS identity and the exact short-lived challenge
+- temporary unsolicited-event collection without free-form Telnet
+- exact case-sensitive durable-ID and challenge matching
+- sanitized output limited to `gameUserId`, `challenge`, and `observedAt`
+- rejection of unrelated chat, wrong identities, malformed lines, timeout, and disconnect
+- command execution and proof collection serialized through one active Provider operation
+- no use of `listplayers`, `listplayerids`, display names, or entity IDs as ownership proof
+
+### Phase 5C - Proof-Gated Verified Link Mutation
+
+Completed through pull request `#67`.
+
+Implemented and verified:
+
+- `IdentityModule.recordVerifiedSelfLink(...)`
+- exact internal verified-proof requirement
+- first identity link created directly as `VERIFIED`
+- one verification timestamp used for creation and verification
+- active Discord-user and game-identity uniqueness preserved
+- malformed, unsuccessful, ambiguous, or expanded proof objects rejected
+- replacement and relinking intentionally excluded from self-link creation
 
 ## Current Phase Objective
 
-Implement the smallest evidence-backed 7 Days to Die Provider proof-collection prerequisite.
+Add the smallest private Discord identity command family through the merged Provider and Module boundaries.
 
-The next phase must determine and test:
+The next phase must implement and test:
 
-- one exact fixed Provider operation or event pattern that exposes a durable Steam/EOS identifier together with the short-lived challenge
-- deterministic command or event completion boundaries
-- sanitized extraction of only `gameUserId`, `challenge`, and `observedAt`
-- rejection of unrelated chat, player names, entity IDs, duplicate matches, malformed lines, stale events, and raw output
-- interaction with the existing single-active-command and unsolicited-event separation boundaries
-- safe timeout, disconnect, and unavailable-Provider behavior
+- a guild-only `/identity status` workflow using only the invoking Discord member's identity
+- a guild-only `/identity link` workflow requiring a supported durable Steam/EOS identifier
+- cryptographically strong short-lived challenge generation inside the Discord Provider
+- a private or ephemeral instruction telling the member to send the challenge in normal in-game global chat
+- deferred private interaction handling while the Provider collects proof
+- Provider evidence evaluation through the merged exact proof evaluator
+- durable verified-link creation only after exact verification
+- safe conflict, timeout, unavailable-Provider, malformed-input, and already-linked responses
+- no platform identifiers in ordinary success, status, or failure responses
+- complete command-definition, registration, dispatch, privacy, and regression coverage
 
-No Discord self-link command or pending identity record may be added until this proof-collection path is evidence-backed and tested.
+Replacement, unlinking, revocation, and staff lookup remain separate explicit workflows.
 
 ## Required Privacy and Safety Boundaries
 
 - Platform identifiers are private operational data by default.
 - Ordinary public Discord responses must not reveal Steam IDs, EOS IDs, raw Telnet output, IP addresses, positions, health, inventory, credentials, paths, socket details, or internal errors.
-- Authorized staff access must be explicit, permission-gated, purpose-limited, and private or ephemeral.
+- Identity commands must use private or ephemeral responses.
+- The invoking Discord member identity must come from the Discord interaction, never from request-controlled input.
 - A Discord member must not be able to claim another member's already-linked durable game identity.
 - Display names and online entity IDs are not sufficient proof of durable identity.
 - Automatic fuzzy matching is prohibited.
@@ -160,10 +189,10 @@ Completed command family:
 
 - RSF supports a single-process SQLite deployment.
 - Node.js 22.13 or newer is required for `node:sqlite`.
-- The optional 7 Days to Die Provider supports one active command at a time through private raw Telnet.
+- The optional 7 Days to Die Provider supports one active command or proof collection at a time through private raw Telnet.
 - Hosted player administration is available through Discord.
-- Identity contracts, records, in-memory and SQLite persistence, proof evaluation, Module registration, and private owner status are implemented.
-- Operational proof collection, self-link commands, staff identity workflows, and verified link mutation are not yet implemented.
+- Identity contracts, records, persistence, proof evaluation, live proof collection, Module registration, private owner status, and proof-gated verified-link mutation are implemented.
+- Discord identity commands, staff identity workflows, replacement, and revocation are not yet implemented.
 
 ## v1.4.0 Release Record
 
@@ -174,7 +203,7 @@ Completed command family:
 
 ## Next Step
 
-Define and test the evidence-backed 7 Days to Die proof-collection prerequisite. Do not add Discord self-link commands or pending identity records until that Provider boundary is reviewed and merged.
+Implement and test private Discord `/identity status` and first-link workflows through the merged proof collector, evaluator, and Identity Module mutation boundary.
 
 ## Release Notes
 
