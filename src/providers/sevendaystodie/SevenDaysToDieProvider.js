@@ -1,10 +1,17 @@
 const BaseProvider = require("../core/BaseProvider");
 const ComponentState = require("../../core/ComponentState");
+const Logger = require("../../core/Logger");
+const ComponentLifecycleOperationLock = require(
+    "../../core/lifecycle/ComponentLifecycleOperationLock"
+);
 const SevenDaysToDieCommandService = require(
     "./SevenDaysToDieCommandService"
 );
 const SevenDaysToDieIdentityProofCollector = require(
     "./identity/SevenDaysToDieIdentityProofCollector"
+);
+const SevenDaysToDieReconnectPolicy = require(
+    "./SevenDaysToDieReconnectPolicy"
 );
 
 class SevenDaysToDieProvider extends BaseProvider {
@@ -14,7 +21,8 @@ class SevenDaysToDieProvider extends BaseProvider {
         commandService = null,
         configuration,
         environment = process.env,
-        identityProofCollector = null
+        identityProofCollector = null,
+        reconnectPolicy = null
     } = {}) {
 
         super("7 Days to Die");
@@ -24,8 +32,11 @@ class SevenDaysToDieProvider extends BaseProvider {
         this.configuration = configuration;
         this.environment = environment;
         this.identityProofCollector = identityProofCollector;
+        this.reconnectPolicy = reconnectPolicy;
         this.connectionAttempted = false;
         this.connectionOptions = null;
+        this.reconnectTask = null;
+        this.startupCompleted = false;
 
     }
 
@@ -36,8 +47,7 @@ class SevenDaysToDieProvider extends BaseProvider {
         try {
 
             this.validateClient();
-            this.connectionOptions =
-                this.createConnectionOptions();
+            this.connectionOptions = this.createConnectionOptions();
 
             if (this.commandService === null) {
                 this.commandService = new SevenDaysToDieCommandService({
@@ -58,8 +68,15 @@ class SevenDaysToDieProvider extends BaseProvider {
                     });
             }
 
+            if (this.reconnectPolicy === null) {
+                this.reconnectPolicy = new SevenDaysToDieReconnectPolicy(
+                    this.createReconnectOptions()
+                );
+            }
+
             this.validateCommandService();
             this.validateIdentityProofCollector();
+            this.validateReconnectPolicy();
             super.initialize();
             return this.getStatus();
 
@@ -72,46 +89,30 @@ class SevenDaysToDieProvider extends BaseProvider {
 
     async start() {
 
-        if (this.state !== ComponentState.READY) {
+        if (
+            this.state !== ComponentState.READY &&
+            this.state !== ComponentState.STOPPED &&
+            this.state !== ComponentState.ERROR
+        ) {
             throw new Error(
-                "7 Days to Die Provider must be ready before startup."
+                "7 Days to Die Provider is not ready for startup."
+            );
+        }
+
+        if (this.reconnectPolicy?.isActive()) {
+            throw new Error(
+                "7 Days to Die reconnect recovery is active."
             );
         }
 
         this.state = ComponentState.STARTING;
         this.connectionAttempted = true;
 
-        let startupConnectionLossError = null;
-
         try {
-
-            await this.client.connect(
-                this.connectionOptions,
-                error => {
-
-                    const wasStarting =
-                        this.state ===
-                        ComponentState.STARTING;
-                    const connectionLossError =
-                        this.handleUnexpectedConnectionLoss(
-                            error
-                        );
-
-                    if (wasStarting) {
-                        startupConnectionLossError =
-                            connectionLossError;
-                    }
-
-                }
-            );
-
-            if (startupConnectionLossError) {
-                throw startupConnectionLossError;
-            }
-
+            await this.connectClient();
             super.start();
+            this.startupCompleted = true;
             return this.getStatus();
-
         } catch (error) {
             this.setError();
             throw error;
@@ -126,8 +127,14 @@ class SevenDaysToDieProvider extends BaseProvider {
         }
 
         this.state = ComponentState.STOPPING;
+        this.startupCompleted = false;
+        this.reconnectPolicy?.cancel();
 
         try {
+
+            if (this.reconnectTask) {
+                await this.reconnectTask;
+            }
 
             if (this.connectionAttempted) {
                 await this.client.disconnect();
@@ -140,6 +147,30 @@ class SevenDaysToDieProvider extends BaseProvider {
         } catch (error) {
             this.setError();
             throw error;
+        }
+
+    }
+
+    async connectClient() {
+
+        let connectionLossError = null;
+
+        await this.client.connect(
+            this.connectionOptions,
+            error => {
+                const wasStarting =
+                    this.state === ComponentState.STARTING;
+                const lossError =
+                    this.handleUnexpectedConnectionLoss(error);
+
+                if (wasStarting) {
+                    connectionLossError = lossError;
+                }
+            }
+        );
+
+        if (connectionLossError) {
+            throw connectionLossError;
         }
 
     }
@@ -162,10 +193,7 @@ class SevenDaysToDieProvider extends BaseProvider {
 
     }
 
-    collectIdentityProof({
-        challenge,
-        gameUserId
-    } = {}) {
+    collectIdentityProof({ challenge, gameUserId } = {}) {
 
         if (this.state !== ComponentState.RUNNING) {
             return Promise.reject(new Error(
@@ -189,8 +217,7 @@ class SevenDaysToDieProvider extends BaseProvider {
     isCommandExecutionActive() {
 
         if (
-            typeof this.commandService.isCommandActive ===
-            "function"
+            typeof this.commandService.isCommandActive === "function"
         ) {
             return this.commandService.isCommandActive();
         }
@@ -221,8 +248,67 @@ class SevenDaysToDieProvider extends BaseProvider {
 
         this.setError();
 
+        if (
+            this.startupCompleted &&
+            this.reconnectPolicy?.enabled === true &&
+            !this.reconnectPolicy.isActive()
+        ) {
+            this.beginReconnectRecovery();
+        }
+
         return connectionLossError;
 
+    }
+
+    beginReconnectRecovery() {
+
+        if (this.reconnectTask) {
+            return this.reconnectTask;
+        }
+
+        this.reconnectTask = ComponentLifecycleOperationLock.run(
+            () => this.reconnectPolicy.run(
+                () => this.runReconnectAttempt()
+            )
+        ).then(locked => {
+
+            if (!locked.acquired) {
+                Logger.error(
+                    "7 Days to Die reconnect recovery could not start."
+                );
+                return Object.freeze({
+                    attempts: 0,
+                    outcome: "BUSY",
+                    recovered: false
+                });
+            }
+
+            if (locked.value.recovered) {
+                Logger.info(
+                    "7 Days to Die Provider connection recovered."
+                );
+            } else if (locked.value.outcome !== "CANCELLED") {
+                this.setError();
+                Logger.error(
+                    "7 Days to Die Provider reconnect attempts were exhausted."
+                );
+            }
+
+            return locked.value;
+
+        }).finally(() => {
+            this.reconnectTask = null;
+        });
+
+        return this.reconnectTask;
+
+    }
+
+    async runReconnectAttempt() {
+        this.state = ComponentState.STARTING;
+        this.connectionAttempted = true;
+        await this.connectClient();
+        this.state = ComponentState.RUNNING;
     }
 
     validateClient() {
@@ -264,6 +350,57 @@ class SevenDaysToDieProvider extends BaseProvider {
                 "7 Days to Die identity proof collector is invalid."
             );
         }
+
+    }
+
+    validateReconnectPolicy() {
+
+        if (
+            !this.reconnectPolicy ||
+            typeof this.reconnectPolicy.run !== "function" ||
+            typeof this.reconnectPolicy.cancel !== "function" ||
+            typeof this.reconnectPolicy.isActive !== "function"
+        ) {
+            throw new Error(
+                "7 Days to Die reconnect policy is invalid."
+            );
+        }
+
+    }
+
+    createReconnectOptions() {
+
+        const reconnect = this.configuration.reconnect;
+
+        if (reconnect === undefined) {
+            return {
+                delayMs: 0,
+                enabled: false,
+                maximumAttempts: 0
+            };
+        }
+
+        if (
+            !reconnect ||
+            typeof reconnect !== "object" ||
+            Array.isArray(reconnect)
+        ) {
+            throw new Error(
+                "7 Days to Die reconnect configuration is invalid."
+            );
+        }
+
+        const enabled = reconnect.enabled === true;
+
+        return {
+            delayMs: enabled
+                ? reconnect.delayMs ?? 5000
+                : 0,
+            enabled,
+            maximumAttempts: enabled
+                ? reconnect.maximumAttempts ?? 3
+                : 0
+        };
 
     }
 
