@@ -1,4 +1,8 @@
+const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
+const ComponentLifecycleOperationResult = require(
+    "../../core/lifecycle/ComponentLifecycleOperationResult"
+);
 const ComponentLifecycleStatus = require(
     "../../core/lifecycle/ComponentLifecycleStatus"
 );
@@ -26,6 +30,109 @@ class ProviderManager {
 
     async startAll() {
         return this.runLifecycleOperation("start");
+    }
+
+    async startProvider(name) {
+        return this.runIndividualOperation({
+            allowedStates: new Set([
+                ComponentState.READY,
+                ComponentState.STOPPED,
+                ComponentState.ERROR
+            ]),
+            methodName: "start",
+            name,
+            operation: "START",
+            requiresInitialization: true
+        });
+    }
+
+    async stopProvider(name) {
+        return this.runIndividualOperation({
+            allowedStates: new Set([ComponentState.RUNNING]),
+            methodName: "stop",
+            name,
+            operation: "STOP",
+            requiresInitialization: false
+        });
+    }
+
+    async runIndividualOperation({
+        allowedStates,
+        methodName,
+        name,
+        operation,
+        requiresInitialization
+    }) {
+        const provider = this.providers.get(name);
+
+        if (!provider) {
+            return this.createOperationResult({
+                name: null,
+                operation,
+                outcome: "NOT_FOUND",
+                state: null
+            });
+        }
+
+        if (
+            requiresInitialization &&
+            !this.initializedProviders.has(provider)
+        ) {
+            return this.createOperationResult({
+                name: provider.name,
+                operation,
+                outcome: "NOT_INITIALIZED",
+                state: provider.state
+            });
+        }
+
+        if (!allowedStates.has(provider.state)) {
+            return this.createOperationResult({
+                name: provider.name,
+                operation,
+                outcome: "INVALID_STATE",
+                state: provider.state
+            });
+        }
+
+        try {
+            await provider[methodName]();
+
+            return this.createOperationResult({
+                name: provider.name,
+                operation,
+                outcome: "SUCCEEDED",
+                state: provider.state
+            });
+        } catch (error) {
+            if (typeof provider.setError === "function") {
+                provider.setError();
+            }
+
+            Logger.error(
+                `Provider '${provider.name}' failed to ${methodName}.`
+            );
+            Logger.error(
+                "Provider reported a recoverable lifecycle error."
+            );
+
+            return this.createOperationResult({
+                name: provider.name,
+                operation,
+                outcome: "FAILED",
+                state: provider.state
+            });
+        }
+    }
+
+    createOperationResult({ name, operation, outcome, state }) {
+        return ComponentLifecycleOperationResult.create({
+            componentType: "PROVIDER",
+            name,
+            operation,
+            outcome,
+            state
+        });
     }
 
     async runLifecycleOperation(operation) {
