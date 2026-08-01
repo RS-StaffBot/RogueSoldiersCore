@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Status:** Active; Phases 1 through 4 and the first focused Phase 5 integration are completed and merged
+**Status:** Active; Phases 1 through 4 and the first two focused Phase 5 integrations are completed and merged
 
 ## Completed Milestones
 
@@ -33,7 +33,7 @@
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active; implementation checkpoint completed through PR `#91`
+Status: Active; implementation checkpoint completed through PR `#92`
 
 ### Completed Checkpoint
 
@@ -43,6 +43,7 @@ Status: Active; implementation checkpoint completed through PR `#91`
 - Phase 3 - narrow Audit services and query policy: PR `#89`
 - Phase 4 - lifecycle administration Audit integration: PR `#90`
 - Phase 5A - Discord `/ban` and `/kick` Audit integration: PR `#91`
+- Phase 5B - hosted-player administration Audit integration: PR `#92`
 
 ### Goal
 
@@ -123,15 +124,17 @@ Implemented:
 
 Status: Active.
 
-Completed checkpoint integration:
+Completed checkpoint integrations:
 
 - Discord `/ban` and `/kick` in PR `#91`
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` in PR `#92`
 
 The merged moderation integration provides authenticated moderator attribution, fixed action and target summaries, sanitized denied and failed statuses, success only after authoritative Moderation history commits, and best-effort Audit recording. Moderation reasons and raw Discord or storage details are not copied into Audit records.
 
+The merged hosted-player integration provides authenticated Discord staff attribution and privacy-safe, best-effort Audit recording for `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` remain excluded. Kick and ban reasons, raw game-console output, and storage details are not copied into Audit records.
+
 Remaining candidate integrations must be separate focused pull requests:
 
-- hosted-player kick, ban, unban, and whitelist administration
 - Ticket staff assignment, response, and closure
 - Economy staff credit, debit, or transfer operations where implemented
 - Identity staff administration only after such a workflow exists

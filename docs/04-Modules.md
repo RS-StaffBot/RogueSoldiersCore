@@ -28,7 +28,7 @@ Modules retain validation, authorization, state transitions, public errors, publ
 
 The Audit Module owns durable platform-neutral accountability summaries. It does not replace the detailed histories owned by Moderation, Economy, Tickets, Identity, or lifecycle state.
 
-Verified responsibilities through PR `#91`:
+Verified responsibilities through PR `#92`:
 
 - validate immutable defensive Audit records
 - generate sequential `audit-N` record IDs and timestamps inside RSF
@@ -46,12 +46,19 @@ Verified responsibilities through PR `#91`:
 
 Core owns SQLite, ordered migration execution, Module construction, lifecycle loading, and private store injection. Providers and commands may receive only the narrow recording or query boundary approved for a workflow. They do not receive the Audit Module, store, SQLite connection, SQL, database rows, or mutable internals.
 
-Implemented recording integrations through PR `#91` are:
+Implemented recording integrations through PR `#92` are:
 
 - Discord lifecycle restart and reload
 - Discord moderation ban and kick
+- hosted-player `/game kick`
+- hosted-player `/game ban`
+- hosted-player `/game unban`
+- hosted-player `/game whitelist add`
+- hosted-player `/game whitelist remove`
 
-The lifecycle and moderation integrations authenticate the Discord actor at the Provider boundary, use fixed action and target shapes, store only sanitized outcomes and allowlisted metadata, and treat Audit recording as best effort after the business result is determined. A successful moderation Audit summary is recorded only after the authoritative Moderation history commit succeeds.
+The lifecycle, moderation, and hosted-player administration integrations authenticate the Discord actor at the Provider boundary, use fixed action and target shapes, store only sanitized outcomes and allowlisted metadata, and treat Audit recording as best effort after the business result is determined. A successful moderation Audit summary is recorded only after the authoritative Moderation history commit succeeds.
+
+Hosted-player administration records use authenticated Discord staff attribution and privacy-safe, best-effort recording. Audit failure does not change an already completed game-server result. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` are not recorded.
 
 Audit records do not contain moderation reasons, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, positions, health, inventory, or arbitrary request objects.
 
