@@ -1,4 +1,7 @@
 const Logger = require("../../core/Logger");
+const ComponentLifecycleStatus = require(
+    "../../core/lifecycle/ComponentLifecycleStatus"
+);
 
 class ModuleManager {
 
@@ -120,6 +123,28 @@ class ModuleManager {
             );
         }
 
+    }
+
+    listModuleStatuses() {
+        return Object.freeze(
+            [...this.modules.values()].map(
+                module => this.createStatus(module)
+            )
+        );
+    }
+
+    getModuleStatus(name) {
+        const module = this.modules.get(name);
+        return module ? this.createStatus(module) : null;
+    }
+
+    createStatus(module) {
+        return ComponentLifecycleStatus.create({
+            componentType: "MODULE",
+            initialized: this.initializedModules.has(module),
+            name: module.name,
+            state: module.state
+        });
     }
 
     list() {

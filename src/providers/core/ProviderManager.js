@@ -1,4 +1,7 @@
 const Logger = require("../../core/Logger");
+const ComponentLifecycleStatus = require(
+    "../../core/lifecycle/ComponentLifecycleStatus"
+);
 
 class ProviderManager {
     constructor() {
@@ -119,6 +122,28 @@ class ProviderManager {
             );
         }
 
+    }
+
+    listProviderStatuses() {
+        return Object.freeze(
+            [...this.providers.values()].map(
+                provider => this.createStatus(provider)
+            )
+        );
+    }
+
+    getProviderStatus(name) {
+        const provider = this.providers.get(name);
+        return provider ? this.createStatus(provider) : null;
+    }
+
+    createStatus(provider) {
+        return ComponentLifecycleStatus.create({
+            componentType: "PROVIDER",
+            initialized: this.initializedProviders.has(provider),
+            name: provider.name,
+            state: provider.state
+        });
     }
 
     list() {
