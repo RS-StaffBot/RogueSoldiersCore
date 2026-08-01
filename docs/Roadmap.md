@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Status:** Phases 1-4 and Phases 5A-5E completed; live end-to-end verification and release hardening are next
+**Status:** Phases 1-4, Phases 5A-5E, and resilient startup isolation completed; live end-to-end verification and release hardening are next
 
 ## Completed Milestones
 
@@ -31,7 +31,7 @@
 
 ## v1.5.0 - Player Identity Linking Foundation
 
-Status: In progress; Phases 1-4 and Phases 5A-5E completed
+Status: In progress; Phases 1-4, Phases 5A-5E, and resilient startup isolation completed
 
 ### Goal
 
@@ -202,10 +202,29 @@ Implemented and tested:
 - no platform-ID repetition in ordinary Discord output
 - fail-closed invalid-input, existing-link, unavailable, timeout, disconnect, malformed-proof, ambiguous-proof, and persistence-conflict behavior
 
+#### Resilient Startup Isolation
+
+Completed through pull request `#72`.
+
+Implemented and tested:
+
+- independent lifecycle handling for every registered Provider and Module
+- failed components retained in `ERROR`
+- failed initialization prevents startup of that component
+- healthy components continue to `RUNNING`
+- recoverable component failure produces `STARTED_DEGRADED`
+- frozen sanitized lifecycle summaries
+- healthy Modules, Providers, and Database remain active after recoverable failures
+- fatal Core, Loader-wide, migration, health, and Database startup failures still propagate and roll back
+- existing Providers -> Modules -> Database shutdown order remains intact
+- 0 production vulnerabilities, 490 passing tests, and ESLint passing
+
+Automatic retries, reconnect loops, runtime restart, reload, replacement, lifecycle administration, and process supervision remain outside this phase.
+
 ### Remaining Planned Work
 
 1. Complete live Discord-to-7DTD first-link verification and apply only evidence-backed corrections.
-2. Verify restart persistence, ordinary status output, privacy boundaries, and normal command recovery after proof collection.
+2. Verify restart persistence, ordinary status output, privacy boundaries, normal command recovery after proof collection, and degraded startup when an optional Provider is unavailable.
 3. Synchronize versions, release notes, source-of-truth documents, and dependency records where required.
 4. Run final audit, complete tests, lint, diff validation, and release checks.
 5. Open and validate the v1.5.0 release pull request, then tag the release after the user merges it.
@@ -227,9 +246,10 @@ Required verification:
 - safe failure for wrong identity, timeout, unavailable Provider, and already-linked use where practical
 - no raw Telnet, platform identifiers, credentials, paths, socket details, or internal errors in ordinary output or logs
 - normal game-command execution after proof collection ends
+- optional Provider failure leaves healthy framework components running in degraded mode
 - complete automated regression coverage and final release validation
 
-The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, or multiple-server support.
+The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, multiple-server support, automatic retries, runtime component restart, reload, or lifecycle administration.
 
 ### Outside v1.5.0
 
@@ -242,6 +262,9 @@ The phase must not add replacement, unlinking, revocation, staff lookup, public 
 - Automatic account merging or fuzzy matching
 - Generic identity support for unimplemented platforms
 - Website identity administration unless explicitly approved during the milestone
+- automatic component retries or reconnect policy
+- runtime component restart, reload, or replacement
+- lifecycle administration commands or process supervision
 
 ## v1.4.0 - Hosted Player Administration
 
@@ -274,6 +297,6 @@ Status: Completed and tagged
 
 ## Future Direction
 
-After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, and multiple-server support.
+After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, multiple-server support, and explicit runtime lifecycle administration.
 
-Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, and fixed-command ownership boundaries.
+Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, fixed-command ownership, and critical-versus-recoverable startup boundaries.
