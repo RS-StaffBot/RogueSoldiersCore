@@ -8,7 +8,7 @@ v1.4.0
 
 v1.5.0 - Player Identity Linking Foundation
 
-Status: Phases 1-4 and Phases 5A-5E completed; live end-to-end verification and release hardening are next.
+Status: Phases 1-4, Phases 5A-5E, and resilient startup isolation completed; live end-to-end verification and release hardening are next.
 
 ## Milestone Goal
 
@@ -159,6 +159,25 @@ Implemented and verified:
 - submitted Steam/EOS identifier never repeated in Discord output
 - fail-closed behavior for invalid input, existing active links, unavailable boundaries, timeout, disconnect, malformed or ambiguous proof, and persistence conflicts
 
+### Resilient Startup Isolation
+
+Completed through pull request `#72`.
+
+Implemented and verified:
+
+- Provider and Module initialization and startup are isolated per registered component
+- one recoverable Provider or independently recoverable Module failure no longer rolls back healthy components
+- failed components remain registered in `ERROR`
+- a component that fails initialization is not started
+- healthy components continue to `RUNNING`
+- Bootstrap returns `STARTED_DEGRADED` when recoverable component failures occur
+- Core configuration, Registry and Bootstrap infrastructure, Loader-wide construction, Database initialization, migration, health, and startup failures remain fatal
+- lifecycle summaries are frozen and exclude raw private error details
+- degraded shutdown preserves Providers -> Modules -> Database order
+- full validation passed with 0 production vulnerabilities, 490 passing tests, and ESLint passing
+
+Automatic retries, reconnect loops, runtime component restart, reload, replacement, lifecycle administration, and process supervision remain deferred.
+
 ## Current Phase Objective
 
 Complete live end-to-end Discord-to-7DTD verification and release hardening for v1.5.0.
@@ -172,6 +191,7 @@ The next phase must verify and document:
 - restart persistence of a verified identity link
 - no Steam/EOS identifier disclosure in ordinary Discord responses or logs
 - no regression to normal 7DTD command execution after proof collection completes
+- degraded framework startup preserves healthy components when an optional Provider is unavailable
 - full audit, test, lint, and diff validation
 - version, release notes, Project Status, Roadmap, Dependencies, Decision Log, Glossary, and AI onboarding synchronization where required
 
@@ -201,6 +221,9 @@ Replacement, relinking, unlinking, revocation, conflict resolution, and staff lo
 - Fuzzy player matching
 - Website identity administration unless separately approved
 - Generic identity support for unimplemented platforms
+- automatic component retry or reconnect policy
+- runtime component restart, reload, or replacement
+- lifecycle administration commands or process supervision
 
 ## Latest Completed Milestone
 
@@ -221,6 +244,8 @@ Completed command family:
 - The optional 7 Days to Die Provider supports one active command or proof collection at a time through private raw Telnet.
 - Hosted player administration is available through Discord.
 - Identity contracts, records, persistence, proof evaluation, live proof collection, Module registration, private owner status, proof-gated verified-link mutation, and private Discord first-link commands are implemented.
+- Recoverable Provider and independently recoverable Module startup failures are isolated; healthy components can remain operational in degraded mode.
+- Critical Core and Database startup failures remain fatal.
 - Live end-to-end verification, release hardening, staff identity workflows, replacement, and revocation are not yet completed.
 
 ## v1.4.0 Release Record
