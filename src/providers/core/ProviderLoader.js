@@ -74,55 +74,17 @@ class ProviderLoader {
                     moduleManager.get(name)
             })
         ];
-        const gameSettings = configuration.get(
-            "providers.sevendaystodie",
-            null
+        const gameProvider = this.createProvider(
+            "7 Days to Die",
+            {
+                configuration,
+                createSevenDaysToDieClient,
+                environment
+            }
         );
 
-        if (gameSettings !== null) {
-
-            if (
-                typeof gameSettings !== "object" ||
-                Array.isArray(gameSettings)
-            ) {
-                throw new Error(
-                    "7 Days to Die Provider configuration must be " +
-                    "an object."
-                );
-            }
-
-            const gameEnabled =
-                gameSettings.enabled ?? false;
-
-            if (typeof gameEnabled !== "boolean") {
-                throw new Error(
-                    "7 Days to Die enabled configuration must be " +
-                    "a boolean."
-                );
-            }
-
-            if (gameEnabled) {
-
-                if (
-                    typeof createSevenDaysToDieClient !==
-                    "function"
-                ) {
-                    throw new Error(
-                        "7 Days to Die client factory must be a function."
-                    );
-                }
-
-                providers.push(
-                    new SevenDaysToDieProvider({
-                        client:
-                            createSevenDaysToDieClient(),
-                        configuration: gameSettings,
-                        environment
-                    })
-                );
-
-            }
-
+        if (gameProvider !== null) {
+            providers.push(gameProvider);
         }
 
         if (websiteSettings === null) {
@@ -138,8 +100,7 @@ class ProviderLoader {
             );
         }
 
-        const websiteEnabled =
-            websiteSettings.enabled ?? false;
+        const websiteEnabled = websiteSettings.enabled ?? false;
 
         if (typeof websiteEnabled !== "boolean") {
             throw new Error(
@@ -168,7 +129,80 @@ class ProviderLoader {
         );
 
         return providers;
+    }
 
+    createProvider(name, {
+        configuration = Configuration,
+        createSevenDaysToDieClient = () =>
+            new SevenDaysToDieTelnetClient(),
+        environment = process.env,
+        reloadConfiguration = false
+    } = {}) {
+
+        if (name !== "7 Days to Die") {
+            return null;
+        }
+
+        if (
+            !configuration ||
+            typeof configuration.get !== "function" ||
+            (reloadConfiguration &&
+                typeof configuration.load !== "function")
+        ) {
+            throw new Error(
+                "Provider reconstruction configuration boundary is invalid."
+            );
+        }
+
+        if (reloadConfiguration) {
+            configuration.load();
+        }
+
+        const gameSettings = configuration.get(
+            "providers.sevendaystodie",
+            null
+        );
+
+        if (gameSettings === null) {
+            return null;
+        }
+
+        if (
+            typeof gameSettings !== "object" ||
+            Array.isArray(gameSettings)
+        ) {
+            throw new Error(
+                "7 Days to Die Provider configuration must be an object."
+            );
+        }
+
+        const gameEnabled = gameSettings.enabled ?? false;
+
+        if (typeof gameEnabled !== "boolean") {
+            throw new Error(
+                "7 Days to Die enabled configuration must be a boolean."
+            );
+        }
+
+        if (!gameEnabled) {
+            return null;
+        }
+
+        if (typeof createSevenDaysToDieClient !== "function") {
+            throw new Error(
+                "7 Days to Die client factory must be a function."
+            );
+        }
+
+        return new SevenDaysToDieProvider({
+            client: createSevenDaysToDieClient(),
+            configuration: gameSettings,
+            environment
+        });
+    }
+
+    canReconstruct(name) {
+        return name === "7 Days to Die";
     }
 
 }

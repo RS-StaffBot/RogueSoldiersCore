@@ -68,6 +68,12 @@ class ProviderManager {
         );
     }
 
+    async replaceProvider(name, createCandidate) {
+        return this.runLockedOperation(name, "REPLACE", () =>
+            this.runReplacementOperation(name, createCandidate)
+        );
+    }
+
     async runLockedOperation(name, operation, action) {
         const locked = await ComponentLifecycleOperationLock.run(action);
 
@@ -149,6 +155,126 @@ class ProviderManager {
                 outcome: "FAILED",
                 state: provider.state
             });
+        }
+    }
+
+    async runReplacementOperation(name, createCandidate) {
+        const current = this.providers.get(name);
+
+        if (!current) {
+            return this.createOperationResult({
+                name: null,
+                operation: "REPLACE",
+                outcome: "NOT_FOUND",
+                state: null
+            });
+        }
+
+        if (!this.initializedProviders.has(current)) {
+            return this.createOperationResult({
+                name: current.name,
+                operation: "REPLACE",
+                outcome: "NOT_INITIALIZED",
+                state: current.state
+            });
+        }
+
+        if (current.state !== ComponentState.RUNNING) {
+            return this.createOperationResult({
+                name: current.name,
+                operation: "REPLACE",
+                outcome: "INVALID_STATE",
+                state: current.state
+            });
+        }
+
+        if (typeof createCandidate !== "function") {
+            return this.createOperationResult({
+                name: current.name,
+                operation: "REPLACE",
+                outcome: "FAILED",
+                state: current.state
+            });
+        }
+
+        let candidate = null;
+
+        try {
+            candidate = await createCandidate();
+
+            if (
+                !candidate ||
+                candidate === current ||
+                candidate.name !== current.name ||
+                typeof candidate.initialize !== "function" ||
+                typeof candidate.start !== "function" ||
+                typeof candidate.stop !== "function"
+            ) {
+                throw new Error("Replacement candidate is invalid.");
+            }
+
+            await candidate.initialize();
+
+            if (candidate.state !== ComponentState.READY) {
+                throw new Error("Replacement candidate is not ready.");
+            }
+
+            await candidate.start();
+
+            if (candidate.state !== ComponentState.RUNNING) {
+                throw new Error("Replacement candidate is not running.");
+            }
+
+            await current.stop();
+
+            if (current.state !== ComponentState.STOPPED) {
+                throw new Error("Current Provider did not stop cleanly.");
+            }
+
+            this.providers.set(name, candidate);
+            this.initializedProviders.add(candidate);
+
+            return this.createOperationResult({
+                name: candidate.name,
+                operation: "REPLACE",
+                outcome: "SUCCEEDED",
+                state: candidate.state
+            });
+        } catch (error) {
+            await this.stopReplacementCandidate(candidate);
+
+            Logger.error(`Provider '${current.name}' failed to replace.`);
+            Logger.error(
+                "Provider reported a recoverable lifecycle error."
+            );
+
+            return this.createOperationResult({
+                name: current.name,
+                operation: "REPLACE",
+                outcome: "FAILED",
+                state: current.state
+            });
+        }
+    }
+
+    async stopReplacementCandidate(candidate) {
+        if (!candidate || typeof candidate.stop !== "function") {
+            return;
+        }
+
+        if (
+            candidate.state === ComponentState.CREATED ||
+            candidate.state === ComponentState.STOPPED
+        ) {
+            return;
+        }
+
+        try {
+            await candidate.stop();
+        } catch {
+            if (typeof candidate.setError === "function") {
+                candidate.setError();
+            }
         }
     }
 
