@@ -66,7 +66,9 @@ class ModuleManager {
                     Logger.error(
                         `Module '${module.name}' failed to ${operation}.`
                     );
-                    Logger.error(error.stack || error.message);
+                    Logger.error(
+                        "Module reported a recoverable lifecycle error."
+                    );
 
                 }
 

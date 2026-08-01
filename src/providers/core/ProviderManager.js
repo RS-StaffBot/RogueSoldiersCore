@@ -65,7 +65,9 @@ class ProviderManager {
                     Logger.error(
                         `Provider '${provider.name}' failed to ${operation}.`
                     );
-                    Logger.error(error.stack || error.message);
+                    Logger.error(
+                        "Provider reported a recoverable lifecycle error."
+                    );
 
                 }
 
