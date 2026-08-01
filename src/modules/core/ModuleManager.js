@@ -1,5 +1,8 @@
 const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
+const ComponentLifecycleOperationLock = require(
+    "../../core/lifecycle/ComponentLifecycleOperationLock"
+);
 const ComponentLifecycleOperationResult = require(
     "../../core/lifecycle/ComponentLifecycleOperationResult"
 );
@@ -8,14 +11,12 @@ const ComponentLifecycleStatus = require(
 );
 
 class ModuleManager {
-
     constructor() {
         this.modules = new Map();
         this.initializedModules = new WeakSet();
     }
 
     register(module) {
-
         if (this.modules.has(module.name)) {
             throw new Error(
                 `Module '${module.name}' is already registered.`
@@ -34,27 +35,121 @@ class ModuleManager {
     }
 
     async startModule(name) {
-        return this.runIndividualOperation({
-            allowedStates: new Set([
-                ComponentState.READY,
-                ComponentState.STOPPED,
-                ComponentState.ERROR
-            ]),
-            methodName: "start",
-            name,
-            operation: "START",
-            requiresInitialization: true
-        });
+        return this.runLockedOperation(name, "START", () =>
+            this.runIndividualOperation({
+                allowedStates: new Set([
+                    ComponentState.READY,
+                    ComponentState.STOPPED,
+                    ComponentState.ERROR
+                ]),
+                methodName: "start",
+                name,
+                operation: "START",
+                requiresInitialization: true
+            })
+        );
     }
 
     async stopModule(name) {
-        return this.runIndividualOperation({
-            allowedStates: new Set([ComponentState.RUNNING]),
-            methodName: "stop",
-            name,
-            operation: "STOP",
-            requiresInitialization: false
+        return this.runLockedOperation(name, "STOP", () =>
+            this.runIndividualOperation({
+                allowedStates: new Set([ComponentState.RUNNING]),
+                methodName: "stop",
+                name,
+                operation: "STOP",
+                requiresInitialization: false
+            })
+        );
+    }
+
+    async restartModule(name) {
+        return this.runLockedOperation(name, "RESTART", () =>
+            this.runRestartOperation(name)
+        );
+    }
+
+    async runLockedOperation(name, operation, action) {
+        const locked = await ComponentLifecycleOperationLock.run(action);
+
+        if (locked.acquired) {
+            return locked.value;
+        }
+
+        const module = this.modules.get(name);
+        return this.createOperationResult({
+            name: module ? module.name : null,
+            operation,
+            outcome: "BUSY",
+            state: module ? module.state : null
         });
+    }
+
+    async runRestartOperation(name) {
+        const module = this.modules.get(name);
+
+        if (!module) {
+            return this.createOperationResult({
+                name: null,
+                operation: "RESTART",
+                outcome: "NOT_FOUND",
+                state: null
+            });
+        }
+
+        if (!this.initializedModules.has(module)) {
+            return this.createOperationResult({
+                name: module.name,
+                operation: "RESTART",
+                outcome: "NOT_INITIALIZED",
+                state: module.state
+            });
+        }
+
+        if (module.state !== ComponentState.RUNNING) {
+            return this.createOperationResult({
+                name: module.name,
+                operation: "RESTART",
+                outcome: "INVALID_STATE",
+                state: module.state
+            });
+        }
+
+        try {
+            await module.stop();
+
+            if (module.state !== ComponentState.STOPPED) {
+                throw new Error("Module did not stop cleanly.");
+            }
+
+            await module.start();
+
+            if (module.state !== ComponentState.RUNNING) {
+                throw new Error("Module did not start cleanly.");
+            }
+
+            return this.createOperationResult({
+                name: module.name,
+                operation: "RESTART",
+                outcome: "SUCCEEDED",
+                state: module.state
+            });
+        } catch (error) {
+            if (typeof module.setError === "function") {
+                module.setError();
+            }
+
+            Logger.error(`Module '${module.name}' failed to restart.`);
+            Logger.error(
+                "Module reported a recoverable lifecycle error."
+            );
+
+            return this.createOperationResult({
+                name: module.name,
+                operation: "RESTART",
+                outcome: "FAILED",
+                state: module.state
+            });
+        }
     }
 
     async runIndividualOperation({
@@ -137,11 +232,9 @@ class ModuleManager {
     }
 
     async runLifecycleOperation(operation) {
-
         const results = [];
 
         for (const module of this.modules.values()) {
-
             let succeeded = false;
 
             if (
@@ -155,7 +248,6 @@ class ModuleManager {
                     "Module initialization did not succeed."
                 );
             } else {
-
                 try {
                     await module[operation]();
                     succeeded = true;
@@ -164,7 +256,6 @@ class ModuleManager {
                         this.initializedModules.add(module);
                     }
                 } catch (error) {
-
                     if (operation === "initialize") {
                         this.initializedModules.delete(module);
                     }
@@ -179,9 +270,7 @@ class ModuleManager {
                     Logger.error(
                         "Module reported a recoverable lifecycle error."
                     );
-
                 }
-
             }
 
             results.push(Object.freeze({
@@ -189,12 +278,9 @@ class ModuleManager {
                 state: module.state,
                 succeeded
             }));
-
         }
 
-        const failed = results.filter(
-            result => !result.succeeded
-        ).length;
+        const failed = results.filter(result => !result.succeeded).length;
 
         return Object.freeze({
             failed,
@@ -203,24 +289,18 @@ class ModuleManager {
             results: Object.freeze(results),
             succeeded: results.length - failed
         });
-
     }
 
     async stopAll() {
-
         const errors = [];
-        const modules = [
-            ...this.modules.values()
-        ].reverse();
+        const modules = [...this.modules.values()].reverse();
 
         for (const module of modules) {
-
             try {
                 await module.stop();
             } catch (error) {
                 errors.push(error);
             }
-
         }
 
         if (errors.length > 0) {
@@ -229,13 +309,12 @@ class ModuleManager {
                 "One or more Modules failed to stop."
             );
         }
-
     }
 
     listModuleStatuses() {
         return Object.freeze(
-            [...this.modules.values()].map(
-                module => this.createStatus(module)
+            [...this.modules.values()].map(module =>
+                this.createStatus(module)
             )
         );
     }
@@ -261,7 +340,6 @@ class ModuleManager {
     get(name) {
         return this.modules.get(name);
     }
-
 }
 
 module.exports = new ModuleManager();
