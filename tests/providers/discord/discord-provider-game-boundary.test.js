@@ -18,7 +18,7 @@ const DiscordProvider = require(
     "../../../src/providers/discord/DiscordProvider"
 );
 
-test("passes focused game and identity boundaries to the command loader", () => {
+test("passes focused game, identity, and lifecycle boundaries to commands", () => {
 
     let receivedOptions;
     const commandLoader = {
@@ -51,9 +51,13 @@ test("passes focused game and identity boundaries to the command loader", () => 
         recordVerifiedSelfLink() {},
         state: "RUNNING"
     };
+    const lifecycleAuditService = {
+        recordAttempt() {}
+    };
     const provider = new DiscordProvider({
         commandLoader,
         commandRegistry,
+        lifecycleAuditService,
         logger,
         resolveGameServerProvider(name) {
             assert.equal(name, "7 Days to Die");
@@ -99,11 +103,16 @@ test("passes focused game and identity boundaries to the command loader", () => 
         receivedOptions.identityProofProviderResolver.resolve().available,
         true
     );
+    assert.equal(
+        receivedOptions.lifecycleAuditService,
+        lifecycleAuditService
+    );
     assert.deepEqual(Object.keys(receivedOptions), [
         "gameCommandAuthorizer",
         "gameServerProviderResolver",
         "identityModuleResolver",
         "identityProofProviderResolver",
+        "lifecycleAuditService",
         "lifecycleService"
     ]);
 
