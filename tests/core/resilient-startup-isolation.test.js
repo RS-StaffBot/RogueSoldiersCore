@@ -27,14 +27,18 @@ function createComponent({
         initialize() {
             this.state = ComponentState.INITIALIZING;
             if (failInitialize) {
-                throw new Error("private initialization detail");
+                throw new Error(
+                    "private initialization detail at D:\\private\\file.js"
+                );
             }
             this.state = ComponentState.READY;
         },
         start() {
             this.state = ComponentState.STARTING;
             if (failStart) {
-                throw new Error("private startup detail");
+                throw new Error(
+                    "private startup detail at D:\\private\\file.js"
+                );
             }
             this.state = ComponentState.RUNNING;
         },
@@ -105,6 +109,16 @@ test("Provider lifecycle failures are isolated and summarized safely", async () 
             message => message.includes("failed to start")
         )
     );
+    assert.strictEqual(
+        captured.errors.some(
+            message => message.includes("private startup detail")
+        ),
+        false
+    );
+    assert.strictEqual(
+        captured.errors.some(message => message.includes("D:\\private")),
+        false
+    );
 
     ProviderManager.providers.clear();
 
@@ -137,6 +151,16 @@ test("Module lifecycle failures do not stop unrelated Modules", async () => {
         JSON.stringify(initialization).includes(
             "private initialization detail"
         ),
+        false
+    );
+    assert.strictEqual(
+        captured.errors.some(
+            message => message.includes("private initialization detail")
+        ),
+        false
+    );
+    assert.strictEqual(
+        captured.errors.some(message => message.includes("D:\\private")),
         false
     );
 
@@ -202,7 +226,9 @@ test("degraded startup preserves healthy layers and reports outcome", () => {
                 },
                 start() {
                     if (failStart) {
-                        throw new Error('private external detail');
+                        throw new Error(
+                            'private external detail at D:\\private\\file.js'
+                        );
                     }
                     this.state = ComponentState.RUNNING;
                 },
@@ -280,6 +306,14 @@ test("degraded startup preserves healthy layers and reports outcome", () => {
                 entry[0] === "warn" &&
                 entry[1] === "Framework started in degraded mode."
         )
+    );
+    assert.strictEqual(
+        JSON.stringify(result.messages).includes("private external detail"),
+        false
+    );
+    assert.strictEqual(
+        JSON.stringify(result.messages).includes("D:\\private"),
+        false
     );
 
 });
