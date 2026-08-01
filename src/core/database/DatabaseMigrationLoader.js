@@ -1,6 +1,9 @@
 const SettingsMigrations = require(
     "../settings/persistence/SettingsMigrations"
 );
+const AuditMigrations = require(
+    "../../modules/audit/persistence/AuditMigrations"
+);
 const ModerationMigrations = require(
     "../../modules/moderation/persistence/ModerationMigrations"
 );
@@ -23,7 +26,8 @@ class DatabaseMigrationLoader {
             ...EconomyMigrations,
             ...TicketMigrations,
             ...SettingsMigrations,
-            ...IdentityMigrations
+            ...IdentityMigrations,
+            ...AuditMigrations
         ];
 
     }
