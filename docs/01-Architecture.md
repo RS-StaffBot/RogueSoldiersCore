@@ -12,7 +12,9 @@ SQLite is the selected local database engine. One Core-owned Database service ow
 
 Database migrations are ordered, tracked, and applied transactionally through Core. Migration SQL defines storage schema only; Module business validation remains in Modules. Providers and commands do not access the database directly.
 
-Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Moderation, Economy, and Ticket stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
+Module-specific stores receive the private Core connection through a controlled factory. SQLite-backed Audit, Moderation, Economy, Ticket, and Identity stores are current production integrations. Their Modules remain authoritative for business validation and public objects, while SQLite is authoritative for their durable state.
+
+Core constructs and loads the Audit Module after migration execution and injects its private store. Core does not own Audit record validation, action taxonomy, metadata rules, recording policy, or query policy.
 
 ## Database Startup Flow
 
@@ -44,21 +46,52 @@ Shutdown stops Providers before Modules and Modules before the Database. Shutdow
 
 Migrations run before Module loading. Stores own SQL and durable mapping but not business rules. Stored rows are reconstructed through Module-owned records before becoming public results. Invalid durable state isolated to one independently recoverable Module fails that Module without stopping unrelated components; repository-wide or Database integrity failures remain fatal.
 
-Module writes report success only after the responsible store commits. Economy multi-row balance, transaction, transfer, and daily-claim changes use database transactions. Ticket row, message, assignment, status, and sequence changes use database transactions. Database transactions do not extend to external Discord actions.
+Module writes report success only after the responsible store commits. Economy multi-row balance, transaction, transfer, and daily-claim changes use database transactions. Ticket row, message, assignment, status, and sequence changes use database transactions. Audit records are validated by the Audit Module before persistence. Database transactions do not extend to external Discord actions.
 
 Providers, commands, Shared components, and Modules do not open SQLite connections or issue SQL. This keeps the database engine replaceable without moving business logic out of Module contracts.
 
 ## Providers
 
-Providers integrate external platforms. Discord-specific clients, interactions, validation, hierarchy checks, API operations, and responses belong in the Discord Provider.
+Providers integrate external platforms. Discord-specific clients, interactions, validation, hierarchy checks, API operations, authenticated actor context, and responses belong in the Discord Provider.
+
+Providers may receive only narrow Audit recording or query services for an approved workflow. They do not receive the Audit store, SQLite connection, SQL, database rows, or mutable Audit Module internals.
 
 ## Modules
 
-Modules contain reusable business logic. Active Modules are Economy, Moderation, and Tickets.
+Modules contain reusable business logic. Active Modules are Audit, Economy, Moderation, Tickets, and Identity.
+
+The Audit Module owns platform-neutral immutable accountability summaries, action and actor/source/target/outcome validation, bounded allowlisted metadata, recording, bounded querying, and its store contract. Existing Module-owned business histories remain authoritative for their own detailed state.
 
 ## Shared
 
-Shared contains reusable cross-layer objects. Moderation, Economy, and Ticket permission identifiers are implemented under `src/shared/permissions/`.
+Shared contains reusable cross-layer objects. Moderation, Economy, Ticket, and Identity permission identifiers are implemented under `src/shared/permissions/`.
+
+## Audit Flow
+
+```text
+Authenticated Provider workflow
+    |
+    v
+Narrow workflow-specific Audit adapter
+    |
+    v
+AuditRecordingService
+    |
+    v
+AuditModule record validation
+    |
+    v
+Audit store contract
+    |
+    v
+SQLite-authoritative Audit records
+```
+
+The source Provider authenticates the actor and supplies only the verified actor context required by the approved workflow. Workflow-specific adapters use fixed action and target shapes and bounded allowlisted metadata. Audit failures are contained according to the explicit policy tested for that workflow and do not expose storage details.
+
+The EventBus and runtime logs are not authoritative Audit storage. Audit records do not replace Moderation cases, Economy transactions, Ticket records and messages, Identity links, or current lifecycle state.
+
+Implemented integrations through PR `#91` are Discord lifecycle restart/reload and Discord moderation ban/kick. Lifecycle and moderation operations preserve their existing private responses and authority boundaries. Successful moderation accountability is recorded only after the authoritative Moderation history commit succeeds.
 
 ## Economy Flow
 
@@ -142,7 +175,18 @@ SQLite-backed Moderation store
     |
     v
 Logger.moderationAudit()
+    |
+    v
+Discord moderation Audit adapter
+    |
+    v
+AuditRecordingService
+    |
+    v
+AuditModule accountability summary
 ```
+
+The Moderation Module remains authoritative for moderation case detail. The framework Audit record stores only the fixed actor, source, action, target, outcome, optional safe reference, bounded status metadata, and RSF-generated timestamp approved for the workflow. Moderation reasons and raw Discord responses are not copied into framework Audit records.
 
 ## Architecture Change Rule
 

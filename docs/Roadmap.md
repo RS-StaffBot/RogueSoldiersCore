@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Status:** Active; milestone architecture and phase plan approved
+**Status:** Active; Phases 1 through 4 and the first focused Phase 5 integration are completed and merged
 
 ## Completed Milestones
 
@@ -33,7 +33,16 @@
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active; milestone architecture and phase plan approved
+Status: Active; implementation checkpoint completed through PR `#91`
+
+### Completed Checkpoint
+
+- Milestone activation: PR `#86`
+- Phase 1 - Audit contracts and in-memory foundation: PR `#87`
+- Phase 2 - SQLite Audit persistence: PR `#88`
+- Phase 3 - narrow Audit services and query policy: PR `#89`
+- Phase 4 - lifecycle administration Audit integration: PR `#90`
+- Phase 5A - Discord `/ban` and `/kick` Audit integration: PR `#91`
 
 ### Goal
 
@@ -61,63 +70,67 @@ Audit records summarize accountability and may reference safe stable business-re
 
 ### Phase 1 - Audit Contracts and In-Memory Foundation
 
-Objective:
+Status: Completed in PR `#87`.
 
-- create an immutable defensive audit record
-- define stable action, actor, source, target, and outcome contracts
-- generate record IDs and timestamps inside RSF
-- validate bounded allowlisted metadata
-- provide an in-memory store implementing the Audit store contract
-- provide deterministic bounded recording and query behavior
+Implemented:
 
-Exclusions:
-
-- SQLite
-- migrations
-- Discord commands
-- lifecycle integration
-- existing workflow integration
-- Website access
-- EventBus publication
+- immutable defensive Audit records
+- fixed actor, source, target, action, outcome, and metadata validation
+- RSF-generated IDs and timestamps
+- bounded allowlisted metadata
+- in-memory store parity foundation
+- deterministic bounded record and query behavior
 
 ### Phase 2 - SQLite Audit Persistence
 
-Objective:
+Status: Completed in PR `#88`.
 
-- add one ordered Core migration
-- add a SQLite Audit store
-- preserve the Module-owned validation boundary
-- provide deterministic ordering and restart recovery
-- ensure database rows are reconstructed through Audit records before public use
+Implemented:
+
+- ordered migration `007_create_audit_records`
+- SQLite Audit store
+- deterministic ordering and restart recovery
+- database-row reconstruction through Audit record validation
+- store isolation from Providers and commands
 
 ### Phase 3 - Narrow Audit Services and Query Policy
 
-Objective:
+Status: Completed in PR `#89`.
 
-- expose frozen recording and bounded-query services
-- define safe pagination and supported filters
-- reject arbitrary metadata and unrestricted query construction
-- define sanitized failure contracts
-- preserve store and database isolation
+Implemented:
+
+- frozen recording and bounded-query services
+- newest-first pagination
+- allowlisted filters
+- opaque continuation cursors
+- normalized privacy-safe failures
+- immutable defensive query pages
 
 ### Phase 4 - Lifecycle Administration Audit Integration
 
-Objective:
+Status: Completed in PR `#90`.
 
-- record authenticated Discord lifecycle restart and reload attempts
-- capture fixed target, source, actor, sanitized outcome, and RSF timestamp
-- include denied, busy, failed, and successful decisions where auditable
-- preserve current ephemeral lifecycle responses and privacy boundaries
+Implemented:
+
+- authenticated Discord lifecycle restart and reload records
+- fixed 7 Days to Die Provider target
+- denied, busy, invalid-state, unavailable, failed, and successful decision mapping
+- bounded previous/current lifecycle state and status metadata
+- preserved private lifecycle responses
+- best-effort Audit writes that cannot change an already determined lifecycle result
 
 ### Phase 5 - Existing Privileged Workflow Integration
 
-Objective:
+Status: Active.
 
-Integrate meaningful actions through separate focused phases, beginning with the highest-value existing privileged workflows.
+Completed checkpoint integration:
 
-Candidate integrations:
+- Discord `/ban` and `/kick` in PR `#91`
 
-- Discord moderation actions
+The merged moderation integration provides authenticated moderator attribution, fixed action and target summaries, sanitized denied and failed statuses, success only after authoritative Moderation history commits, and best-effort Audit recording. Moderation reasons and raw Discord or storage details are not copied into Audit records.
+
+Remaining candidate integrations must be separate focused pull requests:
+
 - hosted-player kick, ban, unban, and whitelist administration
 - Ticket staff assignment, response, and closure
 - Economy staff credit, debit, or transfer operations where implemented
@@ -131,7 +144,7 @@ Objective:
 
 - add one private guild-only staff command
 - require a fixed Discord permission at registration and runtime
-- return bounded recent audit records
+- return bounded recent Audit records
 - support only allowlisted filters
 - sanitize identifiers and metadata according to the approved staff purpose
 - expose no database, SQL, raw error, configuration, or platform-client internals
@@ -140,7 +153,7 @@ Objective:
 
 Required verification:
 
-- durable audit recovery after restart
+- durable Audit recovery after restart
 - deterministic IDs and ordering
 - actor and source attribution
 - denied, failed, and successful privileged outcomes
@@ -162,7 +175,7 @@ Required verification:
 - Raw Discord messages and raw game-console output are not retained.
 - Raw errors, stack traces, credentials, addresses, tokens, sockets, configuration, database rows, SQL, positions, health, inventory, and unrelated identifiers are prohibited.
 - Audit lookup is private, permission-gated, bounded, and purpose-limited.
-- The EventBus is not an authoritative audit path.
+- The EventBus is not an authoritative Audit path.
 - Audit integration must not cause a business operation to report success before its authoritative business transaction commits.
 - Audit write-failure behavior must be explicitly defined and tested per integration.
 
@@ -172,7 +185,7 @@ Required verification:
 - logging every command or interaction
 - user-behavior surveillance
 - replacement of Module-owned histories
-- Website audit administration
+- Website Audit administration
 - configurable retention administration
 - external telemetry or log aggregation
 - remote database hosting, replication, or clustering

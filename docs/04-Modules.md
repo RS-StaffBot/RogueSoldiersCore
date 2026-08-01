@@ -2,6 +2,7 @@
 
 ## Active Modules
 
+- Audit
 - Economy
 - Moderation
 - Tickets
@@ -9,7 +10,7 @@
 
 ## Persistence Convention
 
-Production Moderation, Economy, Ticket, and Identity state is SQLite-authoritative. Direct isolated Module construction defaults to an in-memory store implementing the same Module-specific contract.
+Production Audit, Moderation, Economy, Ticket, and Identity state is SQLite-authoritative. Direct isolated Module construction defaults to an in-memory store implementing the same Module-specific contract.
 
 Core applies the Module migrations before loading Modules:
 
@@ -18,9 +19,43 @@ Core applies the Module migrations before loading Modules:
 002_create_economy_ledger
 003_create_ticket_aggregate
 006_create_identity_links
+007_create_audit_records
 ```
 
 Modules retain validation, authorization, state transitions, public errors, public identities, and defensive public records. Stores own durable rows, parameterized SQL, explicit ordering, transactions, and restart recovery. Modules do not open database connections, and Providers and commands do not access stores.
+
+## Audit Module
+
+The Audit Module owns durable platform-neutral accountability summaries. It does not replace the detailed histories owned by Moderation, Economy, Tickets, Identity, or lifecycle state.
+
+Verified responsibilities through PR `#91`:
+
+- validate immutable defensive Audit records
+- generate sequential `audit-N` record IDs and timestamps inside RSF
+- validate fixed actor types, sources, outcomes, actions, target types, target identifiers, and bounded allowlisted metadata
+- reject arbitrary metadata keys and unrestricted serialized objects
+- record and reconstruct Audit records through one Module-specific store contract
+- provide matching in-memory and SQLite stores
+- persist production records through migration `007_create_audit_records`
+- recover durable records and sequence continuation after restart
+- return deterministic newest-first bounded pages
+- support allowlisted actor-type, source, action, target-type, and outcome filters
+- validate opaque continuation cursors
+- expose frozen narrow recording and bounded-query services
+- normalize storage failures at service boundaries without exposing raw internals
+
+Core owns SQLite, ordered migration execution, Module construction, lifecycle loading, and private store injection. Providers and commands may receive only the narrow recording or query boundary approved for a workflow. They do not receive the Audit Module, store, SQLite connection, SQL, database rows, or mutable internals.
+
+Implemented recording integrations through PR `#91` are:
+
+- Discord lifecycle restart and reload
+- Discord moderation ban and kick
+
+The lifecycle and moderation integrations authenticate the Discord actor at the Provider boundary, use fixed action and target shapes, store only sanitized outcomes and allowlisted metadata, and treat Audit recording as best effort after the business result is determined. A successful moderation Audit summary is recorded only after the authoritative Moderation history commit succeeds.
+
+Audit records do not contain moderation reasons, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, positions, health, inventory, or arbitrary request objects.
+
+Restricted Discord Audit lookup, configurable retention administration, Website Audit administration, external telemetry, general event sourcing, and logging every harmless interaction remain unimplemented.
 
 ## Economy Module
 
