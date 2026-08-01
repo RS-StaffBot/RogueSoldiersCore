@@ -18,7 +18,7 @@ const ModerationAction = require(
 
 class BanCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -43,6 +43,17 @@ class BanCommand extends BaseCommand {
                 )
         );
 
+        if (
+            auditService !== null &&
+            typeof auditService.recordAttempt !== "function"
+        ) {
+            throw new Error(
+                "Discord moderation audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
+
     }
 
     async execute(interaction) {
@@ -63,6 +74,10 @@ class BanCommand extends BaseCommand {
             throw new Error("Moderation Module is not available.");
         }
 
+        const targetUser = interaction.options.getUser(
+            "member",
+            true
+        );
         const requiredPermission =
             moderation.getRequiredPermission(
                 ModerationAction.BAN
@@ -75,6 +90,11 @@ class BanCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "permission-denied"
+            });
+
             await interaction.reply({
                 content:
                     "You do not have permission to ban members.",
@@ -83,11 +103,6 @@ class BanCommand extends BaseCommand {
 
             return;
         }
-
-        const targetUser = interaction.options.getUser(
-            "member",
-            true
-        );
 
         const targetMember =
             await interaction.guild.members.fetch(
@@ -102,6 +117,11 @@ class BanCommand extends BaseCommand {
             );
 
         if (!validation.allowed) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "guard-denied"
+            });
+
             await interaction.reply({
                 content: validation.message,
                 flags: MessageFlags.Ephemeral
@@ -111,6 +131,11 @@ class BanCommand extends BaseCommand {
         }
 
         if (!targetMember.bannable) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
             await interaction.reply({
                 content:
                     "I cannot ban that member. Check my role and permissions.",
@@ -124,19 +149,42 @@ class BanCommand extends BaseCommand {
             interaction.options.getString("reason") ||
             `Banned by ${interaction.user.tag}`;
 
-        await targetMember.ban({
-            reason
-        });
+        try {
+            await targetMember.ban({
+                reason
+            });
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "execution-failed"
+            });
 
-        moderation.recordAction({
-            action: ModerationAction.BAN,
-            guildId: interaction.guild.id,
-            moderatorId: interaction.user.id,
-            targetId: targetUser.id,
-            reason,
-            details: {
-                source: "Discord"
-            }
+            throw error;
+        }
+
+        try {
+            moderation.recordAction({
+                action: ModerationAction.BAN,
+                guildId: interaction.guild.id,
+                moderatorId: interaction.user.id,
+                targetId: targetUser.id,
+                reason,
+                details: {
+                    source: "Discord"
+                }
+            });
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "history-failed"
+            });
+
+            throw error;
+        }
+
+        this.recordAudit(interaction, targetUser.id, {
+            outcome: "SUCCESS",
+            status: "succeeded"
         });
 
         await interaction.reply({
@@ -145,6 +193,23 @@ class BanCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
+    }
+
+    recordAudit(interaction, targetId, details) {
+        if (!this.auditService) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                action: "ban",
+                targetId,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change moderation behavior.
+        }
     }
 
 }
