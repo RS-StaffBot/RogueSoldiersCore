@@ -12,7 +12,7 @@ It reports `RUNNING` only after login readiness and slash-command registration s
 
 ### Verified Commands
 
-The Discord Provider loads 13 unique top-level commands:
+The Discord Provider loads 14 unique top-level commands:
 
 - `/ping`
 - `/help`
@@ -27,16 +27,32 @@ The Discord Provider loads 13 unique top-level commands:
 - `/leaderboard`
 - `/ticket`
 - `/game`
+- `/identity`
 
 ### Module-Facing Commands
 
-Economy, Moderation, and Ticket commands translate Discord interactions into narrow calls to framework-loaded Modules. They do not construct Modules or access Module persistence.
+Economy, Moderation, Ticket, and Identity commands translate Discord interactions into narrow calls to framework-loaded Modules. They do not construct Modules or access Module persistence.
 
 The Ticket command supports creator and staff workflows through ephemeral responses. The current workflow does not create Discord channels, threads, categories, permission overwrites, or transcripts.
 
 ### Discord Moderation Safety
 
 `DiscordModerationGuard` centralizes Discord-specific moderation safety checks, including self-target prevention, server-owner protection, moderator and bot role hierarchy, target manageability, and action-specific rejection wording.
+
+### Discord Identity Command Boundary
+
+The guild-only `/identity` family includes:
+
+- `/identity status`
+- `/identity link user-id:<Steam_...|EOS_...>`
+
+Both workflows use ephemeral responses. The invoking Discord identity comes from the authenticated interaction.
+
+`/identity status` resolves the framework-loaded Identity Module through a narrow service boundary and returns only privacy-safe owner status.
+
+`/identity link` generates a cryptographically random short-lived challenge and instructs the member privately to send the exact challenge in 7 Days to Die global chat. It resolves only a narrow proof-collection service from the running game Provider. Submitted Steam and EOS identifiers are not repeated in ordinary Discord output.
+
+The current workflow creates only the first verified link. Replacement, relinking, unlinking, revocation, staff lookup, identifier-free linking, broad platform attachments, and Identity Hub behavior remain future work.
 
 ### Discord Game Command Boundary
 
@@ -131,6 +147,23 @@ Command results and failure contracts are immutable and defensive. Supported out
 
 The command execution boundary and hosted-player workflows were live verified against a running 7 Days to Die V3.1.0 b13 server.
 
+### Identity Proof Collection
+
+The Provider can collect one temporary identity proof while no normal command is active.
+
+The collector:
+
+- parses the verified 7 Days to Die global-chat event shape
+- requires the exact active challenge
+- accepts only the exact submitted Steam or EOS identifier
+- returns sanitized evidence limited to `gameUserId`, `challenge`, and `observedAt`
+- discards display name, entity ID, raw console text, and unrelated activity
+- fails closed on timeout, disconnect, malformed evidence, ambiguity, or identifier mismatch
+- ends immediately when the exact challenge is received from a different Steam or EOS identifier
+- removes temporary listeners and clears the active timeout when collection completes
+
+Command execution and identity proof collection remain serialized as one active Provider operation.
+
 ### Hosted Player Identifier Evidence
 
 `listplayerids` exposes online player rows in the verified form:
@@ -157,7 +190,7 @@ The current Provider and Discord integration do not include:
 
 - arbitrary console execution
 - free-form Telnet input
-- cross-platform identity linking
+- broad multi-platform Identity Hub behavior
 - continuous Discord and in-game chat bridging
 - Economy-backed in-game purchases or rewards
 - command queues or simultaneous commands
