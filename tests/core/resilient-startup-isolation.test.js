@@ -14,6 +14,8 @@ const ModuleManager = require(
     "../../src/modules/core/ModuleManager"
 );
 
+const RESULT_MARKER = "__RSF_RESULT__";
+
 function createComponent({
     failInitialize = false,
     failStart = false,
@@ -57,6 +59,15 @@ async function withCapturedErrors(action) {
     } finally {
         Logger.error = originalError;
     }
+}
+
+function parseChildResult(child) {
+    assert.strictEqual(child.status, 0, child.stderr);
+    const markerIndex = child.stdout.lastIndexOf(RESULT_MARKER);
+    assert.notStrictEqual(markerIndex, -1, child.stdout);
+    return JSON.parse(
+        child.stdout.slice(markerIndex + RESULT_MARKER.length)
+    );
 }
 
 test("Provider lifecycle failures are isolated and summarized safely", async () => {
@@ -224,14 +235,16 @@ test("degraded startup preserves healthy layers and reports outcome", () => {
                 state: ModuleManager.get(name).state
             }));
             await Bootstrap.stop();
-            process.stdout.write(JSON.stringify({
-                beforeStop,
-                databaseAfterStop: database.state,
-                messages,
-                moduleStates,
-                outcome: result.outcome,
-                providerStates
-            }));
+            process.stdout.write(
+                '${RESULT_MARKER}' + JSON.stringify({
+                    beforeStop,
+                    databaseAfterStop: database.state,
+                    messages,
+                    moduleStates,
+                    outcome: result.outcome,
+                    providerStates
+                })
+            );
         }).catch(error => {
             process.stderr.write(error.stack || error.message);
             process.exitCode = 1;
@@ -247,8 +260,7 @@ test("degraded startup preserves healthy layers and reports outcome", () => {
         }
     );
 
-    assert.strictEqual(child.status, 0, child.stderr);
-    const result = JSON.parse(child.stdout);
+    const result = parseChildResult(child);
     assert.strictEqual(result.outcome, "STARTED_DEGRADED");
     assert.strictEqual(result.beforeStop, ComponentState.RUNNING);
     assert.strictEqual(
@@ -314,10 +326,12 @@ test("Database startup failure remains fatal", () => {
         Bootstrap.start().then(() => {
             process.exitCode = 1;
         }).catch(error => {
-            process.stdout.write(JSON.stringify({
-                message: error.message,
-                modulesLoaded
-            }));
+            process.stdout.write(
+                '${RESULT_MARKER}' + JSON.stringify({
+                    message: error.message,
+                    modulesLoaded
+                })
+            );
         });
     `;
 
@@ -330,8 +344,7 @@ test("Database startup failure remains fatal", () => {
         }
     );
 
-    assert.strictEqual(child.status, 0, child.stderr);
-    const result = JSON.parse(child.stdout);
+    const result = parseChildResult(child);
     assert.strictEqual(result.message, "database unavailable");
     assert.strictEqual(result.modulesLoaded, false);
 
