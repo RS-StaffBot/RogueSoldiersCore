@@ -91,7 +91,9 @@ The source Provider authenticates the actor and supplies only the verified actor
 
 The EventBus and runtime logs are not authoritative Audit storage. Audit records do not replace Moderation cases, Economy transactions, Ticket records and messages, Identity links, or current lifecycle state.
 
-Implemented integrations through PR `#91` are Discord lifecycle restart/reload and Discord moderation ban/kick. Lifecycle and moderation operations preserve their existing private responses and authority boundaries. Successful moderation accountability is recorded only after the authoritative Moderation history commit succeeds.
+Implemented integrations through PR `#92` are Discord lifecycle restart/reload, Discord moderation ban/kick, and hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`. Lifecycle, moderation, and hosted-player operations preserve their existing private responses and authority boundaries. Successful moderation accountability is recorded only after the authoritative Moderation history commit succeeds.
+
+Hosted-player Audit recording uses authenticated Discord staff attribution and remains privacy-safe and best effort. Audit failure does not change an already completed game-server result. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` remain outside the Audit integration.
 
 ## Economy Flow
 

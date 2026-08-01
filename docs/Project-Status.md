@@ -23,11 +23,11 @@ Release record:
 
 v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Audit Phases 1 through 4 and the first focused Phase 5 integration are completed and merged.
+Status: Active; Audit Phases 1 through 4 and the first two focused Phase 5 integrations are completed and merged.
 
 ## Completed Implementation Checkpoint
 
-This checkpoint records completed v1.7.0 work through merged pull request `#91`:
+This checkpoint records completed v1.7.0 work through merged pull request `#92`:
 
 - Milestone activation and architecture approval: `#86`
 - Phase 1 - Audit contracts and in-memory foundation: `#87`
@@ -35,6 +35,7 @@ This checkpoint records completed v1.7.0 work through merged pull request `#91`:
 - Phase 3 - narrow Audit recording and query services: `#89`
 - Phase 4 - lifecycle administration Audit integration: `#90`
 - Phase 5A - Discord `/ban` and `/kick` Audit integration: `#91`
+- Phase 5B - hosted-player administration Audit integration: `#92`
 
 The framework now loads a platform-neutral Audit Module with immutable validated records, in-memory and SQLite stores, narrow recording and bounded-query services, durable restart recovery, lifecycle administration attribution, and Discord ban/kick accountability summaries.
 
@@ -83,7 +84,7 @@ Providers and Modules may receive only narrow audit recording or query services 
 
 They must not receive the Audit store, SQLite connection, SQL, database rows, or mutable Audit Module internals.
 
-The source boundary that authenticates an actor is responsible for supplying that verified actor context. Discord supplies the authenticated Discord user for lifecycle and moderation Audit records.
+The source boundary that authenticates an actor is responsible for supplying that verified actor context. Discord supplies the authenticated Discord user for lifecycle, moderation, and hosted-player administration Audit records.
 
 ## Authoritative History Boundary
 
@@ -113,7 +114,7 @@ The merged foundation provides:
 - normalized privacy-safe service failures
 - durable restart recovery
 
-Implemented workflow integrations through PR `#91` provide:
+Implemented workflow integrations through PR `#92` provide:
 
 - `/lifecycle restart` and `/lifecycle reload` Audit records
 - authenticated Discord actor attribution
@@ -121,7 +122,12 @@ Implemented workflow integrations through PR `#91` provide:
 - Discord `/ban` and `/kick` Audit summaries
 - permission-denied, guard-denied, target-unavailable, execution-failed, history-failed, and successful moderation outcomes
 - success only after the authoritative Moderation history commit succeeds
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` Audit summaries
+- authenticated Discord staff attribution for hosted-player administration
+- privacy-safe, best-effort hosted-player Audit recording that does not change an already completed game-server result
 - best-effort Audit writes that do not change an already determined lifecycle or moderation result
+
+Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` are not audited.
 
 Moderation reasons, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, and arbitrary objects are not copied into framework Audit records.
 
@@ -147,9 +153,10 @@ Status: Completed and merged in PR `#90`.
 
 Status: Active.
 
-Completed checkpoint integration:
+Completed checkpoint integrations:
 
 - Discord `/ban` and `/kick` in PR `#91`
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` in PR `#92`
 
 Remaining existing privileged workflows must continue through separate focused pull requests without duplicating their authoritative business histories.
 
