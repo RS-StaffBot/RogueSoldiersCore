@@ -1,10 +1,10 @@
-const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
 
 class ModuleManager {
 
     constructor() {
         this.modules = new Map();
+        this.initializedModules = new WeakSet();
     }
 
     register(module) {
@@ -36,20 +36,28 @@ class ModuleManager {
 
             if (
                 operation === "start" &&
-                module.state !== ComponentState.READY
+                !this.initializedModules.has(module)
             ) {
                 Logger.error(
                     `Module '${module.name}' failed to start.`
                 );
                 Logger.error(
-                    "Module must be READY before startup."
+                    "Module initialization did not succeed."
                 );
             } else {
 
                 try {
                     await module[operation]();
                     succeeded = true;
+
+                    if (operation === "initialize") {
+                        this.initializedModules.add(module);
+                    }
                 } catch (error) {
+
+                    if (operation === "initialize") {
+                        this.initializedModules.delete(module);
+                    }
 
                     if (typeof module.setError === "function") {
                         module.setError();
