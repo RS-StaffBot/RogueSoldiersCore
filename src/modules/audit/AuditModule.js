@@ -51,6 +51,7 @@ class AuditModule extends BaseModule {
             "getById",
             "listAll",
             "listRecent",
+            "queryPage",
             "count"
         ];
 
@@ -145,6 +146,39 @@ class AuditModule extends BaseModule {
             )
         );
 
+    }
+
+    queryRecords({ beforeSequence, limit, filters }) {
+        this.validateLimit(limit, "query limit");
+
+        if (limit > this.maximumRecentLimit + 1) {
+            throw new Error("Audit query limit exceeds the maximum.");
+        }
+
+        if (
+            beforeSequence !== null &&
+            (
+                !Number.isSafeInteger(beforeSequence) ||
+                beforeSequence <= 0
+            )
+        ) {
+            throw new Error("Audit query cursor is invalid.");
+        }
+
+        if (!Object.isFrozen(filters)) {
+            throw new Error("Audit query filters are invalid.");
+        }
+
+        return Object.freeze(
+            this.store.queryPage({
+                beforeSequence,
+                limit,
+                filters
+            }).map(
+                storedRecord =>
+                    this.createRecordSnapshot(storedRecord)
+            )
+        );
     }
 
     countRecords() {

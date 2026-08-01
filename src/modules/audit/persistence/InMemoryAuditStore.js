@@ -56,6 +56,28 @@ class InMemoryAuditStore {
             .map(record => this.copyRecord(record));
     }
 
+    queryPage({ beforeSequence = null, limit, filters }) {
+        return this.records
+            .filter(record => {
+                const sequence = Number(record.id.slice(6));
+
+                if (
+                    beforeSequence !== null &&
+                    sequence >= beforeSequence
+                ) {
+                    return false;
+                }
+
+                return Object.entries(filters).every(
+                    ([field, value]) => record[field] === value
+                );
+            })
+            .slice()
+            .reverse()
+            .slice(0, limit)
+            .map(record => this.copyRecord(record));
+    }
+
     count() {
         return this.records.length;
     }
