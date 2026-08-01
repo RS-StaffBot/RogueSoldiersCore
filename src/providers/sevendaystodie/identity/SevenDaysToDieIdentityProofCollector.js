@@ -131,13 +131,17 @@ class SevenDaysToDieIdentityProofCollector {
                 return;
             }
 
-            if (
-                evidence &&
-                evidence.gameUserId === active.gameUserId
-            ) {
+            if (!evidence) {
+                continue;
+            }
+
+            if (evidence.gameUserId === active.gameUserId) {
                 this.finish(active, [evidence]);
                 return;
             }
+
+            this.finish(active, []);
+            return;
 
         }
 
