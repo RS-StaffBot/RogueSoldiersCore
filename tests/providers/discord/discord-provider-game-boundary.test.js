@@ -103,7 +103,8 @@ test("passes focused game and identity boundaries to the command loader", () => 
         "gameCommandAuthorizer",
         "gameServerProviderResolver",
         "identityModuleResolver",
-        "identityProofProviderResolver"
+        "identityProofProviderResolver",
+        "lifecycleService"
     ]);
 
 });

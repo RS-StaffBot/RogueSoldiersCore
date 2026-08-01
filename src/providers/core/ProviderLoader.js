@@ -1,4 +1,7 @@
 const DiscordProvider = require("../discord/DiscordProvider");
+const DiscordLifecycleService = require(
+    "../discord/services/DiscordLifecycleService"
+);
 const Configuration = require(
     "../../configuration/ConfigurationManager"
 );
@@ -66,8 +69,29 @@ class ProviderLoader {
             );
         }
 
+        let lifecycleService;
+        if (
+            typeof providerManager.getProviderStatus === "function" &&
+            typeof providerManager.restartProvider === "function" &&
+            typeof providerManager.replaceProvider === "function"
+        ) {
+            lifecycleService = new DiscordLifecycleService({
+                createReplacement: () => this.createProvider(
+                    "7 Days to Die",
+                    {
+                        configuration,
+                        createSevenDaysToDieClient,
+                        environment,
+                        reloadConfiguration: true
+                    }
+                ),
+                providerManager
+            }).asBoundary();
+        }
+
         const providers = [
             new DiscordProvider({
+                lifecycleService,
                 resolveGameServerProvider: name =>
                     providerManager.get(name),
                 resolveIdentityModule: name =>
