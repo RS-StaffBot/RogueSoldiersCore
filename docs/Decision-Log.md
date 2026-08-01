@@ -1,5 +1,26 @@
 # Decision Log
 
+## Critical and Recoverable Startup Boundary
+
+### Decision
+
+RSF distinguishes framework-critical startup failures from identifiable component failures.
+
+Core configuration, Registry or Bootstrap infrastructure, Loader-wide component construction, Database initialization, Database health, and migration failures remain fatal. These failures abort startup and preserve authoritative rollback behavior.
+
+An initialization or startup failure attributable to one registered Provider or independently recoverable Module is isolated to that component. The failed component remains registered in `ERROR`, a component that failed initialization is not started, and healthy unrelated components remain active.
+
+ProviderManager and ModuleManager remain the lifecycle owners for their registered components and return frozen, privacy-safe lifecycle summaries. Bootstrap coordinates those summaries and reports `STARTED` when all recoverable component operations succeed or `STARTED_DEGRADED` when Core and the Database are healthy but one or more recoverable components fail.
+
+### Guardrails
+
+- A recoverable Provider or Module failure must not trigger total framework rollback.
+- Framework-critical failures must not be downgraded into degraded startup.
+- Lifecycle summaries must not expose raw errors, stack traces, configuration, paths, addresses, sockets, tokens, credentials, or other private internals.
+- Shutdown remains Providers -> Modules -> Database and must handle mixed `RUNNING` and `ERROR` component states.
+- Automatic retry, reconnect policy, independent component status, start, stop, restart, configuration-backed reload, safe replacement, and restricted administration remain future lifecycle work.
+- Runtime reload must use controlled reconstruction and replacement rather than arbitrary source paths, classes, configuration, or dynamic code loading.
+
 ## Website Authentication Configuration Boundary
 
 ### Decision
