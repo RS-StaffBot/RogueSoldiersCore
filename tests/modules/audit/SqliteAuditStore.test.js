@@ -23,6 +23,9 @@ const AuditMigrations = require(
 const SqliteAuditStore = require(
     "../../../src/modules/audit/persistence/SqliteAuditStore"
 );
+const AuditQueryPolicy = require(
+    "../../../src/modules/audit/services/AuditQueryPolicy"
+);
 
 function openDatabase(location) {
 
@@ -35,7 +38,7 @@ function openDatabase(location) {
 
 }
 
-function createAction(action) {
+function createAction(action, overrides = {}) {
     return {
         actorType: AuditActorType.DISCORD_USER,
         actorId: "discord-user-1",
@@ -47,7 +50,8 @@ function createAction(action) {
         metadata: {
             previousState: "error",
             currentState: "running"
-        }
+        },
+        ...overrides
     };
 }
 
@@ -108,6 +112,47 @@ test("SQLite Audit persistence survives restart and continues IDs", t => {
 
     database.close();
 
+});
+
+test("SQLite Audit store applies fixed filtered page queries", () => {
+    const database = openDatabase(":memory:");
+    const module = new AuditModule({
+        store: new SqliteAuditStore(database)
+    });
+
+    module.initialize();
+    module.recordAction(createAction("lifecycle.reload"));
+    module.recordAction(createAction("lifecycle.restart"));
+    module.recordAction(createAction("lifecycle.reload", {
+        outcome: AuditOutcome.FAILED
+    }));
+    module.recordAction(createAction("lifecycle.reload"));
+
+    const filters = AuditQueryPolicy.createFilters({
+        action: "lifecycle.reload",
+        outcome: AuditOutcome.SUCCESS
+    });
+    const first = module.queryRecords({
+        beforeSequence: null,
+        limit: 1,
+        filters
+    });
+    const second = module.queryRecords({
+        beforeSequence: 4,
+        limit: 2,
+        filters
+    });
+
+    assert.deepEqual(
+        first.map(record => record.id),
+        ["audit-4"]
+    );
+    assert.deepEqual(
+        second.map(record => record.id),
+        ["audit-1"]
+    );
+
+    database.close();
 });
 
 test("SQLite Audit store returns null for unknown valid IDs", () => {
