@@ -18,7 +18,7 @@ const ModerationAction = require(
 
 class TimeoutCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -57,6 +57,17 @@ class TimeoutCommand extends BaseCommand {
                 )
         );
 
+        if (
+            auditService !== null &&
+            typeof auditService.recordAttempt !== "function"
+        ) {
+            throw new Error(
+                "Discord moderation audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
+
     }
 
     async execute(interaction) {
@@ -80,6 +91,10 @@ class TimeoutCommand extends BaseCommand {
             );
         }
 
+        const targetUser = interaction.options.getUser(
+            "member",
+            true
+        );
         const requiredPermission =
             moderation.getRequiredPermission(
                 ModerationAction.TIMEOUT
@@ -92,6 +107,11 @@ class TimeoutCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "permission-denied"
+            });
+
             await interaction.reply({
                 content:
                     "You do not have permission to time out members.",
@@ -101,21 +121,38 @@ class TimeoutCommand extends BaseCommand {
             return;
         }
 
-        const targetUser = interaction.options.getUser(
-            "member",
-            true
-        );
+        let durationMinutes;
 
-        const durationMinutes =
-            interaction.options.getInteger(
-                "minutes",
-                true
-            );
+        try {
+            durationMinutes =
+                interaction.options.getInteger(
+                    "minutes",
+                    true
+                );
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "validation-failed"
+            });
 
-        const targetMember =
-            await interaction.guild.members.fetch(
-                targetUser.id
-            );
+            throw error;
+        }
+
+        let targetMember;
+
+        try {
+            targetMember =
+                await interaction.guild.members.fetch(
+                    targetUser.id
+                );
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
+            throw error;
+        }
 
         const validation =
             await DiscordModerationGuard.validate(
@@ -125,6 +162,11 @@ class TimeoutCommand extends BaseCommand {
             );
 
         if (!validation.allowed) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "guard-denied"
+            });
+
             await interaction.reply({
                 content: validation.message,
                 flags: MessageFlags.Ephemeral
@@ -134,6 +176,11 @@ class TimeoutCommand extends BaseCommand {
         }
 
         if (!targetMember.moderatable) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
             await interaction.reply({
                 content:
                     "I cannot time out that member. Check my role and permissions.",
@@ -150,21 +197,44 @@ class TimeoutCommand extends BaseCommand {
         const durationMilliseconds =
             durationMinutes * 60 * 1000;
 
-        await targetMember.timeout(
-            durationMilliseconds,
-            reason
-        );
+        try {
+            await targetMember.timeout(
+                durationMilliseconds,
+                reason
+            );
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "execution-failed"
+            });
 
-        moderation.recordAction({
-            action: ModerationAction.TIMEOUT,
-            guildId: interaction.guild.id,
-            moderatorId: interaction.user.id,
-            targetId: targetUser.id,
-            reason,
-            details: {
-                source: "Discord",
-                durationMinutes
-            }
+            throw error;
+        }
+
+        try {
+            moderation.recordAction({
+                action: ModerationAction.TIMEOUT,
+                guildId: interaction.guild.id,
+                moderatorId: interaction.user.id,
+                targetId: targetUser.id,
+                reason,
+                details: {
+                    source: "Discord",
+                    durationMinutes
+                }
+            });
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "history-failed"
+            });
+
+            throw error;
+        }
+
+        this.recordAudit(interaction, targetUser.id, {
+            outcome: "SUCCESS",
+            status: "succeeded"
         });
 
         await interaction.reply({
@@ -174,6 +244,23 @@ class TimeoutCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
+    }
+
+    recordAudit(interaction, targetId, details) {
+        if (!this.auditService) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                action: "timeout",
+                targetId,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change moderation behavior.
+        }
     }
 
 }
