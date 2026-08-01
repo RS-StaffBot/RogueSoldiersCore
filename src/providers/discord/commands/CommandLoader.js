@@ -22,11 +22,14 @@ class CommandLoader {
         identityModuleResolver,
         identityProofProviderResolver,
         lifecycleAuditService,
-        lifecycleService
+        lifecycleService,
+        moderationAuditService
     } = {}) {
 
         const commands = [
-            new BanCommand(),
+            new BanCommand({
+                auditService: moderationAuditService
+            }),
             new BalanceCommand(),
             new DailyCommand(),
             new GameCommand({
@@ -46,7 +49,9 @@ class CommandLoader {
         }
 
         commands.push(
-            new KickCommand(),
+            new KickCommand({
+                auditService: moderationAuditService
+            }),
             new LeaderboardCommand()
         );
 

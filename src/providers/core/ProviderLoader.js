@@ -8,6 +8,9 @@ const DiscordLifecycleAuditService = require(
 const DiscordLifecycleService = require(
     "../discord/services/DiscordLifecycleService"
 );
+const DiscordModerationAuditService = require(
+    "../discord/services/DiscordModerationAuditService"
+);
 const Configuration = require(
     "../../configuration/ConfigurationManager"
 );
@@ -77,6 +80,7 @@ class ProviderLoader {
 
         let lifecycleService;
         let lifecycleAuditService;
+        let moderationAuditService;
         if (
             typeof providerManager.getProviderStatus === "function" &&
             typeof providerManager.restartProvider === "function" &&
@@ -95,14 +99,18 @@ class ProviderLoader {
                 providerManager
             }).asBoundary();
 
-            lifecycleAuditService =
-                this.createLifecycleAuditService(moduleManager);
+            const auditServices =
+                this.createDiscordAuditServices(moduleManager);
+
+            lifecycleAuditService = auditServices.lifecycle;
+            moderationAuditService = auditServices.moderation;
         }
 
         const providers = [
             new DiscordProvider({
                 lifecycleAuditService,
                 lifecycleService,
+                moderationAuditService,
                 resolveGameServerProvider: name =>
                     providerManager.get(name),
                 resolveIdentityModule: name =>
@@ -166,31 +174,42 @@ class ProviderLoader {
         return providers;
     }
 
-    createLifecycleAuditService(moduleManager) {
+    createDiscordAuditServices(moduleManager) {
 
+        const unavailable = Object.freeze({
+            lifecycle: undefined,
+            moderation: undefined
+        });
         let auditModule;
 
         try {
             auditModule = moduleManager.get("Audit");
         } catch {
-            return undefined;
+            return unavailable;
         }
 
         if (
             !auditModule ||
             typeof auditModule.recordAction !== "function"
         ) {
-            return undefined;
+            return unavailable;
         }
 
         try {
-            return new DiscordLifecycleAuditService({
-                recordingService: new AuditRecordingService({
-                    auditModule
-                })
-            }).asBoundary();
+            const recordingService = new AuditRecordingService({
+                auditModule
+            });
+
+            return Object.freeze({
+                lifecycle: new DiscordLifecycleAuditService({
+                    recordingService
+                }).asBoundary(),
+                moderation: new DiscordModerationAuditService({
+                    recordingService
+                }).asBoundary()
+            });
         } catch {
-            return undefined;
+            return unavailable;
         }
 
     }
