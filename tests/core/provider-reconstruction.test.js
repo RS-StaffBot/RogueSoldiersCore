@@ -116,8 +116,7 @@ test("replaces an initialized Provider from runtime error", async () => {
             initialized: true,
             name: "7 Days to Die",
             operational: true,
-            state: ComponentState.RUNNING,
-            supportedActions: ["STOP", "RESTART", "REPLACE"]
+            state: ComponentState.RUNNING
         }
     );
 
