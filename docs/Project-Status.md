@@ -2,13 +2,13 @@
 
 ## Current Version
 
-v1.4.0
+v1.5.0
 
 ## Current Milestone
 
 v1.5.0 - Player Identity Linking Foundation
 
-Status: Phases 1-4, Phases 5A-5E, and resilient startup isolation completed; live end-to-end verification and release hardening are next.
+Status: Release closeout in progress; implementation and required live verification are complete.
 
 ## Milestone Goal
 
@@ -174,28 +174,35 @@ Implemented and verified:
 - healthy Modules, Providers, and Database remain active after recoverable failures
 - Core, Loader-wide, migration, health, and Database startup failures remain fatal
 - shutdown preserves Providers -> Modules -> Database ordering with mixed `RUNNING` and `ERROR` states
-- 0 production vulnerabilities, 490 passing tests, and ESLint passing
 
 Automatic retry and reconnect policy, independent component status, start, stop, restart, configuration-backed reload, safe replacement, restricted administration, and process supervision remain future work.
 
-## Current Phase Objective
+### Release-Hardening Corrections
 
-Complete live end-to-end Discord-to-7DTD verification and release hardening for v1.5.0.
+Completed through pull requests `#74` and `#75`.
 
-The next phase must verify and document:
+Implemented and verified:
 
-- `/identity status` registration and ephemeral owner-only output in a live Discord server
-- `/identity link` registration and ephemeral challenge instructions
-- successful live challenge correlation from Discord through 7DTD global chat to SQLite persistence
-- safe timeout, wrong-identity, unavailable-Provider, and already-linked behavior where practical
-- restart persistence of a verified identity link
-- no Steam/EOS identifier disclosure in ordinary Discord responses or logs
-- no regression to normal 7DTD command execution after proof collection completes
-- degraded startup when an optional Provider is unavailable
-- full audit, test, lint, and diff validation
-- version, release notes, Project Status, Roadmap, Dependencies, Decision Log, Glossary, and AI onboarding synchronization where required
+- recoverable Provider and Module lifecycle errors no longer expose stack traces, local paths, socket details, credentials, or raw internal exceptions
+- the exact active challenge received from a different durable Steam/EOS identifier ends collection immediately and fails closed
+- mismatched proof no longer waits for the full five-minute timeout
+- temporary proof listeners and timers are removed when collection ends
 
-Replacement, relinking, unlinking, revocation, conflict resolution, and staff lookup remain separate explicit workflows and are not required to close the first-link foundation unless live evidence proves a blocking gap.
+## Release Verification
+
+Required v1.5.0 live verification is complete:
+
+- `/identity status` registered and returned private owner-only status
+- `/identity link` registered and returned private challenge instructions
+- the exact challenge was observed through 7 Days to Die global chat
+- an exact Steam identity was verified and persisted
+- the verified link survived framework restart
+- an already-linked member was rejected without generating another challenge
+- normal `/game status` and `/game time` operations worked after proof collection
+- optional 7 Days to Die Provider failure left Discord, the Database, and healthy Modules running in degraded mode
+- recoverable lifecycle logs did not expose stack traces, local paths, socket details, credentials, or raw Provider errors
+
+The current v1.5 implementation remains the narrow first-link compatibility foundation. Replacement, relinking, unlinking, revocation, staff lookup, broad account attachment, and identity merging remain future work.
 
 ## Required Privacy and Safety Boundaries
 
@@ -245,8 +252,8 @@ Completed command family:
 - Core, Loader-wide, migration, health, and Database startup failures remain fatal.
 - The optional 7 Days to Die Provider supports one active command or proof collection at a time through private raw Telnet.
 - Hosted player administration is available through Discord.
-- Identity contracts, records, persistence, proof evaluation, live proof collection, Module registration, private owner status, proof-gated verified-link mutation, and private Discord first-link commands are implemented.
-- Live end-to-end verification, release hardening, staff identity workflows, replacement, and revocation are not yet completed.
+- Identity contracts, records, persistence, proof evaluation, live proof collection, Module registration, private owner status, proof-gated verified-link mutation, and private Discord first-link commands are implemented and live verified.
+- Staff identity workflows, replacement, relinking, unlinking, revocation, and broad Identity Hub behavior remain future work.
 
 ## v1.4.0 Release Record
 
@@ -257,8 +264,8 @@ Completed command family:
 
 ## Next Step
 
-Perform live end-to-end Discord-to-7DTD identity verification, verify degraded startup with the optional game Provider unavailable, apply only evidence-backed corrections, then synchronize versions and release documentation for v1.5.0.
+Complete final automated validation, merge the v1.5.0 release pull request, and create the annotated `v1.5.0` tag.
 
 ## Release Notes
 
-See `docs/Release-Notes-v1.4.0.md`.
+See `docs/Release-Notes-v1.5.0.md`.
