@@ -1,6 +1,13 @@
 # Permissions
 
-## Implemented Moderation Permissions
+## Ownership
+
+- Shared owns reusable business permission identifiers only when proven cross-platform reuse exists.
+- Modules own business authorization decisions.
+- Providers own platform permission translation and enforcement.
+- Discord platform-operation commands may use fixed Discord permissions without introducing a Shared permission identifier when no reusable business permission has been proven.
+
+## Moderation Permissions
 
 Verified location:
 
@@ -19,13 +26,9 @@ UNTIMEOUT -> TIMEOUT_MEMBERS
 PURGE     -> PURGE_MESSAGES
 ```
 
-## Ownership
+Discord translates platform permissions and applies hierarchy and manageability checks. The Moderation Module remains responsible for final reusable action authorization and durable moderation records.
 
-- Shared owns reusable moderation permission identifiers.
-- Moderation Module owns action-to-permission requirements.
-- Discord Provider owns Discord permission translation and enforcement.
-
-## Implemented Economy Permission Identifiers
+## Economy Permissions
 
 Verified location:
 
@@ -44,11 +47,9 @@ VIEW_HISTORY     -> economy.view-history
 ADMINISTRATE     -> economy.administrate
 ```
 
-The Economy Module currently uses `TRANSFER` and `ADMINISTRATE` to authorize transfers under the `STAFF_ONLY` policy. The `DISABLED` policy rejects every transfer, and `EVERYONE` permits transfers without either identifier.
+The Economy Module uses these identifiers for Module-owned business authorization. The current Discord command surface does not provide complete Economy transfer or administration workflows.
 
-These are Module-level permission identifiers. The current Discord command surface has no `/transfer` command, so Discord role translation and enforcement for Economy transfers are not implemented. The `/balance`, `/daily`, and `/leaderboard` commands use validated Economy Module operations but do not provide a complete cross-platform permission administration system.
-
-## Implemented Ticket Permission Identifiers
+## Ticket Permissions
 
 Verified location:
 
@@ -59,18 +60,16 @@ src/shared/permissions/TicketPermission.js
 Implemented identifiers:
 
 ```text
-VIEW_ALL      -> tickets.view-all
-RESPOND       -> tickets.respond
-ASSIGN        -> tickets.assign
-CLOSE         -> tickets.close
-ADMINISTRATE  -> tickets.administrate
+VIEW_ALL     -> tickets.view-all
+RESPOND      -> tickets.respond
+ASSIGN       -> tickets.assign
+CLOSE        -> tickets.close
+ADMINISTRATE -> tickets.administrate
 ```
 
-Ticket creators may list and view their own Tickets, view their own message history, add messages to their own open Tickets, and close their own open Tickets. Staff operations require the corresponding reusable Ticket permission. `ADMINISTRATE` overrides the individual staff permission requirements. Being assigned to a Ticket does not itself grant access or authority.
+Ticket creators retain owner-scoped operations. Staff workflows require the corresponding reusable Ticket permission, with `ADMINISTRATE` acting as the broad override.
 
-The Discord Provider translates `ManageMessages` into `VIEW_ALL`, `RESPOND`, `ASSIGN`, and `CLOSE`. Discord `Administrator` grants `ADMINISTRATE` and, through Discord's permission behavior, the individual staff translations. This fixed mapping is not configurable.
-
-Discord translation determines which reusable identifiers an interaction presents. `TicketModule` remains responsible for the final authorization decision; Provider commands do not duplicate Ticket authorization rules.
+Discord translates `ManageMessages` into the fixed staff Ticket identifiers. Discord `Administrator` grants `ADMINISTRATE` and Discord's normal permission inheritance.
 
 ## Discord Game Command Authorization
 
@@ -80,24 +79,51 @@ Verified location:
 src/providers/discord/services/DiscordGameCommandAuthorizer.js
 ```
 
-The initial `/game` command family uses one reusable Discord Provider requirement:
+The guild-only `/game` command family requires:
 
 ```text
 Discord Manage Guild permission
 ```
 
-`DiscordGameCommandAuthorizer` validates the Discord member-permission boundary and reports whether the member has `ManageGuild`. The authorizer is injected into the Discord command-loading boundary so future `/game` subcommands use one permission decision path.
+Authorization is enforced through one Discord Provider authorizer. This remains a platform-operation requirement rather than a Shared game-server business permission.
 
-This is a Discord platform-operation requirement, not a Module business permission. No Shared game-server permission identifier is introduced because v1.3.0 currently has no second platform or Module consumer for that identifier.
+## Discord Lifecycle Administration Authorization
+
+The guild-only `/lifecycle` command family uses the same fixed Discord `ManageGuild` authorizer.
+
+Authorization is enforced twice:
+
+1. registration-time default member permission
+2. runtime permission validation before status or mutation access
+
+Implemented operations are fixed to:
+
+```text
+/lifecycle status
+/lifecycle restart
+/lifecycle reload
+```
+
+Every response is ephemeral.
+
+The command cannot accept arbitrary component names and cannot restart or replace the Discord Provider.
+
+The authorization boundary grants access only to a frozen lifecycle service exposing approved status, restart, and reload operations for the `7 Days to Die` Provider. It does not grant access to ProviderManager, component instances, constructors, configuration, sockets, credentials, or raw errors.
+
+## Staff Platform Identifier Visibility
+
+Steam and EOS identifiers remain private operational data by default.
+
+An explicitly authorized and purpose-limited staff workflow may return a requested player's durable platform identifier when operationally necessary. Ordinary command results must not expose submitted or server-normalized platform identifiers.
+
+IP addresses, credentials, positions, health, inventory, raw console output, and unrelated player identifiers remain private.
 
 ## Not Yet Implemented
 
-- Role-to-RSF permission mapping
-- Permission persistence
-- Cross-platform identity
-- Permission administration commands
-- Database-backed authorization
-- Discord Economy transfer authorization
-- Configurable Ticket staff roles
-- Broader Ticket permission administration
-- Configurable Discord game-server staff roles
+- configurable role-to-RSF permission mapping
+- permission persistence and administration commands
+- configurable Ticket staff roles
+- configurable game-server lifecycle staff roles
+- Website lifecycle authorization
+- cross-platform permission administration
+- durable actor-attributed framework-wide audit lookup
