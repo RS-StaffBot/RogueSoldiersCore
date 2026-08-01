@@ -28,7 +28,7 @@ Modules retain validation, authorization, state transitions, public errors, publ
 
 The Audit Module owns durable platform-neutral accountability summaries. It does not replace the detailed histories owned by Moderation, Economy, Tickets, Identity, or lifecycle state.
 
-Verified responsibilities through PR `#92`:
+Verified responsibilities through PR `#96`:
 
 - validate immutable defensive Audit records
 - generate sequential `audit-N` record IDs and timestamps inside RSF
@@ -46,21 +46,33 @@ Verified responsibilities through PR `#92`:
 
 Core owns SQLite, ordered migration execution, Module construction, lifecycle loading, and private store injection. Providers and commands may receive only the narrow recording or query boundary approved for a workflow. They do not receive the Audit Module, store, SQLite connection, SQL, database rows, or mutable internals.
 
-Implemented recording integrations through PR `#92` are:
+Implemented recording integrations through PR `#96` are:
 
-- Discord lifecycle restart and reload
-- Discord moderation ban and kick
-- hosted-player `/game kick`
-- hosted-player `/game ban`
-- hosted-player `/game unban`
-- hosted-player `/game whitelist add`
-- hosted-player `/game whitelist remove`
+- lifecycle `/lifecycle restart` and `/lifecycle reload`
+- Discord `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`
+- Ticket staff `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
 
-The lifecycle, moderation, and hosted-player administration integrations authenticate the Discord actor at the Provider boundary, use fixed action and target shapes, store only sanitized outcomes and allowlisted metadata, and treat Audit recording as best effort after the business result is determined. A successful moderation Audit summary is recorded only after the authoritative Moderation history commit succeeds.
+The integrated workflows authenticate the Discord actor at the Provider boundary, use fixed action and target shapes, store only sanitized outcomes and allowlisted metadata, and treat Audit recording as best effort and non-blocking after the owning workflow determines its result. Successful moderation and Ticket summaries are recorded only after their authoritative Module mutations commit. Hosted-player summaries are recorded only after the authoritative Provider operation completes.
 
-Hosted-player administration records use authenticated Discord staff attribution and privacy-safe, best-effort recording. Audit failure does not change an already completed game-server result. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` are not recorded.
+Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries and do not replace Moderation history, Ticket records and messages, hosted-game command results, Identity links, Economy transactions, or lifecycle state.
 
-Audit records do not contain moderation reasons, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, positions, health, inventory, or arbitrary request objects.
+Audit records do not contain moderation reasons, Ticket message content, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, positions, health, inventory, or arbitrary request objects.
+
+### Intentional Audit Exclusions
+
+The following remain unaudited by design:
+
+- ordinary read-only commands
+- `/game status`
+- `/game time`
+- `/game players`
+- `/game say`
+- `/ticket staff list`
+- `/ticket staff view`
+- ordinary member Ticket workflows
+- `/identity status`
+- self-service `/identity link`
 
 Restricted Discord Audit lookup, configurable retention administration, Website Audit administration, external telemetry, general event sourcing, and logging every harmless interaction remain unimplemented.
 
