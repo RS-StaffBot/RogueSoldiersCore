@@ -23,11 +23,11 @@ Release record:
 
 v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Audit Phases 1 through 4 and the first two focused Phase 5 integrations are completed and merged.
+Status: Active; Audit Phases 1 through 5 are completed and merged. Phase 6 has not started.
 
 ## Completed Implementation Checkpoint
 
-This checkpoint records completed v1.7.0 work through merged pull request `#92`:
+This checkpoint records completed v1.7.0 work through merged pull request `#96`:
 
 - Milestone activation and architecture approval: `#86`
 - Phase 1 - Audit contracts and in-memory foundation: `#87`
@@ -36,10 +36,21 @@ This checkpoint records completed v1.7.0 work through merged pull request `#92`:
 - Phase 4 - lifecycle administration Audit integration: `#90`
 - Phase 5A - Discord `/ban` and `/kick` Audit integration: `#91`
 - Phase 5B - hosted-player administration Audit integration: `#92`
+- Phase 5C - remaining Discord moderation Audit integration: `#95`
+- Phase 5D - Ticket staff mutation Audit integration: `#96`
 
-The framework now loads a platform-neutral Audit Module with immutable validated records, in-memory and SQLite stores, narrow recording and bounded-query services, durable restart recovery, lifecycle administration attribution, and Discord ban/kick accountability summaries.
+Recent merge checkpoints:
 
-Later Phase 5 integrations remain separate focused work and are not expanded by this checkpoint.
+- PR `#95` merge commit: `c91f87adcc8eee7a08e0a20f91fa99416f7c6e9e`
+- PR `#96` merge commit: `2dcfac2ef8fc10b92925b389aac5d35e48abb686`
+
+The framework now loads a platform-neutral Audit Module with immutable validated records, in-memory and SQLite stores, narrow recording and bounded-query services, durable restart recovery, and completed Phase 5 integration for lifecycle administration, Discord moderation, hosted-player administration, and privileged Ticket staff mutations.
+
+Phase 5 status: Completed
+
+Next implementation phase: Phase 6 - Restricted Discord Audit Lookup
+
+Phase 6 has not started and is not implemented by this checkpoint.
 
 ## Milestone Goal
 
@@ -114,22 +125,20 @@ The merged foundation provides:
 - normalized privacy-safe service failures
 - durable restart recovery
 
-Implemented workflow integrations through PR `#92` provide:
+Implemented workflow integrations through PR `#96` provide:
 
-- `/lifecycle restart` and `/lifecycle reload` Audit records
+- lifecycle administration through `/lifecycle restart` and `/lifecycle reload`
+- Discord moderation through `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
+- hosted-player administration through `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`
+- Ticket staff mutations through `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
 - authenticated Discord actor attribution
-- denied, busy, unavailable, failed, and successful lifecycle decision summaries
-- Discord `/ban` and `/kick` Audit summaries
-- permission-denied, guard-denied, target-unavailable, execution-failed, history-failed, and successful moderation outcomes
-- success only after the authoritative Moderation history commit succeeds
-- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` Audit summaries
-- authenticated Discord staff attribution for hosted-player administration
-- privacy-safe, best-effort hosted-player Audit recording that does not change an already completed game-server result
-- best-effort Audit writes that do not change an already determined lifecycle or moderation result
+- fixed actions, target categories, outcomes, and bounded statuses
+- success only after the authoritative owning workflow commits or completes successfully
+- best-effort, non-blocking Audit writes that do not change an already determined business or Provider result
 
-Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` are not audited.
+Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries and do not replace Moderation history, Ticket records and messages, hosted-game command results, Identity links, Economy transactions, or lifecycle state.
 
-Moderation reasons, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, and arbitrary objects are not copied into framework Audit records.
+Audit records do not contain moderation reasons, Ticket message content, raw console output, raw Discord responses, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, or arbitrary objects.
 
 ## Phase Plan
 
@@ -151,14 +160,17 @@ Status: Completed and merged in PR `#90`.
 
 ### Phase 5 - Existing Privileged Workflow Integration
 
-Status: Active.
+Status: Completed.
 
-Completed checkpoint integrations:
+Completed integrations:
 
+- lifecycle `/lifecycle restart` and `/lifecycle reload` in PR `#90`
 - Discord `/ban` and `/kick` in PR `#91`
 - hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` in PR `#92`
+- Discord `/warn`, `/timeout`, `/untimeout`, and `/purge` in PR `#95`
+- Ticket staff `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close` in PR `#96`
 
-Remaining existing privileged workflows must continue through separate focused pull requests without duplicating their authoritative business histories.
+The integrated workflows preserve their existing authoritative business records and Provider results. Audit recording is privacy-safe, bounded, best effort, and non-blocking after the owning workflow determines its result.
 
 ### Phase 6 - Restricted Discord Audit Lookup
 
@@ -203,4 +215,4 @@ v1.7.0 does not include:
 
 ## Next Step
 
-Continue Phase 5 only through separate focused pull requests for implemented privileged workflows. Do not begin Phase 6 until the current Phase 5 pull request is merged and its checkpoint is reviewed.
+Phase 5 is completed. The next implementation phase is Phase 6 - Restricted Discord Audit Lookup. Phase 6 has not started and must remain a separate focused implementation pull request.

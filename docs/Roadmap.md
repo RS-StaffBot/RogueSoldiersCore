@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Status:** Active; Phases 1 through 4 and the first two focused Phase 5 integrations are completed and merged
+**Status:** Active; Phases 1 through 5 are completed and merged. Phase 6 has not started
 
 ## Completed Milestones
 
@@ -33,7 +33,7 @@
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active; implementation checkpoint completed through PR `#92`
+Status: Active; Phase 5 completed through PR `#96`. Phase 6 has not started
 
 ### Completed Checkpoint
 
@@ -44,6 +44,13 @@ Status: Active; implementation checkpoint completed through PR `#92`
 - Phase 4 - lifecycle administration Audit integration: PR `#90`
 - Phase 5A - Discord `/ban` and `/kick` Audit integration: PR `#91`
 - Phase 5B - hosted-player administration Audit integration: PR `#92`
+- Phase 5C - remaining Discord moderation Audit integration: PR `#95`
+- Phase 5D - Ticket staff mutation Audit integration: PR `#96`
+
+Recent merge checkpoints:
+
+- PR `#95` merge commit: `c91f87adcc8eee7a08e0a20f91fa99416f7c6e9e`
+- PR `#96` merge commit: `2dcfac2ef8fc10b92925b389aac5d35e48abb686`
 
 ### Goal
 
@@ -122,26 +129,24 @@ Implemented:
 
 ### Phase 5 - Existing Privileged Workflow Integration
 
-Status: Active.
+Status: Completed.
 
-Completed checkpoint integrations:
+Completed integrations:
 
-- Discord `/ban` and `/kick` in PR `#91`
-- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove` in PR `#92`
+- lifecycle `/lifecycle restart` and `/lifecycle reload`
+- Discord `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`
+- Ticket staff `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
 
-The merged moderation integration provides authenticated moderator attribution, fixed action and target summaries, sanitized denied and failed statuses, success only after authoritative Moderation history commits, and best-effort Audit recording. Moderation reasons and raw Discord or storage details are not copied into Audit records.
+The integrated workflows use authenticated Discord actor attribution, fixed action and target shapes, sanitized outcomes, bounded metadata, and best-effort non-blocking recording. Existing Module and Provider-owned records remain authoritative, and success is recorded only after the owning workflow commits or completes successfully.
 
-The merged hosted-player integration provides authenticated Discord staff attribution and privacy-safe, best-effort Audit recording for `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` remain excluded. Kick and ban reasons, raw game-console output, and storage details are not copied into Audit records.
+Moderation reasons, Ticket message content, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, and arbitrary objects are not copied into Audit records.
 
-Remaining candidate integrations must be separate focused pull requests:
-
-- Ticket staff assignment, response, and closure
-- Economy staff credit, debit, or transfer operations where implemented
-- Identity staff administration only after such a workflow exists
-
-Read-only commands and ordinary harmless interactions are not recorded individually by default.
+The authoritative intentional exclusion list is maintained in `04-Modules.md`. Phase 5 does not audit ordinary read-only commands, ordinary member Ticket workflows, or self-service Identity workflows.
 
 ### Phase 6 - Restricted Discord Audit Lookup
+
+Status: Not started.
 
 Objective:
 

@@ -99,6 +99,34 @@ Discord does not receive ProviderManager internals, Provider instances, construc
 
 Discord cannot restart or replace itself through this command path.
 
+### Privileged Audit Integration
+
+Through PR `#96`, the Discord Provider supplies authenticated actor context to narrow workflow-specific Audit adapters for:
+
+- `/lifecycle restart`
+- `/lifecycle reload`
+- `/ban`
+- `/kick`
+- `/warn`
+- `/timeout`
+- `/untimeout`
+- `/purge`
+- `/game kick`
+- `/game ban`
+- `/game unban`
+- `/game whitelist add`
+- `/game whitelist remove`
+- `/ticket staff message`
+- `/ticket staff assign`
+- `/ticket staff unassign`
+- `/ticket staff close`
+
+The Provider receives only narrow recording boundaries. It does not receive the Audit store, SQLite connection, SQL, database rows, or mutable Audit Module internals.
+
+Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries. Recording is best effort and non-blocking after the owning workflow determines its result.
+
+Audit records do not copy moderation reasons, Ticket message content, raw console output, raw Discord responses, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, or arbitrary objects. The authoritative intentional exclusion list is maintained in `04-Modules.md`.
+
 ## 7 Days to Die Provider
 
 `SevenDaysToDieProvider` is optional and disabled by default. `ProviderLoader` omits it when configuration is missing or disabled. Enabled configuration is validated before client use.
@@ -212,7 +240,7 @@ Telnet passwords remain environment-only and outside tracked JSON.
 - multiple game servers
 - OS-level process supervision
 - arbitrary Provider reconstruction
-- durable actor-attributed lifecycle audit history
+- general Provider activity auditing outside the approved privileged workflows
 
 ## Website Provider
 

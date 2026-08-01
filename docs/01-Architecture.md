@@ -91,9 +91,16 @@ The source Provider authenticates the actor and supplies only the verified actor
 
 The EventBus and runtime logs are not authoritative Audit storage. Audit records do not replace Moderation cases, Economy transactions, Ticket records and messages, Identity links, or current lifecycle state.
 
-Implemented integrations through PR `#92` are Discord lifecycle restart/reload, Discord moderation ban/kick, and hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`. Lifecycle, moderation, and hosted-player operations preserve their existing private responses and authority boundaries. Successful moderation accountability is recorded only after the authoritative Moderation history commit succeeds.
+Implemented integrations through PR `#96` are:
 
-Hosted-player Audit recording uses authenticated Discord staff attribution and remains privacy-safe and best effort. Audit failure does not change an already completed game-server result. Read-only `/game status`, `/game time`, and `/game players` operations and `/game say` remain outside the Audit integration.
+- Discord lifecycle `/lifecycle restart` and `/lifecycle reload`
+- Discord moderation `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
+- hosted-player `/game kick`, `/game ban`, `/game unban`, `/game whitelist add`, and `/game whitelist remove`
+- Ticket staff `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
+
+These workflows preserve their existing private responses and authority boundaries. Successful accountability is recorded only after the authoritative owning Module commit or Provider operation completes successfully. Audit recording remains privacy-safe, best effort, and non-blocking; an Audit failure does not change an already determined lifecycle, moderation, hosted-game, or Ticket result.
+
+Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries and do not replace Moderation history, Ticket records and messages, hosted-game command results, Identity links, Economy transactions, or lifecycle state. The authoritative intentional exclusion list is maintained in `04-Modules.md`.
 
 ## Economy Flow
 

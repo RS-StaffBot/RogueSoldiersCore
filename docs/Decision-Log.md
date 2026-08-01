@@ -83,7 +83,52 @@ Discord receives only a frozen lifecycle service exposing `getStatus()`, `restar
 - Discord cannot restart or replace itself.
 - ProviderManager, ProviderLoader, component instances, constructors, configuration, credentials, sockets, clients, and raw errors remain private.
 - Lifecycle administration does not provide configuration editing, process restart, source-code hot reload, Website control, or Module control.
-- Durable actor-attributed lifecycle audit records remain future work.
+- Durable actor-attributed Audit records are implemented for `/lifecycle restart` and `/lifecycle reload`; `/lifecycle status` remains intentionally unaudited.
+
+## Audit Phase 5 Privileged Workflow Integration
+
+### Decision
+
+Phase 5 of `v1.7.0 - Audit and Activity Foundation` is completed through PR `#96`.
+
+Implemented privileged workflow integrations are:
+
+```text
+/lifecycle restart
+/lifecycle reload
+/ban
+/kick
+/warn
+/timeout
+/untimeout
+/purge
+/game kick
+/game ban
+/game unban
+/game whitelist add
+/game whitelist remove
+/ticket staff message
+/ticket staff assign
+/ticket staff unassign
+/ticket staff close
+```
+
+Recent merge checkpoints:
+
+- PR `#95` merge commit: `c91f87adcc8eee7a08e0a20f91fa99416f7c6e9e`
+- PR `#96` merge commit: `2dcfac2ef8fc10b92925b389aac5d35e48abb686`
+
+Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries. Core owns database and lifecycle infrastructure, not Audit business rules. Providers and Modules receive only narrow Audit service boundaries.
+
+Audit recording for the integrated workflows is best effort and non-blocking after the owning workflow determines its result. An Audit failure does not alter an already determined lifecycle, moderation, hosted-game, or Ticket result.
+
+### Guardrails
+
+- Audit records must not store moderation reasons, Ticket message content, raw console output, raw Discord responses, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, or arbitrary objects.
+- Successful accountability must not be recorded before the authoritative owning Module mutation commits or Provider operation completes.
+- Ordinary read-only commands and harmless member interactions are not recorded by default.
+- The authoritative intentional exclusion list is maintained in `04-Modules.md`.
+- Phase 6 - Restricted Discord Audit Lookup is the next implementation phase and has not started.
 
 ## Critical and Recoverable Startup Boundary
 
