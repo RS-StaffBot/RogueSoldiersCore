@@ -2,6 +2,12 @@ const AuditRecordingService = require(
     "../../modules/audit/services/AuditRecordingService"
 );
 const DiscordProvider = require("../discord/DiscordProvider");
+const CommandLoader = require(
+    "../discord/commands/CommandLoader"
+);
+const DiscordHostedPlayerAuditService = require(
+    "../discord/services/DiscordHostedPlayerAuditService"
+);
 const DiscordLifecycleAuditService = require(
     "../discord/services/DiscordLifecycleAuditService"
 );
@@ -78,6 +84,7 @@ class ProviderLoader {
             );
         }
 
+        let hostedPlayerAuditService;
         let lifecycleService;
         let lifecycleAuditService;
         let moderationAuditService;
@@ -102,12 +109,20 @@ class ProviderLoader {
             const auditServices =
                 this.createDiscordAuditServices(moduleManager);
 
+            hostedPlayerAuditService = auditServices.hostedPlayer;
             lifecycleAuditService = auditServices.lifecycle;
             moderationAuditService = auditServices.moderation;
         }
 
+        const commandLoader = Object.freeze({
+            load: options => CommandLoader.load({
+                ...options,
+                hostedPlayerAuditService
+            })
+        });
         const providers = [
             new DiscordProvider({
+                commandLoader,
                 lifecycleAuditService,
                 lifecycleService,
                 moderationAuditService,
@@ -177,6 +192,7 @@ class ProviderLoader {
     createDiscordAuditServices(moduleManager) {
 
         const unavailable = Object.freeze({
+            hostedPlayer: undefined,
             lifecycle: undefined,
             moderation: undefined
         });
@@ -201,6 +217,9 @@ class ProviderLoader {
             });
 
             return Object.freeze({
+                hostedPlayer: new DiscordHostedPlayerAuditService({
+                    recordingService
+                }).asBoundary(),
                 lifecycle: new DiscordLifecycleAuditService({
                     recordingService
                 }).asBoundary(),
