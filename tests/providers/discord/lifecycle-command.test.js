@@ -34,6 +34,9 @@ function createInteraction({
             getSubcommand: () => subcommand
         },
         replies,
+        user: {
+            id: "discord-user-1"
+        },
         async reply(payload) {
             replies.push(payload);
         },
@@ -105,9 +108,18 @@ test("registers a guild-only ManageGuild lifecycle command", () => {
     );
 });
 
-test("denies unauthorized lifecycle requests ephemerally", async () => {
-    const interaction = createInteraction({ authorized: false });
+test("audits denied lifecycle mutations without executing them", async () => {
+    const interaction = createInteraction({
+        authorized: false,
+        subcommand: "restart"
+    });
+    const records = [];
     const command = new LifecycleCommand({
+        auditService: {
+            recordAttempt(record) {
+                records.push(record);
+            }
+        },
         authorizer: createAuthorizer(false),
         lifecycleService: {
             getStatus() {
@@ -127,11 +139,23 @@ test("denies unauthorized lifecycle requests ephemerally", async () => {
     assert.equal(interaction.replies.length, 1);
     assert.match(interaction.replies[0].content, /do not have permission/u);
     assert.equal(interaction.deferred.length, 0);
+    assert.deepEqual(records, [{
+        actorId: "discord-user-1",
+        operation: "restart",
+        outcome: "DENIED",
+        status: "permission-denied"
+    }]);
 });
 
-test("reports private lifecycle status without internal details", async () => {
+test("does not audit read-only lifecycle status", async () => {
     const interaction = createInteraction();
+    const records = [];
     const command = new LifecycleCommand({
+        auditService: {
+            recordAttempt(record) {
+                records.push(record);
+            }
+        },
         authorizer: createAuthorizer(),
         lifecycleService: {
             getStatus: () => Object.freeze({
@@ -150,19 +174,29 @@ test("reports private lifecycle status without internal details", async () => {
 
     assert.equal(interaction.replies.length, 1);
     assert.match(interaction.replies[0].content, /RUNNING/u);
+    assert.deepEqual(records, []);
     assert.doesNotMatch(
         interaction.replies[0].content,
         /password|host|port|socket|stack/iu
     );
 });
 
-test("executes restart privately and sanitizes failures", async () => {
+test("audits successful and failed lifecycle mutations safely", async () => {
     const success = createInteraction({ subcommand: "restart" });
     const failed = createInteraction({ subcommand: "reload" });
+    const records = [];
     const command = new LifecycleCommand({
+        auditService: {
+            recordAttempt(record) {
+                records.push(record);
+            }
+        },
         authorizer: createAuthorizer(),
         lifecycleService: {
-            getStatus() {},
+            getStatus: () => Object.freeze({
+                name: "7 Days to Die",
+                state: "ERROR"
+            }),
             reload: async () => Object.freeze({
                 outcome: "FAILED",
                 state: "ERROR",
@@ -184,7 +218,50 @@ test("executes restart privately and sanitizes failures", async () => {
     assert.equal(failed.deferred.length, 1);
     assert.match(failed.edits[0].content, /did not complete/u);
     assert.doesNotMatch(
-        failed.edits[0].content,
+        JSON.stringify(records),
         /password|host|socket|stack/iu
     );
+    assert.deepEqual(records, [
+        {
+            actorId: "discord-user-1",
+            operation: "restart",
+            outcome: "SUCCESS",
+            previousState: "ERROR",
+            currentState: "RUNNING",
+            status: "succeeded"
+        },
+        {
+            actorId: "discord-user-1",
+            operation: "reload",
+            outcome: "FAILED",
+            previousState: "ERROR",
+            currentState: "ERROR",
+            status: "failed"
+        }
+    ]);
+});
+
+test("audit failure does not change lifecycle operation response", async () => {
+    const interaction = createInteraction({ subcommand: "restart" });
+    const command = new LifecycleCommand({
+        auditService: {
+            recordAttempt() {
+                throw new Error("private audit storage failure");
+            }
+        },
+        authorizer: createAuthorizer(),
+        lifecycleService: {
+            getStatus: () => ({ state: "READY" }),
+            reload() {},
+            restart: async () => ({
+                outcome: "SUCCEEDED",
+                state: "RUNNING",
+                succeeded: true
+            })
+        }
+    });
+
+    await command.execute(interaction);
+
+    assert.match(interaction.edits[0].content, /completed successfully/u);
 });
