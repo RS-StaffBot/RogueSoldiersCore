@@ -1,9 +1,9 @@
-const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
 
 class ProviderManager {
     constructor() {
         this.providers = new Map();
+        this.initializedProviders = new WeakSet();
     }
 
     register(provider) {
@@ -35,20 +35,28 @@ class ProviderManager {
 
             if (
                 operation === "start" &&
-                provider.state !== ComponentState.READY
+                !this.initializedProviders.has(provider)
             ) {
                 Logger.error(
                     `Provider '${provider.name}' failed to start.`
                 );
                 Logger.error(
-                    "Provider must be READY before startup."
+                    "Provider initialization did not succeed."
                 );
             } else {
 
                 try {
                     await provider[operation]();
                     succeeded = true;
+
+                    if (operation === "initialize") {
+                        this.initializedProviders.add(provider);
+                    }
                 } catch (error) {
+
+                    if (operation === "initialize") {
+                        this.initializedProviders.delete(provider);
+                    }
 
                     if (typeof provider.setError === "function") {
                         provider.setError();
