@@ -2,152 +2,94 @@
 
 ## Current Version
 
-v1.5.0
+v1.6.0
 
 ## Latest Completed Milestone
 
-v1.5.0 - Player Identity Linking Foundation
+v1.6.0 - Component Resilience and Runtime Lifecycle
 
-Status: Completed, merged, live verified, and tagged.
+Status: Completed, merged, live verified, and awaiting release PR merge and tag.
 
 Release record:
 
-- Release pull request: `#76`
-- Release merge commit: `0c318bddbfc4b5937d0d791b2df8610bfa0aff5c`
-- Annotated tag: `v1.5.0`
-- Release validation: GitHub Actions passed
-- Release notes: `docs/Release-Notes-v1.5.0.md`
+- Implementation pull requests: `#77` through `#84`
+- Release pull request: pending
+- Release merge commit: pending
+- Annotated tag: pending
+- Release validation: GitHub Actions required before merge
+- Release notes: `docs/Release-Notes-v1.6.0.md`
 
-Verified v1.5 capabilities include:
+## Verified v1.6 Capabilities
 
-- private `/identity status`
-- private `/identity link user-id:<Steam_...|EOS_...>`
-- exact short-lived challenge proof through 7 Days to Die global chat
-- proof-gated SQLite persistence
-- verified-link recovery after framework restart
-- already-linked rejection without another challenge
-- normal game commands after proof collection
-- degraded startup when the optional 7 Days to Die Provider is unavailable
-- privacy-safe recoverable lifecycle logging
-- immediate fail-closed completion when the exact challenge comes from a different durable Steam/EOS identifier
+- frozen privacy-safe lifecycle status contracts for registered Providers and Modules
+- controlled individual Provider and Module start and stop operations
+- one shared non-reentrant lifecycle-operation lock
+- safe Provider and Module restart coordination
+- bounded opt-in 7 Days to Die reconnect policy
+- cancellation of reconnect work during intentional stop
+- fixed Loader-owned 7 Days to Die reconstruction allowlist
+- configuration reload before replacement candidate construction
+- candidate initialization and startup before atomic registry replacement
+- failed-candidate cleanup while preserving the existing Provider
+- replacement of an initialized 7 Days to Die Provider from `RUNNING` or `ERROR`
+- guild-only private `/lifecycle status`
+- guild-only private `/lifecycle restart`
+- guild-only private `/lifecycle reload`
+- Discord registration-time and runtime `ManageGuild` enforcement
+- fixed 7 Days to Die lifecycle target with no arbitrary component selection
+- degraded operation while the 7 Days to Die Provider is unavailable
+- live recovery from `ERROR` to `RUNNING` after the game server and Telnet return
+- continued `/game time` operation after restart, reload, and degraded recovery
+- fresh-clone JSON startup compatibility through BOM-free `config/core/app.json`
 
-The v1.5 `identity_links` model remains the active narrow first-link compatibility foundation. Replacement, relinking, unlinking, revocation, staff lookup, broad platform attachments, and Identity Hub behavior remain future work.
+## Live Verification Record
 
-## Current Milestone
+Live verification confirmed:
 
-v1.6.0 - Component Resilience and Runtime Lifecycle
+1. healthy 7 Days to Die lifecycle status
+2. controlled restart followed by successful game command execution
+3. configuration-backed reload followed by successful game command execution
+4. Provider transition to `ERROR` after the game server was stopped and bounded recovery was exhausted
+5. Discord and unrelated RSF components remaining online during the Provider failure
+6. successful reload from `ERROR` after the game server and Telnet returned
+7. final Provider status of `RUNNING`, initialized and operational
+8. private Discord lifecycle responses with no raw Telnet, address, credential, path, or stack-trace exposure
 
-Status: Active; Phase 1 planning approved.
+## Architecture Boundary
 
-## Milestone Goal
+Core owns lifecycle coordination, status and result contracts, operation serialization, trusted replacement coordination, and framework-wide critical-versus-recoverable policy.
 
-Give RSF a safe, observable, and controllable runtime lifecycle for independently recoverable Providers and Modules without requiring a full framework restart.
+ProviderManager and ModuleManager own registered component lookup and lifecycle operations. Components retain responsibility for their own initialization, startup, cleanup, and platform or business behavior.
 
-The milestone builds on the v1.5 critical-versus-recoverable startup boundary. It must preserve healthy components when one recoverable component fails and must never downgrade Core, Database, migration, Loader-wide, or other framework-critical failures into ordinary component failures.
+Discord receives only narrow frozen lifecycle services. It does not receive Manager internals, component instances, constructors, source paths, configuration objects, credentials, sockets, clients, stores, database handles, or raw errors.
 
-The milestone prepares RSF for more reliable hosted-game operation, Linux and Docker deployment, additional game Providers, and future administration interfaces.
+The 7 Days to Die Provider owns reconnect behavior. Reconnect is bounded, opt-in, Provider-specific, and cancelled during intentional stop.
 
-## Approved Architecture Boundary
-
-Core owns lifecycle coordination, component registration, operation serialization, lifecycle status contracts, safe reconstruction coordination, and framework-wide critical-versus-recoverable policy.
-
-ProviderManager owns registered Provider lookup and Provider lifecycle operations.
-
-ModuleManager owns registered Module lookup and Module lifecycle operations.
-
-Each Provider and Module remains responsible for its own platform or business cleanup and startup behavior through its existing lifecycle methods.
-
-Discord and Website Providers may expose restricted administrative interfaces only through narrow Core lifecycle services. They must not receive Manager internals, component instances, constructors, arbitrary source paths, configuration objects, errors, sockets, credentials, or raw Provider state.
-
-## Phase Plan
-
-### Phase 1 - Read-Only Lifecycle Status Foundation
-
-Objective: create one privacy-safe status contract for registered Providers and Modules.
-
-Planned operations:
-
-```text
-listProviderStatuses()
-getProviderStatus(name)
-listModuleStatuses()
-getModuleStatus(name)
-```
-
-Each result may expose only approved runtime facts such as:
-
-- component type
-- registered component name
-- current component state
-- whether initialization previously succeeded
-- whether the component is currently operational
-- lifecycle actions supported by the current state
-
-Results must be frozen, defensive, deterministic, and free of raw errors, stack traces, configuration, credentials, addresses, IPs, paths, sockets, clients, stores, database handles, and other component internals.
-
-Phase 1 is read-only. It does not mutate lifecycle state.
-
-### Phase 2 - Controlled Individual Stop and Start
-
-Planned objective: add narrow, validated operations for stopping and starting one registered recoverable component while preserving lifecycle ownership and dependency safety.
-
-### Phase 3 - Safe Restart Coordination
-
-Planned objective: serialize lifecycle mutations, prevent overlapping operations, and provide one controlled restart operation with truthful results and rollback-safe behavior where applicable.
-
-### Phase 4 - Provider Reconnect Policy
-
-Planned objective: define evidence-backed opt-in reconnect behavior for eligible Providers without creating uncontrolled retry loops or hiding persistent failures.
-
-### Phase 5 - Configuration-Backed Reload and Safe Replacement
-
-Planned objective: reconstruct approved components from trusted Loader-owned configuration and replace them atomically without arbitrary paths, dynamic code loading, or request-controlled constructors.
-
-### Phase 6 - Restricted Lifecycle Administration
-
-Planned objective: expose approved private staff workflows through Discord and, when appropriate, Website administration boundaries.
-
-### Phase 7 - Live Recovery Verification and Release Hardening
-
-Planned objective: verify degraded operation, controlled recovery, privacy-safe output, operation serialization, restart and reload behavior, and final release documentation.
-
-## Phase 1 Explicit Exclusions
-
-Phase 1 must not add:
-
-- start, stop, restart, reconnect, reload, or replacement operations
-- automatic retries or reconnect loops
-- Discord or Website lifecycle commands
-- configuration mutations
-- process supervision
-- multiple-server support
-- arbitrary component names passed into reconstruction code
-- component constructors, instances, Managers, Registry, configuration, or raw errors in public results
-- changes to existing startup, degraded-startup, or shutdown behavior
-
-## Required Safety and Privacy Boundaries
-
-- Lifecycle output must never expose raw errors, stack traces, local paths, credentials, tokens, IP addresses, socket details, clients, configuration objects, database handles, Module stores, or Provider internals.
-- Component names accepted by future mutation operations must resolve through registered trusted components rather than arbitrary source paths or class names.
-- Lifecycle mutations must be serialized and reject conflicting concurrent operations.
-- Failed lifecycle operations must report truthful sanitized outcomes and leave component state observable.
-- Automatic retry must be bounded, opt-in, and Provider-appropriate when implemented.
-- Core, Database, health, migration, Loader-wide, and other framework-critical failures remain fatal.
-- Recoverable component failures must not trigger total framework rollback.
-- Discord must not be able to restart or replace itself through an unsafe in-process command path.
-- Reload and replacement must use trusted Loader-owned reconstruction and atomic replacement rather than dynamic code loading.
+Provider reconstruction is fixed to trusted Loader-owned factories. Arbitrary paths, class names, dynamic code loading, request-controlled constructors, and Discord self-replacement remain prohibited.
 
 ## Current Production Boundaries
 
 - RSF supports one application process and one Core-owned SQLite connection.
 - Node.js 22.13 or newer is required for `node:sqlite`.
 - Registered Providers and Modules are initialized and started independently.
-- Recoverable component failures leave healthy unrelated components running and produce degraded startup.
-- Failed components remain registered in `ERROR`.
+- Recoverable component failures leave healthy unrelated components running.
+- Failed components remain registered with truthful state.
 - Core, Database, health, migration, and Loader-wide failures remain fatal.
 - Shutdown remains Providers -> Modules -> Database.
-- Runtime status, individual lifecycle mutation, reconnect, reload, replacement, and administration are not yet implemented.
+- Lifecycle status is available for Providers and Modules.
+- Individual start, stop, and restart contracts exist for Providers and Modules.
+- Configuration-backed replacement is currently approved only for the 7 Days to Die Provider.
+- Discord lifecycle administration is fixed to the 7 Days to Die Provider.
+- Website lifecycle administration is not implemented.
+- OS-level process supervision is not implemented.
+- Durable actor-attributed framework-wide audit/activity history is not implemented.
+
+## Deferred Audit and Activity Foundation
+
+A future focused milestone should provide durable RSF-owned records for meaningful privileged and business actions, including actor, source, action, target, outcome, and timestamp. Lifecycle restart and reload should eventually record the authorized Discord or Website actor that initiated them.
+
+This future work must not be confused with terminal logging. Runtime logs should remain operational and privacy-safe, while durable audit records should be queryable through permission-gated staff interfaces.
 
 ## Next Step
 
-Implement Phase 1 as a focused read-only lifecycle status contract with complete automated coverage and no lifecycle mutations.
+Merge the v1.6.0 release pull request only after the production dependency audit, complete test suite, ESLint, `git diff --check`, version consistency checks, and release-document review pass. After merge, create the annotated `v1.6.0` tag.
