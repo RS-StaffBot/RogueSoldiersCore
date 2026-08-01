@@ -112,9 +112,10 @@ test("collects one exact sanitized durable-ID challenge match", async () => {
 
 });
 
-test("fails closed for another durable identity", async () => {
+test("fails closed immediately for another durable identity", async () => {
 
     const client = createClient();
+    let clearTimerCalls = 0;
     let timeoutCallback = null;
     const collector = new SevenDaysToDieIdentityProofCollector({
         client,
@@ -123,18 +124,22 @@ test("fails closed for another durable identity", async () => {
             timeoutCallback = callback;
             return { timer: true };
         },
-        clearTimer: () => {}
+        clearTimer: () => {
+            clearTimerCalls += 1;
+        }
     });
     const collection = collector.collect({
         challenge,
-        gameUserId: "Steam_11111111111111111"
+        gameUserId: "EOS_0002c60901644d5dbbe98aa9575f6d65"
     });
 
     client.socket.emit("data", `${liveLine}\n`);
-    timeoutCallback();
 
     assert.deepStrictEqual(await collection, []);
+    assert.strictEqual(typeof timeoutCallback, "function");
+    assert.strictEqual(clearTimerCalls, 1);
     assert.strictEqual(collector.isCollecting(), false);
+    assert.strictEqual(client.socket.listenerCount("data"), 0);
 
 });
 
