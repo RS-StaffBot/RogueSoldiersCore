@@ -1,3 +1,5 @@
+const Logger = require("../../core/Logger");
+
 class ModuleManager {
 
     constructor() {
@@ -16,15 +18,57 @@ class ModuleManager {
     }
 
     async initializeAll() {
-        for (const module of this.modules.values()) {
-            await module.initialize();
-        }
+        return this.runLifecycleOperation("initialize");
     }
 
     async startAll() {
+        return this.runLifecycleOperation("start");
+    }
+
+    async runLifecycleOperation(operation) {
+
+        const results = [];
+
         for (const module of this.modules.values()) {
-            await module.start();
+
+            let succeeded = false;
+
+            try {
+                await module[operation]();
+                succeeded = true;
+            } catch (error) {
+
+                if (typeof module.setError === "function") {
+                    module.setError();
+                }
+
+                Logger.error(
+                    `Module '${module.name}' failed to ${operation}.`
+                );
+                Logger.error(error.stack || error.message);
+
+            }
+
+            results.push(Object.freeze({
+                name: module.name,
+                state: module.state,
+                succeeded
+            }));
+
         }
+
+        const failed = results.filter(
+            result => !result.succeeded
+        ).length;
+
+        return Object.freeze({
+            failed,
+            operation,
+            processed: results.length,
+            results: Object.freeze(results),
+            succeeded: results.length - failed
+        });
+
     }
 
     async stopAll() {
