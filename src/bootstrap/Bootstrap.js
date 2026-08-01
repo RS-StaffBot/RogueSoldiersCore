@@ -84,7 +84,7 @@ class Bootstrap {
                 providerStartup
             ]);
             const degraded = lifecycleSummaries.some(
-                summary => summary.failed > 0
+                summary => summary?.failed > 0
             );
 
             Logger.info("Loaded Core Services:");
