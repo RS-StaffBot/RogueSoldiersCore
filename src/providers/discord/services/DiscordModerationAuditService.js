@@ -11,7 +11,7 @@ const SUPPORTED_ACTIONS = Object.freeze([
 
 class DiscordModerationAuditService {
 
-    constructor({ recordingService }) {
+    constructor({ recordingService } = {}) {
         if (
             !recordingService ||
             typeof recordingService.record !== "function"
