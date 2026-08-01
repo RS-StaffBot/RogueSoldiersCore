@@ -48,7 +48,7 @@ Core configuration, Registry or Bootstrap infrastructure, Loader-wide constructi
 
 Recoverable component failures do not trigger total rollback. Shutdown continues in Providers -> Modules -> Database order and safely handles mixed `RUNNING` and `ERROR` component states.
 
-Automatic retry, reconnect policy, independent component start or stop, restart, configuration-backed reload, safe replacement, and restricted lifecycle administration are not implemented by the current Bootstrap contract.
+Automatic retry, reconnect policy, independent component status, start, stop, restart, configuration-backed reload, safe replacement, and restricted lifecycle administration are not implemented by the current Bootstrap contract.
 
 ## Settings Infrastructure
 
