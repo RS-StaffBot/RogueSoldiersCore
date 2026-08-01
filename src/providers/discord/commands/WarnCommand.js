@@ -18,7 +18,7 @@ const ModerationAction = require(
 
 class WarnCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -49,6 +49,17 @@ class WarnCommand extends BaseCommand {
                 )
         );
 
+        if (
+            auditService !== null &&
+            typeof auditService.recordAttempt !== "function"
+        ) {
+            throw new Error(
+                "Discord moderation audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
+
     }
 
     async execute(interaction) {
@@ -72,6 +83,10 @@ class WarnCommand extends BaseCommand {
             );
         }
 
+        const targetUser = interaction.options.getUser(
+            "member",
+            true
+        );
         const requiredPermission =
             moderation.getRequiredPermission(
                 ModerationAction.WARN
@@ -84,6 +99,11 @@ class WarnCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "permission-denied"
+            });
+
             await interaction.reply({
                 content:
                     "You do not have permission to warn members.",
@@ -93,15 +113,21 @@ class WarnCommand extends BaseCommand {
             return;
         }
 
-        const targetUser = interaction.options.getUser(
-            "member",
-            true
-        );
+        let targetMember;
 
-        const targetMember =
-            await interaction.guild.members.fetch(
-                targetUser.id
-            );
+        try {
+            targetMember =
+                await interaction.guild.members.fetch(
+                    targetUser.id
+                );
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
+            throw error;
+        }
 
         const validation =
             await DiscordModerationGuard.validate(
@@ -111,6 +137,11 @@ class WarnCommand extends BaseCommand {
             );
 
         if (!validation.allowed) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "guard-denied"
+            });
+
             await interaction.reply({
                 content: validation.message,
                 flags: MessageFlags.Ephemeral
@@ -136,6 +167,11 @@ class WarnCommand extends BaseCommand {
                 content: warningMessage
             });
         } catch {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "execution-failed"
+            });
+
             await interaction.reply({
                 content:
                     `I could not deliver the warning to ${targetUser.tag}. ` +
@@ -146,16 +182,30 @@ class WarnCommand extends BaseCommand {
             return;
         }
 
-        moderation.recordAction({
-            action: ModerationAction.WARN,
-            guildId: interaction.guild.id,
-            moderatorId: interaction.user.id,
-            targetId: targetUser.id,
-            reason,
-            details: {
-                source: "Discord",
-                delivered: true
-            }
+        try {
+            moderation.recordAction({
+                action: ModerationAction.WARN,
+                guildId: interaction.guild.id,
+                moderatorId: interaction.user.id,
+                targetId: targetUser.id,
+                reason,
+                details: {
+                    source: "Discord",
+                    delivered: true
+                }
+            });
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "history-failed"
+            });
+
+            throw error;
+        }
+
+        this.recordAudit(interaction, targetUser.id, {
+            outcome: "SUCCESS",
+            status: "succeeded"
         });
 
         await interaction.reply({
@@ -164,6 +214,23 @@ class WarnCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
+    }
+
+    recordAudit(interaction, targetId, details) {
+        if (!this.auditService) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                action: "warn",
+                targetId,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change moderation behavior.
+        }
     }
 
 }

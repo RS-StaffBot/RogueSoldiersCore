@@ -18,7 +18,7 @@ const ModerationAction = require(
 
 class UntimeoutCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -47,6 +47,17 @@ class UntimeoutCommand extends BaseCommand {
                 )
         );
 
+        if (
+            auditService !== null &&
+            typeof auditService.recordAttempt !== "function"
+        ) {
+            throw new Error(
+                "Discord moderation audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
+
     }
 
     async execute(interaction) {
@@ -70,6 +81,10 @@ class UntimeoutCommand extends BaseCommand {
             );
         }
 
+        const targetUser = interaction.options.getUser(
+            "member",
+            true
+        );
         const requiredPermission =
             moderation.getRequiredPermission(
                 ModerationAction.UNTIMEOUT
@@ -82,6 +97,11 @@ class UntimeoutCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "permission-denied"
+            });
+
             await interaction.reply({
                 content:
                     "You do not have permission to remove timeouts.",
@@ -91,15 +111,21 @@ class UntimeoutCommand extends BaseCommand {
             return;
         }
 
-        const targetUser = interaction.options.getUser(
-            "member",
-            true
-        );
+        let targetMember;
 
-        const targetMember =
-            await interaction.guild.members.fetch(
-                targetUser.id
-            );
+        try {
+            targetMember =
+                await interaction.guild.members.fetch(
+                    targetUser.id
+                );
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
+            throw error;
+        }
 
         const validation =
             await DiscordModerationGuard.validate(
@@ -109,6 +135,11 @@ class UntimeoutCommand extends BaseCommand {
             );
 
         if (!validation.allowed) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "DENIED",
+                status: "guard-denied"
+            });
+
             await interaction.reply({
                 content: validation.message,
                 flags: MessageFlags.Ephemeral
@@ -118,6 +149,11 @@ class UntimeoutCommand extends BaseCommand {
         }
 
         if (!targetMember.moderatable) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
             await interaction.reply({
                 content:
                     "I cannot remove that member's timeout. " +
@@ -129,6 +165,11 @@ class UntimeoutCommand extends BaseCommand {
         }
 
         if (!targetMember.isCommunicationDisabled()) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "not-timed-out"
+            });
+
             await interaction.reply({
                 content:
                     `${targetUser.tag} is not currently timed out.`,
@@ -142,17 +183,40 @@ class UntimeoutCommand extends BaseCommand {
             interaction.options.getString("reason") ||
             `Timeout removed by ${interaction.user.tag}`;
 
-        await targetMember.timeout(null, reason);
+        try {
+            await targetMember.timeout(null, reason);
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "execution-failed"
+            });
 
-        moderation.recordAction({
-            action: ModerationAction.UNTIMEOUT,
-            guildId: interaction.guild.id,
-            moderatorId: interaction.user.id,
-            targetId: targetUser.id,
-            reason,
-            details: {
-                source: "Discord"
-            }
+            throw error;
+        }
+
+        try {
+            moderation.recordAction({
+                action: ModerationAction.UNTIMEOUT,
+                guildId: interaction.guild.id,
+                moderatorId: interaction.user.id,
+                targetId: targetUser.id,
+                reason,
+                details: {
+                    source: "Discord"
+                }
+            });
+        } catch (error) {
+            this.recordAudit(interaction, targetUser.id, {
+                outcome: "FAILED",
+                status: "history-failed"
+            });
+
+            throw error;
+        }
+
+        this.recordAudit(interaction, targetUser.id, {
+            outcome: "SUCCESS",
+            status: "succeeded"
         });
 
         await interaction.reply({
@@ -162,6 +226,23 @@ class UntimeoutCommand extends BaseCommand {
             flags: MessageFlags.Ephemeral
         });
 
+    }
+
+    recordAudit(interaction, targetId, details) {
+        if (!this.auditService) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                action: "untimeout",
+                targetId,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change moderation behavior.
+        }
     }
 
 }

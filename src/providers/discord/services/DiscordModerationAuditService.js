@@ -6,7 +6,11 @@ const {
 
 const SUPPORTED_ACTIONS = Object.freeze([
     "ban",
-    "kick"
+    "kick",
+    "purge",
+    "timeout",
+    "untimeout",
+    "warn"
 ]);
 
 class DiscordModerationAuditService {
@@ -37,7 +41,7 @@ class DiscordModerationAuditService {
                 actorId,
                 source: AuditSource.DISCORD,
                 action: this.resolveAction(action),
-                targetType: "discord-member",
+                targetType: this.resolveTargetType(action),
                 targetId,
                 outcome: this.resolveOutcome(outcome),
                 metadata: this.createMetadata(status)
@@ -57,6 +61,14 @@ class DiscordModerationAuditService {
         }
 
         return `moderation.${action}`;
+    }
+
+    resolveTargetType(action) {
+        if (action === "purge") {
+            return "discord-channel";
+        }
+
+        return "discord-member";
     }
 
     resolveOutcome(outcome) {

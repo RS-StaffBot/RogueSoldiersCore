@@ -69,11 +69,19 @@ class CommandLoader {
 
         commands.push(
             new PingCommand(),
-            new PurgeCommand(),
+            new PurgeCommand({
+                auditService: moderationAuditService
+            }),
             new TicketCommand(),
-            new TimeoutCommand(),
-            new UntimeoutCommand(),
-            new WarnCommand()
+            new TimeoutCommand({
+                auditService: moderationAuditService
+            }),
+            new UntimeoutCommand({
+                auditService: moderationAuditService
+            }),
+            new WarnCommand({
+                auditService: moderationAuditService
+            })
         );
 
         return commands;

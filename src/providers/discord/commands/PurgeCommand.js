@@ -15,7 +15,7 @@ const ModerationAction = require(
 
 class PurgeCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -38,6 +38,17 @@ class PurgeCommand extends BaseCommand {
                         .setMaxValue(100)
                 )
         );
+
+        if (
+            auditService !== null &&
+            typeof auditService.recordAttempt !== "function"
+        ) {
+            throw new Error(
+                "Discord moderation audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
 
     }
 
@@ -62,6 +73,8 @@ class PurgeCommand extends BaseCommand {
             );
         }
 
+        const channel = interaction.channel;
+        const channelId = channel?.id;
         const requiredPermission =
             moderation.getRequiredPermission(
                 ModerationAction.PURGE
@@ -74,6 +87,11 @@ class PurgeCommand extends BaseCommand {
             );
 
         if (!hasPermission) {
+            this.recordAudit(interaction, channelId, {
+                outcome: "DENIED",
+                status: "permission-denied"
+            });
+
             await interaction.reply({
                 content:
                     "You do not have permission to delete messages.",
@@ -83,12 +101,15 @@ class PurgeCommand extends BaseCommand {
             return;
         }
 
-        const channel = interaction.channel;
-
         if (
             !channel ||
             typeof channel.bulkDelete !== "function"
         ) {
+            this.recordAudit(interaction, channelId, {
+                outcome: "FAILED",
+                status: "target-unavailable"
+            });
+
             await interaction.reply({
                 content:
                     "Messages cannot be bulk deleted in this channel.",
@@ -98,20 +119,42 @@ class PurgeCommand extends BaseCommand {
             return;
         }
 
-        const amount = interaction.options.getInteger(
-            "amount",
-            true
-        );
+        let amount;
+
+        try {
+            amount = interaction.options.getInteger(
+                "amount",
+                true
+            );
+        } catch (error) {
+            this.recordAudit(interaction, channelId, {
+                outcome: "FAILED",
+                status: "validation-failed"
+            });
+
+            throw error;
+        }
 
         await interaction.deferReply({
             flags: MessageFlags.Ephemeral
         });
 
-        const deletedMessages =
-            await channel.bulkDelete(
-                amount,
-                true
-            );
+        let deletedMessages;
+
+        try {
+            deletedMessages =
+                await channel.bulkDelete(
+                    amount,
+                    true
+                );
+        } catch (error) {
+            this.recordAudit(interaction, channelId, {
+                outcome: "FAILED",
+                status: "execution-failed"
+            });
+
+            throw error;
+        }
 
         const deletedCount =
             deletedMessages.size ??
@@ -121,18 +164,32 @@ class PurgeCommand extends BaseCommand {
         const reason =
             `Deleted ${deletedCount} message(s).`;
 
-        moderation.recordAction({
-            action: ModerationAction.PURGE,
-            guildId: interaction.guild.id,
-            moderatorId: interaction.user.id,
-            targetId: null,
-            reason,
-            details: {
-                source: "Discord",
-                channelId: channel.id,
-                requestedAmount: amount,
-                deletedCount
-            }
+        try {
+            moderation.recordAction({
+                action: ModerationAction.PURGE,
+                guildId: interaction.guild.id,
+                moderatorId: interaction.user.id,
+                targetId: null,
+                reason,
+                details: {
+                    source: "Discord",
+                    channelId: channel.id,
+                    requestedAmount: amount,
+                    deletedCount
+                }
+            });
+        } catch (error) {
+            this.recordAudit(interaction, channelId, {
+                outcome: "FAILED",
+                status: "history-failed"
+            });
+
+            throw error;
+        }
+
+        this.recordAudit(interaction, channelId, {
+            outcome: "SUCCESS",
+            status: "succeeded"
         });
 
         await interaction.editReply({
@@ -141,6 +198,27 @@ class PurgeCommand extends BaseCommand {
                 "Messages older than 14 days were skipped."
         });
 
+    }
+
+    recordAudit(interaction, targetId, details) {
+        if (
+            !this.auditService ||
+            typeof targetId !== "string" ||
+            targetId.length === 0
+        ) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                action: "purge",
+                targetId,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change moderation behavior.
+        }
     }
 
 }
