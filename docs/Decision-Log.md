@@ -1,5 +1,90 @@
 # Decision Log
 
+## Runtime Lifecycle Coordination and Recovery
+
+### Decision
+
+RSF provides privacy-safe runtime lifecycle status and controlled lifecycle mutation for registered Providers and Modules without exposing component internals or requiring a full framework restart.
+
+ProviderManager and ModuleManager own registered component lookup, initialization tracking, status creation, and individual start, stop, and restart operations.
+
+A shared non-reentrant lifecycle-operation lock serializes individual start, stop, restart, Provider replacement, and eligible Provider reconnect work. Conflicting operations return a sanitized `BUSY` outcome rather than waiting, overlapping, or exposing lock internals.
+
+Lifecycle status and operation results are frozen and defensive. They expose only approved facts such as component type, trusted registered name, state, initialization status, operational status, operation, outcome, and success.
+
+### Guardrails
+
+- Unknown request-controlled names must not be echoed in lifecycle results.
+- Raw errors, stack traces, paths, addresses, ports, credentials, tokens, sockets, clients, configuration, stores, database handles, and component instances must not be exposed.
+- Failed operations must leave truthful observable state.
+- Core, Database, health, migration, Loader-wide, and other framework-critical failures remain fatal.
+- Recoverable component failure must not trigger total framework rollback.
+- Bulk startup and shutdown ownership remains unchanged.
+
+## 7 Days to Die Reconnect Policy
+
+### Decision
+
+Unexpected runtime connection loss may trigger a Provider-owned bounded reconnect policy only when reconnect is explicitly enabled in trusted 7 Days to Die configuration.
+
+Reconnect is limited by validated maximum attempts and delay, uses one active sequence, runs under the shared lifecycle-operation lock, and is cancelled during intentional stop.
+
+Reconnect does not apply to initial configuration, initialization, or authentication failure. Successful recovery returns the Provider to `RUNNING`; exhausted attempts leave it in `ERROR`.
+
+### Guardrails
+
+- Reconnect must never become an endless loop.
+- Reconnect must not conceal persistent failure.
+- Intentional stop must cancel reconnect work.
+- Reconnect logs must remain generic and privacy-safe.
+- Reconnect remains Provider-specific rather than a generic Core retry mechanism.
+
+## Trusted Provider Reconstruction and Atomic Replacement
+
+### Decision
+
+Provider reconstruction is owned by `ProviderLoader` through a fixed allowlist. The only currently reconstructable Provider is `7 Days to Die`.
+
+Reconstruction reloads trusted configuration before candidate construction. It does not accept request-controlled source paths, class names, constructors, modules, or arbitrary Provider names.
+
+ProviderManager replacement acquires the shared lifecycle-operation lock, constructs a candidate, initializes it, starts it, verifies `RUNNING`, stops the existing Provider, and atomically replaces the registry entry.
+
+Replacement is allowed for an initialized existing Provider in `RUNNING` or `ERROR`. `CREATED`, `READY`, and `STOPPED` remain invalid replacement states.
+
+If candidate construction, initialization, startup, or old-Provider cleanup fails, the existing Provider remains registered and the candidate is cleaned up where possible.
+
+### Guardrails
+
+- Candidate readiness must be proven before registry replacement.
+- Arbitrary dynamic code loading is prohibited.
+- Discord and Website must not receive constructors, Loader internals, configuration objects, or Provider instances.
+- Discord self-replacement is prohibited.
+- Module reconstruction and replacement remain future work.
+
+## Restricted Discord Lifecycle Administration
+
+### Decision
+
+The Discord Provider exposes a guild-only private lifecycle command family fixed to the `7 Days to Die` Provider:
+
+```text
+/lifecycle status
+/lifecycle restart
+/lifecycle reload
+```
+
+Discord `ManageGuild` is required at registration time and checked again at runtime. Every response is ephemeral.
+
+Discord receives only a frozen lifecycle service exposing `getStatus()`, `restart()`, and `reload()` for the fixed target.
+
+### Guardrails
+
+- Arbitrary component selection is not supported.
+- Discord cannot restart or replace itself.
+- ProviderManager, ProviderLoader, component instances, constructors, configuration, credentials, sockets, clients, and raw errors remain private.
+- Lifecycle administration does not provide configuration editing, process restart, source-code hot reload, Website control, or Module control.
+- Durable actor-attributed lifecycle audit records remain future work.
+
 ## Critical and Recoverable Startup Boundary
 
 ### Decision
@@ -18,7 +103,6 @@ ProviderManager and ModuleManager remain the lifecycle owners for their register
 - Framework-critical failures must not be downgraded into degraded startup.
 - Lifecycle summaries must not expose raw errors, stack traces, configuration, paths, addresses, sockets, tokens, credentials, or other private internals.
 - Shutdown remains Providers -> Modules -> Database and must handle mixed `RUNNING` and `ERROR` component states.
-- Automatic retry, reconnect policy, independent component status, start, stop, restart, configuration-backed reload, safe replacement, and restricted administration remain future lifecycle work.
 - Runtime reload must use controlled reconstruction and replacement rather than arbitrary source paths, classes, configuration, or dynamic code loading.
 
 ## Website Authentication Configuration Boundary
@@ -50,9 +134,7 @@ Invalid enabled configuration fails before the Website listener starts. Secrets 
 
 Evidence-backed deterministic completion is implemented for `gettime`, `listplayers`, `lp`, `say`, `help`, `kick`, `ban add`, `ban remove`, `whitelist add`, `whitelist remove`, and invalid or unknown commands. Other meaningful multiline output uses a bounded inactivity fallback.
 
-Command results, completion decisions, response arrays, event arrays, and failure contracts are immutable and defensive. Failure handling includes timeout, disconnect, write failure, completion-decision failure, size truncation, and generic execution failure.
-
-The command boundary and hosted-player administration workflows were live verified against a running 7 Days to Die V3.1.0 b13 server.
+Command results, completion decisions, response arrays, event arrays, and failure contracts are immutable and defensive.
 
 ### Guardrails
 
@@ -61,8 +143,6 @@ The command boundary and hosted-player administration workflows were live verifi
 - One active command remains the supported concurrency boundary.
 - Arbitrary console execution, free-form Telnet input, command queues, multiple servers, continuous chat bridging, and Economy-backed game effects remain outside the implementation.
 - Telnet secrets remain outside tracked JSON.
-- Game protocol and command behavior remain Provider-owned.
-- Reusable authorization, Economy, Moderation, Ticket, identity, and transaction policy remains Module-owned where applicable.
 
 ## Discord Game Command Authorization Boundary
 
@@ -71,18 +151,6 @@ The command boundary and hosted-player administration workflows were live verifi
 The guild-only `/game` command family uses Discord `ManageGuild` as its fixed staff requirement.
 
 The Discord Provider owns command definitions, Discord authorization, input validation, reply deferral, safe output parsing, and user-facing formatting. The 7 Days to Die Provider owns remote execution outcomes.
-
-The implemented command family is:
-
-- `/game status`
-- `/game time`
-- `/game players`
-- `/game say message:<text>`
-- `/game kick entity-id:<id> reason:<text>`
-- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
-- `/game unban display-name:<exact text>`
-- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
-- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
 
 ### Guardrails
 
@@ -111,16 +179,14 @@ whitelist add <durable user id> <display name>
 whitelist remove <durable user id>
 ```
 
-Unban success requires the second `ban list` to prove that the exact stored UserID is absent. A success-looking `ban remove` line proves command completion only.
-
-Whitelist add and remove use deterministic completion. First-entry activation and final-entry deactivation are separate server mode lines. Duplicate add may return success but must not create a duplicate row.
+Unban success requires the second `ban list` to prove that the exact stored UserID is absent.
 
 ### Guardrails
 
 - Online entity IDs are kick targets only while the player is online.
 - Steam and EOS combined identifiers are durable administration targets.
 - Ordinary Discord results use validated display names and do not echo durable identifiers.
-- Whitelist groups, identity linking, fuzzy matching, and arbitrary console execution are excluded.
+- Whitelist groups, fuzzy matching, and arbitrary console execution are excluded.
 
 ## Staff Platform Identifier Visibility
 
@@ -128,16 +194,12 @@ Whitelist add and remove use deterministic completion. First-entry activation an
 
 Steam and EOS player identifiers are private operational data by default, but they are not categorically hidden from authorized staff.
 
-An explicitly authorized staff lookup or administration workflow may return a requested player's Steam ID, EOS ID, or both when those identifiers are operationally necessary. The workflow must be permission-gated, scoped to the requested player and purpose, and use an ephemeral or equivalently private response where the platform supports it.
-
-Ordinary command success and failure responses continue to avoid echoing submitted or server-normalized platform identifiers unless the approved staff workflow specifically requires that disclosure.
+An explicitly authorized staff lookup or administration workflow may return a requested player's Steam ID, EOS ID, or both when operationally necessary. The workflow must be permission-gated, scoped to the requested player and purpose, and use an ephemeral or equivalently private response.
 
 ### Guardrails
 
 - Platform identifiers must not be exposed publicly or to ordinary members.
-- Raw login, authentication, Telnet, socket, configuration, and server-console output must never be returned merely to reveal an identifier.
-- Staff visibility requires an explicit command or workflow contract rather than incidental leakage from another operation.
-- Only the identifiers and player context required for the approved staff purpose may be returned.
+- Raw login, authentication, Telnet, socket, configuration, and server-console output must not be returned merely to reveal an identifier.
 - IP addresses, credentials, positions, health, inventory, internal errors, and unrelated player identifiers remain private.
 
 ## Database Infrastructure Foundation
@@ -154,9 +216,9 @@ Module schemas and persistence integrations remain separate. Providers and comma
 
 ### Decision
 
-SQLite is authoritative for production Moderation audit state. `ModerationModule` retains action validation, immutable public record construction, and logging order. A Module-specific store owns parameterized SQL and row mapping. Bootstrap injects the store through `ModuleLoader`; Providers and commands do not access it.
+SQLite is authoritative for production Moderation audit state. `ModerationModule` retains action validation, immutable public record construction, and logging order. A Module-specific store owns parameterized SQL and row mapping.
 
-Audit storage must succeed before the Module reports a successful action. Stored records are reconstructed through `ModerationAuditRecord`, so invalid durable data fails Module initialization instead of bypassing Module validation.
+Audit storage must succeed before the Module reports a successful action.
 
 ## Economy Persistence Authority
 
@@ -166,4 +228,4 @@ SQLite is authoritative for production Economy accounts, balances, transaction h
 
 The Economy Module retains input validation, transfer policy and authorization, balance calculations, transaction construction, public records, and public errors. The store owns durable rows, parameterized queries, transaction boundaries, deterministic ordering, restart recovery, and durable transaction sequence allocation.
 
-Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction. A rolled-back operation does not consume the next successful public transaction ID.
+Credits, debits, transfers, and daily claims commit every affected balance, claim timestamp, transaction row, and successful transaction identity in one SQLite transaction.
