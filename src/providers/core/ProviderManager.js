@@ -1,3 +1,4 @@
+const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
 
 class ProviderManager {
@@ -32,19 +33,33 @@ class ProviderManager {
 
             let succeeded = false;
 
-            try {
-                await provider[operation]();
-                succeeded = true;
-            } catch (error) {
-
-                if (typeof provider.setError === "function") {
-                    provider.setError();
-                }
-
+            if (
+                operation === "start" &&
+                provider.state !== ComponentState.READY
+            ) {
                 Logger.error(
-                    `Provider '${provider.name}' failed to ${operation}.`
+                    `Provider '${provider.name}' failed to start.`
                 );
-                Logger.error(error.stack || error.message);
+                Logger.error(
+                    "Provider must be READY before startup."
+                );
+            } else {
+
+                try {
+                    await provider[operation]();
+                    succeeded = true;
+                } catch (error) {
+
+                    if (typeof provider.setError === "function") {
+                        provider.setError();
+                    }
+
+                    Logger.error(
+                        `Provider '${provider.name}' failed to ${operation}.`
+                    );
+                    Logger.error(error.stack || error.message);
+
+                }
 
             }
 
