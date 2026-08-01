@@ -23,21 +23,26 @@ Configuration and Core registration
 Database initialization and migrations
     |
     v
-Module loading, initialization, and startup
+Module loading and independent lifecycle processing
     |
     v
-Provider loading, initialization, and startup
+Provider loading and independent lifecycle processing
     |
     v
-Provider readiness
+Component state summary
     |
-    v
-Framework startup success
+    +--> all recoverable components healthy: STARTED
+    |
+    +--> one or more recoverable components failed: STARTED_DEGRADED
 ```
 
-Providers start only after Module dependencies are ready. Shutdown stops Providers before Modules and Modules before the Database. Partial-startup rollback follows Providers -> Modules -> Database, continues cleanup after individual failures, and preserves the original startup error as authoritative.
+Providers start only after Module lifecycle processing completes. Each registered Module and Provider is initialized and started independently. An identifiable component failure is isolated to that component, which remains registered in `ERROR`; healthy unrelated components remain active.
 
-Migrations run before Module loading. Stores own SQL and durable mapping but not business rules. Stored rows are reconstructed through Module-owned records before becoming public results. Invalid durable state fails Module initialization rather than bypassing validation.
+Core, Bootstrap, Registry, Loader-wide construction, Database initialization, Database health, and migration failures remain framework-critical. Those failures abort startup and preserve authoritative rollback behavior. Recoverable component failures do not trigger total rollback.
+
+Shutdown stops Providers before Modules and Modules before the Database. Shutdown handles mixed `RUNNING` and `ERROR` component states and continues cleanup after individual stop failures.
+
+Migrations run before Module loading. Stores own SQL and durable mapping but not business rules. Stored rows are reconstructed through Module-owned records before becoming public results. Invalid durable state isolated to one independently recoverable Module fails that Module without stopping unrelated components; repository-wide or Database integrity failures remain fatal.
 
 Module writes report success only after the responsible store commits. Economy multi-row balance, transaction, transfer, and daily-claim changes use database transactions. Ticket row, message, assignment, status, and sequence changes use database transactions. Database transactions do not extend to external Discord actions.
 
