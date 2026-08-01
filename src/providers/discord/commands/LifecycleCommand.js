@@ -27,7 +27,7 @@ class LifecycleCommand extends BaseCommand {
             new SlashCommandBuilder()
                 .setName("lifecycle")
                 .setDescription(
-                    "Manages the hosted game Provider lifecycle."
+                    "Manages the game-server Provider lifecycle."
                 )
                 .setDMPermission(false)
                 .setDefaultMemberPermissions(
@@ -37,21 +37,21 @@ class LifecycleCommand extends BaseCommand {
                     subcommand
                         .setName("status")
                         .setDescription(
-                            "Shows the private hosted game Provider status."
+                            "Shows the private game-server Provider status."
                         )
                 )
                 .addSubcommand(subcommand =>
                     subcommand
                         .setName("restart")
                         .setDescription(
-                            "Safely restarts the hosted game Provider."
+                            "Safely restarts the game-server Provider."
                         )
                 )
                 .addSubcommand(subcommand =>
                     subcommand
                         .setName("reload")
                         .setDescription(
-                            "Reloads configuration and atomically replaces the hosted game Provider."
+                            "Reloads configuration and atomically replaces the game-server Provider."
                         )
                 )
         );
@@ -139,7 +139,7 @@ class LifecycleCommand extends BaseCommand {
             typeof status.initialized !== "boolean" ||
             typeof status.operational !== "boolean"
         ) {
-            return "The hosted game Provider is not currently available.";
+            return "The game-server Provider is not currently available.";
         }
 
         return (
@@ -158,7 +158,7 @@ class LifecycleCommand extends BaseCommand {
             result.succeeded === true &&
             result.state === "RUNNING"
         ) {
-            return `The hosted game Provider ${label} completed successfully.`;
+            return `The game-server Provider ${label} completed successfully.`;
         }
 
         if (result?.outcome === "BUSY") {
@@ -166,17 +166,17 @@ class LifecycleCommand extends BaseCommand {
         }
 
         if (result?.outcome === "INVALID_STATE") {
-            return "The hosted game Provider is not in a valid state for that operation.";
+            return "The game-server Provider is not in a valid state for that operation.";
         }
 
         if (
             result?.outcome === "NOT_FOUND" ||
             result?.outcome === "NOT_INITIALIZED"
         ) {
-            return "The hosted game Provider is not currently available.";
+            return "The game-server Provider is not currently available.";
         }
 
-        return `The hosted game Provider ${label} did not complete.`;
+        return `The game-server Provider ${label} did not complete.`;
     }
 
 }
