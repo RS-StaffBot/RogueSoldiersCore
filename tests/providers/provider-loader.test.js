@@ -507,7 +507,7 @@ test("enabled Website receives a Tickets Module resolver", () => {
     );
     assert.deepStrictEqual(
         requestedNames,
-        ["Tickets"]
+        ["Audit", "Tickets"]
     );
 
 });
