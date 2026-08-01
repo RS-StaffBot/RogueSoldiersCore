@@ -1,5 +1,8 @@
 const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
+const ComponentLifecycleOperationLock = require(
+    "../../core/lifecycle/ComponentLifecycleOperationLock"
+);
 const ComponentLifecycleOperationResult = require(
     "../../core/lifecycle/ComponentLifecycleOperationResult"
 );
@@ -14,7 +17,6 @@ class ProviderManager {
     }
 
     register(provider) {
-
         if (this.providers.has(provider.name)) {
             throw new Error(
                 `Provider '${provider.name}' is already registered.`
@@ -33,27 +35,121 @@ class ProviderManager {
     }
 
     async startProvider(name) {
-        return this.runIndividualOperation({
-            allowedStates: new Set([
-                ComponentState.READY,
-                ComponentState.STOPPED,
-                ComponentState.ERROR
-            ]),
-            methodName: "start",
-            name,
-            operation: "START",
-            requiresInitialization: true
-        });
+        return this.runLockedOperation(name, "START", () =>
+            this.runIndividualOperation({
+                allowedStates: new Set([
+                    ComponentState.READY,
+                    ComponentState.STOPPED,
+                    ComponentState.ERROR
+                ]),
+                methodName: "start",
+                name,
+                operation: "START",
+                requiresInitialization: true
+            })
+        );
     }
 
     async stopProvider(name) {
-        return this.runIndividualOperation({
-            allowedStates: new Set([ComponentState.RUNNING]),
-            methodName: "stop",
-            name,
-            operation: "STOP",
-            requiresInitialization: false
+        return this.runLockedOperation(name, "STOP", () =>
+            this.runIndividualOperation({
+                allowedStates: new Set([ComponentState.RUNNING]),
+                methodName: "stop",
+                name,
+                operation: "STOP",
+                requiresInitialization: false
+            })
+        );
+    }
+
+    async restartProvider(name) {
+        return this.runLockedOperation(name, "RESTART", () =>
+            this.runRestartOperation(name)
+        );
+    }
+
+    async runLockedOperation(name, operation, action) {
+        const locked = await ComponentLifecycleOperationLock.run(action);
+
+        if (locked.acquired) {
+            return locked.value;
+        }
+
+        const provider = this.providers.get(name);
+        return this.createOperationResult({
+            name: provider ? provider.name : null,
+            operation,
+            outcome: "BUSY",
+            state: provider ? provider.state : null
         });
+    }
+
+    async runRestartOperation(name) {
+        const provider = this.providers.get(name);
+
+        if (!provider) {
+            return this.createOperationResult({
+                name: null,
+                operation: "RESTART",
+                outcome: "NOT_FOUND",
+                state: null
+            });
+        }
+
+        if (!this.initializedProviders.has(provider)) {
+            return this.createOperationResult({
+                name: provider.name,
+                operation: "RESTART",
+                outcome: "NOT_INITIALIZED",
+                state: provider.state
+            });
+        }
+
+        if (provider.state !== ComponentState.RUNNING) {
+            return this.createOperationResult({
+                name: provider.name,
+                operation: "RESTART",
+                outcome: "INVALID_STATE",
+                state: provider.state
+            });
+        }
+
+        try {
+            await provider.stop();
+
+            if (provider.state !== ComponentState.STOPPED) {
+                throw new Error("Provider did not stop cleanly.");
+            }
+
+            await provider.start();
+
+            if (provider.state !== ComponentState.RUNNING) {
+                throw new Error("Provider did not start cleanly.");
+            }
+
+            return this.createOperationResult({
+                name: provider.name,
+                operation: "RESTART",
+                outcome: "SUCCEEDED",
+                state: provider.state
+            });
+        } catch (error) {
+            if (typeof provider.setError === "function") {
+                provider.setError();
+            }
+
+            Logger.error(`Provider '${provider.name}' failed to restart.`);
+            Logger.error(
+                "Provider reported a recoverable lifecycle error."
+            );
+
+            return this.createOperationResult({
+                name: provider.name,
+                operation: "RESTART",
+                outcome: "FAILED",
+                state: provider.state
+            });
+        }
     }
 
     async runIndividualOperation({
@@ -136,11 +232,9 @@ class ProviderManager {
     }
 
     async runLifecycleOperation(operation) {
-
         const results = [];
 
         for (const provider of this.providers.values()) {
-
             let succeeded = false;
 
             if (
@@ -154,7 +248,6 @@ class ProviderManager {
                     "Provider initialization did not succeed."
                 );
             } else {
-
                 try {
                     await provider[operation]();
                     succeeded = true;
@@ -163,7 +256,6 @@ class ProviderManager {
                         this.initializedProviders.add(provider);
                     }
                 } catch (error) {
-
                     if (operation === "initialize") {
                         this.initializedProviders.delete(provider);
                     }
@@ -178,9 +270,7 @@ class ProviderManager {
                     Logger.error(
                         "Provider reported a recoverable lifecycle error."
                     );
-
                 }
-
             }
 
             results.push(Object.freeze({
@@ -188,12 +278,9 @@ class ProviderManager {
                 state: provider.state,
                 succeeded
             }));
-
         }
 
-        const failed = results.filter(
-            result => !result.succeeded
-        ).length;
+        const failed = results.filter(result => !result.succeeded).length;
 
         return Object.freeze({
             failed,
@@ -202,24 +289,18 @@ class ProviderManager {
             results: Object.freeze(results),
             succeeded: results.length - failed
         });
-
     }
 
     async stopAll() {
-
         const errors = [];
-        const providers = [
-            ...this.providers.values()
-        ].reverse();
+        const providers = [...this.providers.values()].reverse();
 
         for (const provider of providers) {
-
             try {
                 await provider.stop();
             } catch (error) {
                 errors.push(error);
             }
-
         }
 
         if (errors.length > 0) {
@@ -228,13 +309,12 @@ class ProviderManager {
                 "One or more Providers failed to stop."
             );
         }
-
     }
 
     listProviderStatuses() {
         return Object.freeze(
-            [...this.providers.values()].map(
-                provider => this.createStatus(provider)
+            [...this.providers.values()].map(provider =>
+                this.createStatus(provider)
             )
         );
     }
