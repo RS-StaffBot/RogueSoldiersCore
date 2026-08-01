@@ -37,10 +37,7 @@ class ProviderLoader {
 
         if (
             !providerManager ||
-            typeof providerManager.get !== "function" ||
-            typeof providerManager.getProviderStatus !== "function" ||
-            typeof providerManager.restartProvider !== "function" ||
-            typeof providerManager.replaceProvider !== "function"
+            typeof providerManager.get !== "function"
         ) {
             throw new Error(
                 "Discord game Provider Manager boundary is invalid."
@@ -72,18 +69,26 @@ class ProviderLoader {
             );
         }
 
-        const lifecycleService = new DiscordLifecycleService({
-            createReplacement: () => this.createProvider(
-                "7 Days to Die",
-                {
-                    configuration,
-                    createSevenDaysToDieClient,
-                    environment,
-                    reloadConfiguration: true
-                }
-            ),
-            providerManager
-        }).asBoundary();
+        let lifecycleService;
+        if (
+            typeof providerManager.getProviderStatus === "function" &&
+            typeof providerManager.restartProvider === "function" &&
+            typeof providerManager.replaceProvider === "function"
+        ) {
+            lifecycleService = new DiscordLifecycleService({
+                createReplacement: () => this.createProvider(
+                    "7 Days to Die",
+                    {
+                        configuration,
+                        createSevenDaysToDieClient,
+                        environment,
+                        reloadConfiguration: true
+                    }
+                ),
+                providerManager
+            }).asBoundary();
+        }
+
         const providers = [
             new DiscordProvider({
                 lifecycleService,
