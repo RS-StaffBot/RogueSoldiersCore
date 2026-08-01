@@ -219,7 +219,7 @@ Implemented and tested:
 - existing Providers -> Modules -> Database shutdown order remains intact
 - 0 production vulnerabilities, 490 passing tests, and ESLint passing
 
-Automatic retries, reconnect loops, runtime restart, reload, replacement, lifecycle administration, and process supervision remain outside this phase.
+Automatic retries, reconnect loops, independent component status, start, stop, restart, configuration-backed reload, safe replacement, restricted administration, and process supervision remain outside this phase.
 
 ### Remaining Planned Work
 
@@ -249,7 +249,7 @@ Required verification:
 - optional Provider failure leaves healthy framework components running in degraded mode
 - complete automated regression coverage and final release validation
 
-The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, multiple-server support, automatic retries, runtime component restart, reload, or lifecycle administration.
+The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, multiple-server support, automatic retries, independent component status, start, stop, restart, configuration-backed reload, safe replacement, or restricted administration.
 
 ### Outside v1.5.0
 
@@ -263,8 +263,8 @@ The phase must not add replacement, unlinking, revocation, staff lookup, public 
 - Generic identity support for unimplemented platforms
 - Website identity administration unless explicitly approved during the milestone
 - automatic component retries or reconnect policy
-- runtime component restart, reload, or replacement
-- lifecycle administration commands or process supervision
+- independent component status, start, stop, restart, configuration-backed reload, and safe replacement
+- restricted lifecycle administration commands or process supervision
 
 ## v1.4.0 - Hosted Player Administration
 
@@ -297,6 +297,6 @@ Status: Completed and tagged
 
 ## Future Direction
 
-After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, multiple-server support, and explicit runtime lifecycle administration.
+After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, multiple-server support, and a dedicated runtime lifecycle milestone covering independent component status, start, stop, restart, configuration-backed reload, safe replacement, and restricted administration.
 
 Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, fixed-command ownership, and critical-versus-recoverable startup boundaries.
