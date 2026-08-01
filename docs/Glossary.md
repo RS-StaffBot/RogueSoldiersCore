@@ -18,7 +18,7 @@ A platform-neutral owner of cohesive business rules, validation, authorization, 
 
 ## Shared
 
-The layer for small platform-neutral contracts and identifiers that are genuinely shared across architectural boundaries. It does not own platform integrations, Core lifecycle, or Module business state.
+The layer for small platform-neutral contracts and identifiers that are genuinely shared across architectural boundaries.
 
 ## Component
 
@@ -27,6 +27,40 @@ A named framework part with a focused responsibility and, where applicable, life
 ## Lifecycle
 
 The ordered initialization, startup, running, stopping, stopped, and error behavior of framework components.
+
+## Lifecycle Status
+
+A frozen privacy-safe snapshot of one registered component containing only approved runtime facts such as component type, trusted name, state, initialization status, and operational status.
+
+## Lifecycle Operation Result
+
+A frozen privacy-safe result describing a controlled component operation, its trusted target, sanitized outcome, resulting state, and success status.
+
+## Lifecycle Operation Lock
+
+The shared non-reentrant Core lock that serializes individual start, stop, restart, Provider replacement, and eligible reconnect work. Conflicting operations return `BUSY`.
+
+## Controlled Restart
+
+A serialized stop-then-start operation for one initialized running component with expected state verification and sanitized failure handling.
+
+## Reconnect Policy
+
+A Provider-owned bounded recovery policy for unexpected runtime connection loss. The 7 Days to Die implementation is opt-in, attempt-limited, delayed, cancellable, and protected by the lifecycle lock.
+
+## Provider Reconstruction
+
+Trusted Loader-owned construction of a new Provider instance from approved configuration. It does not accept arbitrary paths, class names, constructors, modules, or request-controlled Provider types.
+
+## Atomic Provider Replacement
+
+The ProviderManager transaction that proves a reconstructed candidate is initialized and running before stopping the existing Provider and replacing the registry entry.
+
+The v1.6.0 implementation supports only the trusted `7 Days to Die` reconstruction path and accepts an initialized existing Provider in `RUNNING` or `ERROR`.
+
+## Degraded Operation
+
+The framework state in which Core, Database, and healthy unrelated components continue operating while one recoverable Provider or Module remains failed.
 
 ## Business Logic
 
@@ -42,83 +76,73 @@ The Provider that owns Discord login, slash-command registration, interaction di
 
 ## Discord Game Command Authorizer
 
-The Discord Provider service that applies the fixed `ManageGuild` requirement to the guild-only `/game` command family.
+The Discord Provider service that applies the fixed `ManageGuild` requirement to the guild-only `/game` and `/lifecycle` command families.
 
 ## Discord Game Server Provider Resolver
 
-The Discord Provider service that resolves the framework-loaded `7 Days to Die` Provider and returns either a stable failure status or a frozen service exposing only `executeCommand`.
+The Discord Provider service that resolves the framework-loaded `7 Days to Die` Provider and returns either a stable failure status or a frozen service exposing only approved game-command execution.
+
+## Discord Lifecycle Service
+
+The frozen Discord boundary exposing only `getStatus()`, `restart()`, and `reload()` for the fixed `7 Days to Die` Provider target.
 
 ## `/game` Command Family
 
-The guild-only Discord command family requiring `ManageGuild`:
+The guild-only Discord command family requiring `ManageGuild` for status, time, players, chat, kick, ban, unban, and individual whitelist administration.
 
-- `/game status`
-- `/game time`
-- `/game players`
-- `/game say message:<text>`
-- `/game kick entity-id:<id> reason:<text>`
-- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
-- `/game unban display-name:<exact text>`
-- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
-- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
+## `/lifecycle` Command Family
+
+The guild-only private Discord command family requiring `ManageGuild`:
+
+- `/lifecycle status`
+- `/lifecycle restart`
+- `/lifecycle reload`
+
+The family is fixed to the `7 Days to Die` Provider and cannot select arbitrary components or restart Discord itself.
 
 ## Hosted Player Administration
 
-The v1.4.0 fixed Discord-to-game workflows for kicking an online player, adding a durable ban, verifying an unban, and adding or removing an individual whitelist entry.
-
-These workflows remain Provider-owned platform administration and do not introduce a Module because no reusable cross-platform business policy has been proven.
+The fixed Discord-to-game workflows for kicking an online player, adding a durable ban, verifying an unban, and adding or removing an individual whitelist entry.
 
 ## Online Entity ID
 
-A positive 7 Days to Die entity ID used as an exact kick target while a player is online. It is not treated as a globally durable game-account identity.
+A positive 7 Days to Die entity ID used as an exact kick target while a player is online. It is not a globally durable game-account identity.
 
 ## Durable User ID
 
-A single combined game-account identifier using either `Steam_<id>` or `EOS_<id>`. Durable IDs are used for ban and individual whitelist administration.
+A single combined game-account identifier using either `Steam_<id>` or `EOS_<id>`.
 
 ## Verified Unban
 
 The workflow that reads `ban list`, requires exactly one exact display-name match, removes the returned stored UserID, and reads `ban list` again to prove that UserID is absent.
 
-A `removed from ban list` line confirms command completion only and is not sufficient verification.
-
 ## Individual Whitelist Entry
 
 A durable Steam or EOS user identifier stored with a display name through the 7 Days to Die `whitelist` command.
-
-The first entry activates whitelist-only mode. Removing the final entry disables whitelist-only mode. Duplicate add may return success without creating a duplicate row.
 
 ## Staff Platform Identifier Visibility
 
 The decision that authorized staff may receive a requested player's Steam ID, EOS ID, or both through an explicit permission-gated private workflow when operationally necessary.
 
-Ordinary command results do not expose those identifiers.
-
 ## Game Provider
 
-A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as those capabilities are implemented. The optional 7 Days to Die Provider is the first implemented game Provider.
+A Provider for a hosted game server. It owns game clients, protocols, platform commands, and game events as implemented.
 
 ## SevenDaysToDieProvider
 
-The optional Provider that coordinates validated configuration, lifecycle, Telnet readiness, and Provider-level command execution for a 7 Days to Die server.
-
-It exposes `executeCommand(command)` while retaining ownership of the command service and keeping Telnet, socket, credentials, and configuration private.
+The optional Provider that coordinates validated configuration, lifecycle, Telnet readiness, command execution, identity proof collection, and bounded reconnect recovery for a 7 Days to Die server.
 
 ## SevenDaysToDieTelnetClient
 
 The Provider-owned raw TCP client built on Node's `node:net` API.
 
-It owns password-authenticated and direct-console readiness, Telnet protocol-byte stripping, UTF-8 line framing, CRLF writes, connection timeout, post-readiness connection-loss notification, and awaited idempotent disconnection.
-
 ## SevenDaysToDieCommandService
 
-The Provider-owned service that executes one active command at a time, applies the response-start gate, separates command response lines from unsolicited event lines, applies evidence-backed completion rules, and returns immutable results or failures.
+The Provider-owned service that executes one active command at a time, separates command responses from unsolicited events, applies evidence-backed completion rules, and returns immutable results or failures.
 
 ## Command-Response Boundary
 
-The implemented evidence-backed rules that determine when a remote command response begins and completes and distinguish it from stale startup output and unsolicited console events.
-
-Verified deterministic completion exists for `gettime`, `listplayers`, `lp`, `say`, `help`, `kick`, `ban add`, `ban remove`, `whitelist add`, `whitelist remove`, and invalid or unknown commands. Other meaningful multiline output uses bounded inactivity completion.
+The evidence-backed rules that determine when a remote command response begins and completes and distinguish it from stale startup output and unsolicited console events.
 
 ## Response-Start Gate
 
@@ -126,7 +150,7 @@ The command-service rule that prevents stale Telnet startup-banner lines from en
 
 ## Unsolicited Event
 
-A game-server console line that is not part of the active command response. Events are classified and stored separately from response lines.
+A game-server console line that is not part of the active command response.
 
 ## Immutable Command Result
 
@@ -134,11 +158,11 @@ A defensive frozen result containing command status, completion reason, response
 
 ## Deployment-Specific Configuration
 
-Validated local configuration for the intended server deployment, including enabled state, private host, Telnet port, and connection timeout. Secrets remain environment-only.
+Validated local configuration for the intended server deployment. Secrets remain environment-only.
 
 ## Raw Telnet
 
-The unencrypted administrative TCP transport used by the 7 Days to Die Provider. It must remain on loopback, LAN, VPN, or another protected private path and must not be exposed directly to the public internet.
+The unencrypted administrative TCP transport used by the 7 Days to Die Provider. It must remain on loopback, LAN, VPN, or another protected private path.
 
 ## Website Provider
 
@@ -150,7 +174,7 @@ The Discord OAuth authorization-code flow with PKCE S256, one-time state, browse
 
 ## Website Session
 
-An opaque bounded in-memory session associated with a frozen Website identity. Website sessions are revoked on Provider shutdown or process restart and are not shared across processes.
+An opaque bounded in-memory session associated with a frozen Website identity.
 
 ## Registry
 
@@ -158,11 +182,15 @@ The Core-owned lookup boundary for registered framework services.
 
 ## Provider Manager
 
-The Core Provider registry and lifecycle coordinator. Discord game commands do not receive it directly.
+The Provider registry and lifecycle coordinator. Provider-facing interfaces do not receive it directly.
 
 ## Module Manager
 
-The Core Module registry and lifecycle coordinator used by Providers to resolve framework-loaded Modules through narrow boundaries.
+The Module registry and lifecycle coordinator used by Providers to resolve framework-loaded Modules through narrow boundaries.
+
+## Audit and Activity Foundation
+
+Future RSF infrastructure for durable actor-attributed records of meaningful privileged and business actions. It is not implemented in v1.6.0.
 
 ## SQLite Authority
 
