@@ -6,7 +6,9 @@
 
 **Latest Completed Milestone:** v1.6.0 - Component Resilience and Runtime Lifecycle
 
-**Status:** Completed, merged, live verified, and awaiting release PR merge and tag
+**Current Milestone:** v1.7.0 - Audit and Activity Foundation
+
+**Status:** Active; milestone architecture and phase plan approved
 
 ## Completed Milestones
 
@@ -29,93 +31,195 @@
 - v1.5.0 - Player Identity Linking Foundation
 - v1.6.0 - Component Resilience and Runtime Lifecycle
 
+## v1.7.0 - Audit and Activity Foundation
+
+Status: Active; milestone architecture and phase plan approved
+
+### Goal
+
+Create a durable, privacy-safe, actor-attributed record of meaningful RSF actions without turning terminal logging, the EventBus, or existing Module histories into responsibilities they do not own.
+
+The milestone establishes one platform-neutral Audit Module that can be used by approved Discord, Website, lifecycle, Module, and game-server workflows through narrow service boundaries.
+
+### Approved Responsibility Boundary
+
+The Audit Module owns immutable records, action taxonomy, actor/source/target/outcome validation, bounded metadata, recording, querying, and its store contract.
+
+Core owns SQLite, migrations, Audit Module construction, lifecycle loading, and private store injection.
+
+Providers authenticate platform actors and format platform responses. They do not access SQL, database rows, the Audit store, or mutable Module internals.
+
+Existing business histories remain authoritative:
+
+- Moderation cases and actions
+- Economy transactions and balances
+- Ticket records and messages
+- Identity links and verification state
+- Current lifecycle state
+
+Audit records summarize accountability and may reference safe stable business-record identifiers. They do not duplicate or replace complete business records.
+
+### Phase 1 - Audit Contracts and In-Memory Foundation
+
+Objective:
+
+- create an immutable defensive audit record
+- define stable action, actor, source, target, and outcome contracts
+- generate record IDs and timestamps inside RSF
+- validate bounded allowlisted metadata
+- provide an in-memory store implementing the Audit store contract
+- provide deterministic bounded recording and query behavior
+
+Exclusions:
+
+- SQLite
+- migrations
+- Discord commands
+- lifecycle integration
+- existing workflow integration
+- Website access
+- EventBus publication
+
+### Phase 2 - SQLite Audit Persistence
+
+Objective:
+
+- add one ordered Core migration
+- add a SQLite Audit store
+- preserve the Module-owned validation boundary
+- provide deterministic ordering and restart recovery
+- ensure database rows are reconstructed through Audit records before public use
+
+### Phase 3 - Narrow Audit Services and Query Policy
+
+Objective:
+
+- expose frozen recording and bounded-query services
+- define safe pagination and supported filters
+- reject arbitrary metadata and unrestricted query construction
+- define sanitized failure contracts
+- preserve store and database isolation
+
+### Phase 4 - Lifecycle Administration Audit Integration
+
+Objective:
+
+- record authenticated Discord lifecycle restart and reload attempts
+- capture fixed target, source, actor, sanitized outcome, and RSF timestamp
+- include denied, busy, failed, and successful decisions where auditable
+- preserve current ephemeral lifecycle responses and privacy boundaries
+
+### Phase 5 - Existing Privileged Workflow Integration
+
+Objective:
+
+Integrate meaningful actions through separate focused phases, beginning with the highest-value existing privileged workflows.
+
+Candidate integrations:
+
+- Discord moderation actions
+- hosted-player kick, ban, unban, and whitelist administration
+- Ticket staff assignment, response, and closure
+- Economy staff credit, debit, or transfer operations where implemented
+- Identity staff administration only after such a workflow exists
+
+Read-only commands and ordinary harmless interactions are not recorded individually by default.
+
+### Phase 6 - Restricted Discord Audit Lookup
+
+Objective:
+
+- add one private guild-only staff command
+- require a fixed Discord permission at registration and runtime
+- return bounded recent audit records
+- support only allowlisted filters
+- sanitize identifiers and metadata according to the approved staff purpose
+- expose no database, SQL, raw error, configuration, or platform-client internals
+
+### Phase 7 - Live Verification and Release Hardening
+
+Required verification:
+
+- durable audit recovery after restart
+- deterministic IDs and ordering
+- actor and source attribution
+- denied, failed, and successful privileged outcomes
+- privacy-safe metadata and lookup output
+- permission denial
+- lifecycle and existing workflow compatibility
+- no regression to Moderation, Economy, Tickets, Identity, game commands, lifecycle, Website, Database, or shutdown
+- production dependency audit
+- complete automated tests
+- ESLint
+- `git diff --check`
+- synchronized versions and release documentation
+
+### Safety Requirements
+
+- Audit records are immutable, defensive, and validated before persistence.
+- Record IDs and timestamps are generated by RSF.
+- Arbitrary serialized request objects and metadata keys are prohibited.
+- Raw Discord messages and raw game-console output are not retained.
+- Raw errors, stack traces, credentials, addresses, tokens, sockets, configuration, database rows, SQL, positions, health, inventory, and unrelated identifiers are prohibited.
+- Audit lookup is private, permission-gated, bounded, and purpose-limited.
+- The EventBus is not an authoritative audit path.
+- Audit integration must not cause a business operation to report success before its authoritative business transaction commits.
+- Audit write-failure behavior must be explicitly defined and tested per integration.
+
+### Outside v1.7.0
+
+- general event sourcing
+- logging every command or interaction
+- user-behavior surveillance
+- replacement of Module-owned histories
+- Website audit administration
+- configurable retention administration
+- external telemetry or log aggregation
+- remote database hosting, replication, or clustering
+- Identity Hub implementation
+- Linux and Docker deployment hardening
+- expanded Ticket portal implementation
+- Economy-backed hosted-game purchases
+- continuous Discord and game chat bridging
+- multiple hosted game servers
+
 ## v1.6.0 - Component Resilience and Runtime Lifecycle
 
-Status: Completed and live verified
+Status: Completed, merged, live verified, and tagged
+
+### Release Record
+
+- Implementation pull requests: `#77` through `#84`
+- Release pull request: `#85`
+- Release merge commit: `2519014b7b1a80bc8e12d45787c644da91c21d8a`
+- Annotated tag: `v1.6.0`
+- GitHub Actions validation: passed
+- Release notes: `docs/Release-Notes-v1.6.0.md`
 
 ### Completed Capabilities
 
-- privacy-safe Provider and Module lifecycle status contracts
-- controlled individual start and stop operations
-- shared lifecycle-operation serialization
-- safe Provider and Module restart coordination
-- bounded opt-in 7 Days to Die reconnect behavior
-- reconnect cancellation during intentional stop
-- trusted Loader-owned 7 Days to Die reconstruction
-- configuration-backed candidate creation
-- candidate-first initialization and startup
-- atomic Provider replacement
-- replacement recovery from both `RUNNING` and `ERROR`
-- private permission-gated Discord lifecycle status, restart, and reload
-- degraded operation while 7 Days to Die is unavailable
-- live `ERROR -> reload -> RUNNING` recovery
-- privacy-safe immutable outcomes
-- BOM-free application JSON for reliable fresh-clone startup
+- privacy-safe Provider and Module lifecycle status
+- controlled individual start, stop, and restart
+- shared lifecycle mutation serialization
+- bounded opt-in 7 Days to Die reconnect recovery
+- trusted configuration-backed reconstruction
+- atomic replacement from `RUNNING` and recoverable `ERROR`
+- private permission-gated Discord lifecycle administration
+- live degraded operation and `ERROR -> reload -> RUNNING` recovery
+- BOM-free tracked application JSON
 
-### Preserved Safety Boundaries
+## Decided Future Flow
 
-- Core, Database, health, migration, and Loader-wide failures remain fatal.
-- Recoverable component failure does not trigger total framework rollback.
-- Lifecycle output excludes raw errors, stack traces, local paths, credentials, tokens, IP addresses, socket details, clients, configuration objects, database handles, Module stores, and Provider internals.
-- Lifecycle mutations are serialized and reject overlapping work.
-- Reconnect is bounded, opt-in, and Provider-specific.
-- Replacement accepts only trusted registered component names and Loader-owned factories.
-- Arbitrary source paths, dynamic code loading, request-controlled constructors, Discord self-replacement, and public lifecycle administration remain prohibited.
+The working milestone order is:
 
-### Release Verification
+1. v1.7.0 - Audit and Activity Foundation
+2. Identity Hub and Platform Attachments
+3. Linux and Docker Deployment Hardening
+4. Expanded Ticket Workflows and Staff Portal Foundation
+5. Economy-to-Game Rewards and Purchases
+6. Continuous Discord and In-Game Chat Bridge
+7. Multiple Hosted Game Servers
 
-Live testing confirmed:
+This order remains the preferred direction unless a concrete operational dependency or Rogue Soldiers priority justifies reevaluation.
 
-- healthy lifecycle status
-- controlled restart
-- configuration-backed reload
-- game command operation after restart and reload
-- transition to `ERROR` after bounded reconnect exhaustion
-- continued Discord and framework operation while 7 Days to Die was unavailable
-- successful reload from `ERROR` after Telnet returned
-- final healthy `RUNNING` status
-
-## Approved Future Direction
-
-### Audit and Activity Foundation
-
-A future focused milestone should make RSF the authoritative durable record for meaningful staff, infrastructure, moderation, Economy, Ticket, identity, and game-server actions.
-
-The foundation should distinguish:
-
-- operational runtime logging
-- durable actor-attributed audit records
-- Module-owned business history
-- permission-gated staff lookup and website administration
-
-Privileged lifecycle actions should eventually record who initiated the action, the source interface, the fixed target, the sanitized outcome, and the RSF-generated timestamp.
-
-This is future work and is not implemented in v1.6.0.
-
-### Identity Hub and Platform Attachments
-
-Future scope may include:
-
-- RSF-owned permanent identities
-- Discord, Steam, EOS, hosted-game, and future platform attachments
-- game-first unclaimed identities
-- exact durable-identifier matching
-- observations, aliases, and activity history
-- conflict records and merge candidates
-- moderation references preserving exact platform and server scope
-- compatibility migration from v1.5 identity links
-
-Automatic merge execution is not approved for the first Identity Hub implementation.
-
-### Other Future Candidates
-
-- continuous Discord and in-game chat integration
-- Economy-backed hosted-game rewards and purchases
-- multiple hosted game servers
-- expanded Ticket workflows
-- persistent Website sessions
-- broader administration interfaces
-- Linux and Docker deployment hardening
-- OS-level process supervision
-
-Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, fixed-command ownership, and critical-versus-recoverable boundaries.
+Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, fixed-command ownership, database, and critical-versus-recoverable lifecycle boundaries.
