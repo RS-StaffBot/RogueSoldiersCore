@@ -5,10 +5,11 @@
 - Economy
 - Moderation
 - Tickets
+- Identity
 
 ## Persistence Convention
 
-Production Moderation, Economy, and Ticket state is SQLite-authoritative. Direct isolated Module construction defaults to an in-memory store implementing the same Module-specific contract.
+Production Moderation, Economy, Ticket, and Identity state is SQLite-authoritative. Direct isolated Module construction defaults to an in-memory store implementing the same Module-specific contract.
 
 Core applies the Module migrations before loading Modules:
 
@@ -16,6 +17,7 @@ Core applies the Module migrations before loading Modules:
 001_create_moderation_audit_records
 002_create_economy_ledger
 003_create_ticket_aggregate
+006_create_identity_links
 ```
 
 Modules retain validation, authorization, state transitions, public errors, public identities, and defensive public records. Stores own durable rows, parameterized SQL, explicit ordering, transactions, and restart recovery. Modules do not open database connections, and Providers and commands do not access stores.
@@ -137,6 +139,31 @@ SQLite is authoritative for production Moderation audit state. Direct `Moderatio
 An invalid durable record causes Moderation initialization to fail rather than being silently accepted. Storage failures do not report success or emit a successful moderation audit log.
 
 Moderation, Economy, and Ticket persistence has been verified across restart. Database transactions protect the durable facts owned by each Module but cannot roll back external Discord actions.
+
+## Identity Module
+
+The Identity Module owns the current narrow Discord-to-game identity-link business rules.
+
+Verified responsibilities:
+
+- validate Discord and durable Steam/EOS identifiers
+- enforce one active link per Discord member
+- enforce one active Discord owner per durable game identity
+- represent pending, verified, and revoked link states
+- validate durable state during Module initialization
+- provide privacy-safe private owner status
+- accept only exact internal verified-proof results
+- create the first identity link directly as verified
+- preserve creation and verification timestamps
+- persist production links in SQLite
+- recover verified links after framework restart
+- reject conflicting ownership and malformed or ambiguous proof
+
+The production store uses migration `006_create_identity_links`. Direct isolated Module construction uses an in-memory store implementing the same narrow persistence contract.
+
+The current Module does not implement broad RSF-owned identities, multiple platform attachments, aliases, observations, game-first identity creation, automatic matching, merge execution, conflict-resolution interfaces, staff lookup, replacement, relinking, unlinking, or revocation workflows.
+
+The future RSF Identity Hub direction is a separate architecture expansion. The existing `identity_links` table and verified links remain active compatibility sources until a tested migration and rollback path are approved.
 
 ## Settings Ownership Boundary
 

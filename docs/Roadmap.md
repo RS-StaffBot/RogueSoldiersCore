@@ -2,13 +2,13 @@
 
 ## Current Status
 
-**Repository Version:** v1.4.0
+**Repository Version:** v1.5.0
 
 **Latest Completed Milestone:** v1.4.0 - Hosted Player Administration
 
 **Current Milestone:** v1.5.0 - Player Identity Linking Foundation
 
-**Status:** Phases 1-4, Phases 5A-5E, and resilient startup isolation completed; live end-to-end verification and release hardening are next
+**Status:** Release closeout in progress; implementation and required live verification are complete
 
 ## Completed Milestones
 
@@ -31,13 +31,13 @@
 
 ## v1.5.0 - Player Identity Linking Foundation
 
-Status: In progress; Phases 1-4, Phases 5A-5E, and resilient startup isolation completed
+Status: Release closeout in progress; implementation and required live verification are complete
 
 ### Goal
 
 Create a secure, platform-neutral identity-linking foundation that can associate Discord members with durable hosted-game identities for future player-specific workflows.
 
-The milestone establishes identity ownership and privacy boundaries. It does not deliver Economy purchases, rewards, statistics, or broad game automation.
+The milestone establishes identity ownership and privacy boundaries. It does not deliver Economy purchases, rewards, statistics, broad account attachment, or broad game automation.
 
 ### Approved Architecture
 
@@ -217,39 +217,44 @@ Implemented and tested:
 - healthy Modules, Providers, and Database remain active after recoverable failures
 - fatal Core, Loader-wide, migration, health, and Database startup failures still propagate and roll back
 - existing Providers -> Modules -> Database shutdown order remains intact
-- 0 production vulnerabilities, 490 passing tests, and ESLint passing
 
 Automatic retries, reconnect loops, independent component status, start, stop, restart, configuration-backed reload, safe replacement, restricted administration, and process supervision remain outside this phase.
 
-### Remaining Planned Work
+#### Release-Hardening Corrections
 
-1. Complete live Discord-to-7DTD first-link verification and apply only evidence-backed corrections.
-2. Verify restart persistence, ordinary status output, privacy boundaries, normal command recovery after proof collection, and degraded startup when an optional Provider is unavailable.
-3. Synchronize versions, release notes, source-of-truth documents, and dependency records where required.
-4. Run final audit, complete tests, lint, diff validation, and release checks.
-5. Open and validate the v1.5.0 release pull request, then tag the release after the user merges it.
+Completed through pull requests `#74` and `#75`.
 
-Replacement, relinking, unlinking, revocation, conflict resolution, and staff lookup remain separate explicit workflows. They are not required to close the first-link foundation unless live evidence identifies a blocking gap.
+Implemented and tested:
 
-### Next Phase
+- recoverable lifecycle logs omit raw exceptions, stack traces, local paths, sockets, credentials, and configuration details
+- exact active challenge from a different Steam/EOS identifier fails closed immediately
+- mismatch collection clears its timer and removes temporary listeners
+- no automatic Steam/EOS association is inferred
 
-Objective: complete live end-to-end verification and release hardening for the merged private identity workflow.
+### Release Verification
 
-Required verification:
+Required live verification completed:
 
-- live registration of `/identity status` and `/identity link`
-- ephemeral owner-only status behavior
-- private challenge instructions without repeating the submitted Steam/EOS ID
-- exact 7DTD global-chat challenge correlation
-- verified SQLite persistence through the Identity Module
-- verified status after linking and after framework restart
-- safe failure for wrong identity, timeout, unavailable Provider, and already-linked use where practical
-- no raw Telnet, platform identifiers, credentials, paths, socket details, or internal errors in ordinary output or logs
-- normal game-command execution after proof collection ends
-- optional Provider failure leaves healthy framework components running in degraded mode
-- complete automated regression coverage and final release validation
+- private `/identity status`
+- private `/identity link` challenge instructions
+- exact Steam identity and challenge correlation through 7 Days to Die global chat
+- verified SQLite persistence
+- verified status after framework restart
+- already-linked rejection without another challenge
+- normal `/game status` and `/game time` after proof collection
+- degraded startup with the optional 7 Days to Die Provider unavailable
+- privacy-safe recoverable lifecycle logging
 
-The phase must not add replacement, unlinking, revocation, staff lookup, public identifier output, free-form Telnet, Economy integration, multiple-server support, automatic retries, independent component status, start, stop, restart, configuration-backed reload, safe replacement, or restricted administration.
+### Release Closeout
+
+Remaining release steps:
+
+1. Complete focused source-of-truth documentation synchronization.
+2. Run the production dependency audit, complete test suite, ESLint, and `git diff --check`.
+3. Open and validate the v1.5.0 release pull request.
+4. Create the annotated `v1.5.0` tag only after the user merges the release pull request.
+
+Replacement, relinking, unlinking, revocation, conflict resolution, staff lookup, broad platform attachments, and identity merging remain separate future workflows.
 
 ### Outside v1.5.0
 
@@ -295,8 +300,40 @@ Status: Completed and tagged
 - Release merge commit: `71e476641bb5026dfa4d41dbd88131db2326800b`
 - Annotated tag: `v1.3.0`
 
+## Approved Follow-Up Milestone Options
+
+After v1.5.0, two major follow-up milestones are approved candidates. Their version numbers and order remain undecided until operational priority is selected.
+
+### Component Resilience and Runtime Lifecycle
+
+Choose this direction first when the priority is:
+
+- restarting failed Providers without restarting RSF
+- reconnect policy
+- configuration-backed reload
+- safe component replacement
+- restricted lifecycle administration
+- reducing Provider observation downtime
+
+### RSF Identity Hub and Platform Attachments
+
+Choose this direction first when the priority is:
+
+- establishing an RSF-owned permanent identity
+- attaching Discord, Steam, EOS, hosted-game, and future platform accounts
+- defining exact match, attachment, merge-candidate, conflict, observation, and privacy contracts
+- supporting game-first unclaimed identities
+- preserving identity, moderation, alias, and activity history across hosted servers and games
+- preparing compatibility and migration boundaries before broader Economy and cross-game systems depend on the narrow v1.5 link model
+
+The Identity Hub contract and persistence phases do not depend on Runtime Lifecycle. Observation ingestion must tolerate Provider downtime, record its source and timestamp, remain idempotent, avoid duplicate identities, and fail closed on conflicts.
+
+Automatic identity merge is not approved for the first Identity Hub implementation. Deterministic evidence may allow direct attachment or create a merge candidate. General merge execution requires a separate transactional and audited design.
+
+Whichever milestone is not selected first should follow before broad Economy purchases, automated game rewards, or cross-game moderation depend on these capabilities.
+
 ## Future Direction
 
-After v1.5.0, candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, multiple-server support, and a dedicated runtime lifecycle milestone covering independent component status, start, stop, restart, configuration-backed reload, safe replacement, and restricted administration.
+Other candidate directions include continuous chat integration, Economy-backed game rewards or purchases, administration interfaces, expanded Ticket workflows, persistent Website sessions, command queuing, and multiple-server support.
 
 Every future milestone must preserve the established Core, Provider, Module, Shared, privacy, fixed-command ownership, and critical-versus-recoverable startup boundaries.
