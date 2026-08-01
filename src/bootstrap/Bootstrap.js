@@ -60,8 +60,10 @@ class Bootstrap {
             }
 
             modulesActive = true;
-            await ModuleManager.initializeAll();
-            await ModuleManager.startAll();
+            const moduleInitialization =
+                await ModuleManager.initializeAll();
+            const moduleStartup =
+                await ModuleManager.startAll();
 
             const providers = ProviderLoader.load();
 
@@ -70,8 +72,20 @@ class Bootstrap {
             }
 
             providersActive = true;
-            await ProviderManager.initializeAll();
-            await ProviderManager.startAll();
+            const providerInitialization =
+                await ProviderManager.initializeAll();
+            const providerStartup =
+                await ProviderManager.startAll();
+
+            const lifecycleSummaries = Object.freeze([
+                moduleInitialization,
+                moduleStartup,
+                providerInitialization,
+                providerStartup
+            ]);
+            const degraded = lifecycleSummaries.some(
+                summary => summary?.failed > 0
+            );
 
             Logger.info("Loaded Core Services:");
             Logger.info(
@@ -109,7 +123,21 @@ class Bootstrap {
             }
 
             Logger.info("");
-            Logger.info("Framework started successfully.");
+
+            if (degraded) {
+                Logger.warn(
+                    "Framework started in degraded mode."
+                );
+            } else {
+                Logger.info("Framework started successfully.");
+            }
+
+            return Object.freeze({
+                lifecycleSummaries,
+                outcome: degraded
+                    ? "STARTED_DEGRADED"
+                    : "STARTED"
+            });
 
         } catch (startupError) {
 

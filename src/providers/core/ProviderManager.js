@@ -1,6 +1,9 @@
+const Logger = require("../../core/Logger");
+
 class ProviderManager {
     constructor() {
         this.providers = new Map();
+        this.initializedProviders = new WeakSet();
     }
 
     register(provider) {
@@ -15,15 +18,79 @@ class ProviderManager {
     }
 
     async initializeAll() {
-        for (const provider of this.providers.values()) {
-            await provider.initialize();
-        }
+        return this.runLifecycleOperation("initialize");
     }
 
     async startAll() {
+        return this.runLifecycleOperation("start");
+    }
+
+    async runLifecycleOperation(operation) {
+
+        const results = [];
+
         for (const provider of this.providers.values()) {
-            await provider.start();
+
+            let succeeded = false;
+
+            if (
+                operation === "start" &&
+                !this.initializedProviders.has(provider)
+            ) {
+                Logger.error(
+                    `Provider '${provider.name}' failed to start.`
+                );
+                Logger.error(
+                    "Provider initialization did not succeed."
+                );
+            } else {
+
+                try {
+                    await provider[operation]();
+                    succeeded = true;
+
+                    if (operation === "initialize") {
+                        this.initializedProviders.add(provider);
+                    }
+                } catch (error) {
+
+                    if (operation === "initialize") {
+                        this.initializedProviders.delete(provider);
+                    }
+
+                    if (typeof provider.setError === "function") {
+                        provider.setError();
+                    }
+
+                    Logger.error(
+                        `Provider '${provider.name}' failed to ${operation}.`
+                    );
+                    Logger.error(error.stack || error.message);
+
+                }
+
+            }
+
+            results.push(Object.freeze({
+                name: provider.name,
+                state: provider.state,
+                succeeded
+            }));
+
         }
+
+        const failed = results.filter(
+            result => !result.succeeded
+        ).length;
+
+        return Object.freeze({
+            failed,
+            operation,
+            processed: results.length,
+            results: Object.freeze(results),
+            succeeded: results.length - failed
+        });
+
     }
 
     async stopAll() {

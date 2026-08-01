@@ -1,7 +1,10 @@
+const Logger = require("../../core/Logger");
+
 class ModuleManager {
 
     constructor() {
         this.modules = new Map();
+        this.initializedModules = new WeakSet();
     }
 
     register(module) {
@@ -16,15 +19,79 @@ class ModuleManager {
     }
 
     async initializeAll() {
-        for (const module of this.modules.values()) {
-            await module.initialize();
-        }
+        return this.runLifecycleOperation("initialize");
     }
 
     async startAll() {
+        return this.runLifecycleOperation("start");
+    }
+
+    async runLifecycleOperation(operation) {
+
+        const results = [];
+
         for (const module of this.modules.values()) {
-            await module.start();
+
+            let succeeded = false;
+
+            if (
+                operation === "start" &&
+                !this.initializedModules.has(module)
+            ) {
+                Logger.error(
+                    `Module '${module.name}' failed to start.`
+                );
+                Logger.error(
+                    "Module initialization did not succeed."
+                );
+            } else {
+
+                try {
+                    await module[operation]();
+                    succeeded = true;
+
+                    if (operation === "initialize") {
+                        this.initializedModules.add(module);
+                    }
+                } catch (error) {
+
+                    if (operation === "initialize") {
+                        this.initializedModules.delete(module);
+                    }
+
+                    if (typeof module.setError === "function") {
+                        module.setError();
+                    }
+
+                    Logger.error(
+                        `Module '${module.name}' failed to ${operation}.`
+                    );
+                    Logger.error(error.stack || error.message);
+
+                }
+
+            }
+
+            results.push(Object.freeze({
+                name: module.name,
+                state: module.state,
+                succeeded
+            }));
+
         }
+
+        const failed = results.filter(
+            result => !result.succeeded
+        ).length;
+
+        return Object.freeze({
+            failed,
+            operation,
+            processed: results.length,
+            results: Object.freeze(results),
+            succeeded: results.length - failed
+        });
+
     }
 
     async stopAll() {
