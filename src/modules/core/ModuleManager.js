@@ -1,3 +1,4 @@
+const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
 
 class ModuleManager {
@@ -33,19 +34,33 @@ class ModuleManager {
 
             let succeeded = false;
 
-            try {
-                await module[operation]();
-                succeeded = true;
-            } catch (error) {
-
-                if (typeof module.setError === "function") {
-                    module.setError();
-                }
-
+            if (
+                operation === "start" &&
+                module.state !== ComponentState.READY
+            ) {
                 Logger.error(
-                    `Module '${module.name}' failed to ${operation}.`
+                    `Module '${module.name}' failed to start.`
                 );
-                Logger.error(error.stack || error.message);
+                Logger.error(
+                    "Module must be READY before startup."
+                );
+            } else {
+
+                try {
+                    await module[operation]();
+                    succeeded = true;
+                } catch (error) {
+
+                    if (typeof module.setError === "function") {
+                        module.setError();
+                    }
+
+                    Logger.error(
+                        `Module '${module.name}' failed to ${operation}.`
+                    );
+                    Logger.error(error.stack || error.message);
+
+                }
 
             }
 
