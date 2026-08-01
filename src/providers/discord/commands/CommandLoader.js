@@ -6,6 +6,7 @@ const HelpCommand = require("./HelpCommand");
 const IdentityCommand = require("./IdentityCommand");
 const KickCommand = require("./KickCommand");
 const LeaderboardCommand = require("./LeaderboardCommand");
+const LifecycleCommand = require("./LifecycleCommand");
 const PingCommand = require("./PingCommand");
 const PurgeCommand = require("./PurgeCommand");
 const TicketCommand = require("./TicketCommand");
@@ -19,7 +20,8 @@ class CommandLoader {
         gameCommandAuthorizer,
         gameServerProviderResolver,
         identityModuleResolver,
-        identityProofProviderResolver
+        identityProofProviderResolver,
+        lifecycleService
     } = {}) {
 
         const commands = [
@@ -44,7 +46,19 @@ class CommandLoader {
 
         commands.push(
             new KickCommand(),
-            new LeaderboardCommand(),
+            new LeaderboardCommand()
+        );
+
+        if (lifecycleService !== undefined) {
+            commands.push(
+                new LifecycleCommand({
+                    authorizer: gameCommandAuthorizer,
+                    lifecycleService
+                })
+            );
+        }
+
+        commands.push(
             new PingCommand(),
             new PurgeCommand(),
             new TicketCommand(),
