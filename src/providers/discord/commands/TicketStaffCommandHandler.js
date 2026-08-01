@@ -124,7 +124,8 @@ class TicketStaffCommandHandler {
     async execute(
         interaction,
         tickets,
-        subcommand
+        subcommand,
+        auditService = null
     ) {
 
         switch (subcommand) {
@@ -146,28 +147,32 @@ class TicketStaffCommandHandler {
             case "message":
                 await this.addStaffMessage(
                     interaction,
-                    tickets
+                    tickets,
+                    auditService
                 );
                 return;
 
             case "assign":
                 await this.assignTicket(
                     interaction,
-                    tickets
+                    tickets,
+                    auditService
                 );
                 return;
 
             case "unassign":
                 await this.unassignTicket(
                     interaction,
-                    tickets
+                    tickets,
+                    auditService
                 );
                 return;
 
             case "close":
                 await this.closeAnyTicket(
                     interaction,
-                    tickets
+                    tickets,
+                    auditService
                 );
                 return;
 
@@ -388,7 +393,11 @@ class TicketStaffCommandHandler {
 
     }
 
-    async addStaffMessage(interaction, tickets) {
+    async addStaffMessage(
+        interaction,
+        tickets,
+        auditService
+    ) {
 
         const ticketId = interaction.options.getString(
             "id",
@@ -414,6 +423,13 @@ class TicketStaffCommandHandler {
                 actorPermissions
             );
         } catch (error) {
+            this.recordAudit(
+                auditService,
+                interaction,
+                "message",
+                ticketId,
+                this.resolveAuditFailure(error, ticketId)
+            );
 
             if (
                 await this.replyToError(
@@ -426,8 +442,18 @@ class TicketStaffCommandHandler {
             }
 
             throw error;
-
         }
+
+        this.recordAudit(
+            auditService,
+            interaction,
+            "message",
+            message.ticketId,
+            {
+                outcome: "SUCCESS",
+                status: "succeeded"
+            }
+        );
 
         await interaction.reply({
             content:
@@ -438,7 +464,11 @@ class TicketStaffCommandHandler {
 
     }
 
-    async assignTicket(interaction, tickets) {
+    async assignTicket(
+        interaction,
+        tickets,
+        auditService
+    ) {
 
         const ticketId = interaction.options.getString(
             "id",
@@ -462,6 +492,13 @@ class TicketStaffCommandHandler {
                 actorPermissions
             );
         } catch (error) {
+            this.recordAudit(
+                auditService,
+                interaction,
+                "assign",
+                ticketId,
+                this.resolveAuditFailure(error, ticketId)
+            );
 
             if (
                 await this.replyToError(
@@ -474,8 +511,18 @@ class TicketStaffCommandHandler {
             }
 
             throw error;
-
         }
+
+        this.recordAudit(
+            auditService,
+            interaction,
+            "assign",
+            ticket.id,
+            {
+                outcome: "SUCCESS",
+                status: "succeeded"
+            }
+        );
 
         await interaction.reply({
             content:
@@ -486,7 +533,11 @@ class TicketStaffCommandHandler {
 
     }
 
-    async unassignTicket(interaction, tickets) {
+    async unassignTicket(
+        interaction,
+        tickets,
+        auditService
+    ) {
 
         const ticketId = interaction.options.getString(
             "id",
@@ -505,6 +556,13 @@ class TicketStaffCommandHandler {
                 actorPermissions
             );
         } catch (error) {
+            this.recordAudit(
+                auditService,
+                interaction,
+                "unassign",
+                ticketId,
+                this.resolveAuditFailure(error, ticketId)
+            );
 
             if (
                 await this.replyToError(
@@ -517,8 +575,18 @@ class TicketStaffCommandHandler {
             }
 
             throw error;
-
         }
+
+        this.recordAudit(
+            auditService,
+            interaction,
+            "unassign",
+            ticket.id,
+            {
+                outcome: "SUCCESS",
+                status: "succeeded"
+            }
+        );
 
         await interaction.reply({
             content: `Unassigned ticket **${ticket.id}**.`,
@@ -527,7 +595,11 @@ class TicketStaffCommandHandler {
 
     }
 
-    async closeAnyTicket(interaction, tickets) {
+    async closeAnyTicket(
+        interaction,
+        tickets,
+        auditService
+    ) {
 
         const ticketId = interaction.options.getString(
             "id",
@@ -547,6 +619,13 @@ class TicketStaffCommandHandler {
                 actorPermissions
             );
         } catch (error) {
+            this.recordAudit(
+                auditService,
+                interaction,
+                "close",
+                ticketId,
+                this.resolveAuditFailure(error, ticketId)
+            );
 
             if (
                 await this.replyToError(
@@ -559,13 +638,147 @@ class TicketStaffCommandHandler {
             }
 
             throw error;
-
         }
+
+        this.recordAudit(
+            auditService,
+            interaction,
+            "close",
+            ticket.id,
+            {
+                outcome: "SUCCESS",
+                status: "succeeded"
+            }
+        );
 
         await interaction.reply({
             content: `Closed ticket **${ticket.id}**.`,
             flags: MessageFlags.Ephemeral
         });
+
+    }
+
+    recordAudit(
+        auditService,
+        interaction,
+        action,
+        ticketId,
+        {
+            outcome,
+            status
+        }
+    ) {
+
+        if (!auditService) {
+            return false;
+        }
+
+        try {
+            return auditService.recordAttempt({
+                actorId: interaction.user.id,
+                action,
+                targetId: this.resolveAuditTargetId(
+                    ticketId
+                ),
+                outcome,
+                status
+            });
+        } catch {
+            return false;
+        }
+
+    }
+
+    resolveAuditTargetId(ticketId) {
+
+        if (
+            typeof ticketId === "string" &&
+            /^ticket-[1-9]\d*$/.test(ticketId)
+        ) {
+            return ticketId;
+        }
+
+        return "unresolved-ticket";
+
+    }
+    resolveAuditFailure(error, ticketId) {
+
+        const permissionErrors = new Set([
+            "Ticket responses are limited to its creator " +
+                "or actors with respond permission.",
+            "Ticket assignment permission is required.",
+            "Ticket closing is limited to its creator " +
+                "or actors with close permission."
+        ]);
+
+        if (permissionErrors.has(error.message)) {
+            return {
+                outcome: "DENIED",
+                status: "permission-denied"
+            };
+        }
+
+        if (
+            error.message === "Ticket ID is required." ||
+            error.message ===
+                "Ticket message content is required." ||
+            error.message ===
+                "Ticket assignee ID is required."
+        ) {
+            return {
+                outcome: "FAILED",
+                status: "validation-failed"
+            };
+        }
+
+        if (
+            typeof ticketId === "string" &&
+            error.message ===
+                `Ticket not found: ${ticketId}`
+        ) {
+            return {
+                outcome: "FAILED",
+                status: "ticket-not-found"
+            };
+        }
+
+        if (
+            error.message ===
+                "Ticket messages require an open ticket." ||
+            error.message ===
+                "Ticket assignments require an open ticket." ||
+            error.message ===
+                "Ticket transition from CLOSED to CLOSED " +
+                    "is not allowed."
+        ) {
+            return {
+                outcome: "FAILED",
+                status: "ticket-not-open"
+            };
+        }
+
+        if (
+            error.message.startsWith(
+                "Ticket is already assigned to:"
+            )
+        ) {
+            return {
+                outcome: "FAILED",
+                status: "already-assigned"
+            };
+        }
+
+        if (error.message === "Ticket is not assigned.") {
+            return {
+                outcome: "FAILED",
+                status: "not-assigned"
+            };
+        }
+
+        return {
+            outcome: "FAILED",
+            status: "persistence-failed"
+        };
 
     }
 

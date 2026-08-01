@@ -114,7 +114,7 @@ test("passes focused game, identity, and lifecycle boundaries to commands", () =
         "identityProofProviderResolver",
         "lifecycleAuditService",
         "lifecycleService",
-        "moderationAuditService"
+        "moderationAuditService",        "ticketAuditService"
     ]);
 
 });

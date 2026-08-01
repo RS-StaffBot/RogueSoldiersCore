@@ -17,6 +17,9 @@ const DiscordLifecycleService = require(
 const DiscordModerationAuditService = require(
     "../discord/services/DiscordModerationAuditService"
 );
+const DiscordTicketAuditService = require(
+    "../discord/services/DiscordTicketAuditService"
+);
 const Configuration = require(
     "../../configuration/ConfigurationManager"
 );
@@ -88,6 +91,7 @@ class ProviderLoader {
         let lifecycleService;
         let lifecycleAuditService;
         let moderationAuditService;
+        let ticketAuditService;
         if (
             typeof providerManager.getProviderStatus === "function" &&
             typeof providerManager.restartProvider === "function" &&
@@ -112,6 +116,7 @@ class ProviderLoader {
             hostedPlayerAuditService = auditServices.hostedPlayer;
             lifecycleAuditService = auditServices.lifecycle;
             moderationAuditService = auditServices.moderation;
+            ticketAuditService = auditServices.ticket;
         }
 
         const commandLoader = Object.freeze({
@@ -126,6 +131,7 @@ class ProviderLoader {
                 lifecycleAuditService,
                 lifecycleService,
                 moderationAuditService,
+                ticketAuditService,
                 resolveGameServerProvider: name =>
                     providerManager.get(name),
                 resolveIdentityModule: name =>
@@ -194,7 +200,8 @@ class ProviderLoader {
         const unavailable = Object.freeze({
             hostedPlayer: undefined,
             lifecycle: undefined,
-            moderation: undefined
+            moderation: undefined,
+            ticket: undefined
         });
         let auditModule;
 
@@ -224,6 +231,9 @@ class ProviderLoader {
                     recordingService
                 }).asBoundary(),
                 moderation: new DiscordModerationAuditService({
+                    recordingService
+                }).asBoundary(),
+                ticket: new DiscordTicketAuditService({
                     recordingService
                 }).asBoundary()
             });
