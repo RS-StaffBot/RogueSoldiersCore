@@ -95,23 +95,8 @@ class ProviderLoader {
                 providerManager
             }).asBoundary();
 
-            const auditModule = moduleManager.get("Audit");
-
-            if (
-                !auditModule ||
-                typeof auditModule.recordAction !== "function"
-            ) {
-                throw new Error(
-                    "Discord lifecycle Audit Module boundary is invalid."
-                );
-            }
-
             lifecycleAuditService =
-                new DiscordLifecycleAuditService({
-                    recordingService: new AuditRecordingService({
-                        auditModule
-                    })
-                }).asBoundary();
+                this.createLifecycleAuditService(moduleManager);
         }
 
         const providers = [
@@ -179,6 +164,35 @@ class ProviderLoader {
         );
 
         return providers;
+    }
+
+    createLifecycleAuditService(moduleManager) {
+
+        let auditModule;
+
+        try {
+            auditModule = moduleManager.get("Audit");
+        } catch {
+            return undefined;
+        }
+
+        if (
+            !auditModule ||
+            typeof auditModule.recordAction !== "function"
+        ) {
+            return undefined;
+        }
+
+        try {
+            return new DiscordLifecycleAuditService({
+                recordingService: new AuditRecordingService({
+                    auditModule
+                })
+            }).asBoundary();
+        } catch {
+            return undefined;
+        }
+
     }
 
     createProvider(name, {
