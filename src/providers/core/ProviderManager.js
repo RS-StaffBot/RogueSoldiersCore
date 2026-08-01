@@ -179,7 +179,10 @@ class ProviderManager {
             });
         }
 
-        if (current.state !== ComponentState.RUNNING) {
+        if (
+            current.state !== ComponentState.RUNNING &&
+            current.state !== ComponentState.ERROR
+        ) {
             return this.createOperationResult({
                 name: current.name,
                 operation: "REPLACE",

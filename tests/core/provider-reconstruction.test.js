@@ -87,6 +87,42 @@ test("atomically replaces a running initialized Provider", async () => {
     ProviderManager.providers.clear();
 });
 
+test("replaces an initialized Provider from runtime error", async () => {
+    const current = createProvider();
+    const candidate = createProvider();
+    await registerRunning(current);
+    current.setError();
+
+    const result = await ProviderManager.replaceProvider(
+        current.name,
+        () => candidate
+    );
+
+    assert.deepEqual(result, {
+        componentType: "PROVIDER",
+        name: "7 Days to Die",
+        operation: "REPLACE",
+        outcome: "SUCCEEDED",
+        state: ComponentState.RUNNING,
+        succeeded: true
+    });
+    assert.equal(current.state, ComponentState.STOPPED);
+    assert.equal(candidate.state, ComponentState.RUNNING);
+    assert.equal(ProviderManager.get(current.name), candidate);
+    assert.deepEqual(
+        ProviderManager.getProviderStatus(current.name),
+        {
+            componentType: "PROVIDER",
+            initialized: true,
+            name: "7 Days to Die",
+            operational: true,
+            state: ComponentState.RUNNING
+        }
+    );
+
+    ProviderManager.providers.clear();
+});
+
 test("retains the old Provider when candidate startup fails", async () => {
     const current = createProvider();
     const candidate = createProvider({ failStart: true });
