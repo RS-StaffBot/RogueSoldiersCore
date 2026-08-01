@@ -1,7 +1,7 @@
+const AuditedGameCommand = require("./AuditedGameCommand");
 const BanCommand = require("./BanCommand");
 const BalanceCommand = require("./BalanceCommand");
 const DailyCommand = require("./DailyCommand");
-const GameCommand = require("./GameCommand");
 const HelpCommand = require("./HelpCommand");
 const IdentityCommand = require("./IdentityCommand");
 const KickCommand = require("./KickCommand");
@@ -19,6 +19,7 @@ class CommandLoader {
     load({
         gameCommandAuthorizer,
         gameServerProviderResolver,
+        hostedPlayerAuditService,
         identityModuleResolver,
         identityProofProviderResolver,
         lifecycleAuditService,
@@ -32,7 +33,8 @@ class CommandLoader {
             }),
             new BalanceCommand(),
             new DailyCommand(),
-            new GameCommand({
+            new AuditedGameCommand({
+                auditService: hostedPlayerAuditService,
                 gameCommandAuthorizer,
                 gameServerProviderResolver
             }),
