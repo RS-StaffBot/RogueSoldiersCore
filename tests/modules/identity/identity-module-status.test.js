@@ -106,10 +106,16 @@ test("registers Identity between Economy and Moderation", () => {
 
     assert.deepEqual(
         modules.map(module => module.name),
-        ["Economy", "Identity", "Moderation", "Tickets"]
+        [
+            "Audit",
+            "Economy",
+            "Identity",
+            "Moderation",
+            "Tickets"
+        ]
     );
     assert.equal(
-        modules[1] instanceof IdentityModule,
+        modules[2] instanceof IdentityModule,
         true
     );
 });

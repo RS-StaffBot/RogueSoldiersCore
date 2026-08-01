@@ -1,6 +1,10 @@
 const SettingsStore = require(
     "../../core/settings/persistence/SettingsStore"
 );
+const AuditModule = require("../audit/AuditModule");
+const SqliteAuditStore = require(
+    "../audit/persistence/SqliteAuditStore"
+);
 const EconomyModule = require("../economy/EconomyModule");
 const EconomySettingsResolver = require(
     "../economy/EconomySettingsResolver"
@@ -30,6 +34,11 @@ class ModuleLoader {
         const settingsStore = database
             ? database.createStore(SettingsStore)
             : null;
+        const auditStore = database
+            ? database.createStore(
+                SqliteAuditStore
+            )
+            : undefined;
         const economyStore = database
             ? database.createStore(
                 SqliteEconomyStore
@@ -57,6 +66,9 @@ class ModuleLoader {
             : {};
 
         return [
+            new AuditModule({
+                store: auditStore
+            }),
             new EconomyModule({
                 ...economyOptions,
                 store: economyStore
