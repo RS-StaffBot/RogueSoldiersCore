@@ -4,268 +4,150 @@
 
 v1.5.0
 
-## Current Milestone
+## Latest Completed Milestone
 
 v1.5.0 - Player Identity Linking Foundation
 
-Status: Release closeout in progress; implementation and required live verification are complete.
+Status: Completed, merged, live verified, and tagged.
+
+Release record:
+
+- Release pull request: `#76`
+- Release merge commit: `0c318bddbfc4b5937d0d791b2df8610bfa0aff5c`
+- Annotated tag: `v1.5.0`
+- Release validation: GitHub Actions passed
+- Release notes: `docs/Release-Notes-v1.5.0.md`
+
+Verified v1.5 capabilities include:
+
+- private `/identity status`
+- private `/identity link user-id:<Steam_...|EOS_...>`
+- exact short-lived challenge proof through 7 Days to Die global chat
+- proof-gated SQLite persistence
+- verified-link recovery after framework restart
+- already-linked rejection without another challenge
+- normal game commands after proof collection
+- degraded startup when the optional 7 Days to Die Provider is unavailable
+- privacy-safe recoverable lifecycle logging
+- immediate fail-closed completion when the exact challenge comes from a different durable Steam/EOS identifier
+
+The v1.5 `identity_links` model remains the active narrow first-link compatibility foundation. Replacement, relinking, unlinking, revocation, staff lookup, broad platform attachments, and Identity Hub behavior remain future work.
+
+## Current Milestone
+
+v1.6.0 - Component Resilience and Runtime Lifecycle
+
+Status: Active; Phase 1 planning approved.
 
 ## Milestone Goal
 
-Create a secure, platform-neutral foundation that can associate one Discord member with a durable hosted-game identity without exposing identifiers publicly or coupling identity ownership to Discord or 7 Days to Die.
+Give RSF a safe, observable, and controllable runtime lifecycle for independently recoverable Providers and Modules without requiring a full framework restart.
 
-The milestone establishes the trusted identity boundary required for future player-specific Economy rewards, game purchases, account history, staff administration, and other cross-platform workflows.
+The milestone builds on the v1.5 critical-versus-recoverable startup boundary. It must preserve healthy components when one recoverable component fails and must never downgrade Core, Database, migration, Loader-wide, or other framework-critical failures into ordinary component failures.
 
-## Architecture Boundary
+The milestone prepares RSF for more reliable hosted-game operation, Linux and Docker deployment, additional game Providers, and future administration interfaces.
 
-The Identity Module owns identity-link business rules, validation, authorization, conflict handling, lifecycle, private owner status, proof-gated verified-link mutation, and durable identity records.
+## Approved Architecture Boundary
 
-Core remains responsible for database lifecycle and migrations. Module-specific stores own identity persistence without exposing SQL or the Core database connection to Providers.
+Core owns lifecycle coordination, component registration, operation serialization, lifecycle status contracts, safe reconstruction coordination, and framework-wide critical-versus-recoverable policy.
 
-The Discord Provider owns Discord command definitions, Discord authorization, interaction handling, private responses, challenge generation, and Discord identity translation.
+ProviderManager owns registered Provider lookup and Provider lifecycle operations.
 
-The 7 Days to Die Provider owns game-server protocol behavior and sanitized evidence used to verify game identities. It does not own cross-platform identity records or Discord membership policy.
+ModuleManager owns registered Module lookup and Module lifecycle operations.
 
-Shared contains reusable identity permissions required across Module and Provider boundaries.
+Each Provider and Module remains responsible for its own platform or business cleanup and startup behavior through its existing lifecycle methods.
 
-## Completed v1.5.0 Work
+Discord and Website Providers may expose restricted administrative interfaces only through narrow Core lifecycle services. They must not receive Manager internals, component instances, constructors, arbitrary source paths, configuration objects, errors, sockets, credentials, or raw Provider state.
 
-### Phase 1 - Identity Domain Contract
+## Phase Plan
 
-Completed through pull request `#59`.
+### Phase 1 - Read-Only Lifecycle Status Foundation
 
-Implemented and verified:
+Objective: create one privacy-safe status contract for registered Providers and Modules.
 
-- canonical fields `discordUserId` and `gameUserId`
-- supported durable identifiers `Steam_...` and `EOS_...`
-- one active link per Discord member
-- one active owner per durable game identity
-- pending, verified, and revoked states
-- atomic revoke-and-pend replacement semantics
-- private-by-default identifier visibility
-- reusable identity permissions
-- narrow persistence contract
+Planned operations:
 
-### Phase 2 - Immutable Records and In-Memory Store
+```text
+listProviderStatuses()
+getProviderStatus(name)
+listModuleStatuses()
+getModuleStatus(name)
+```
 
-Completed through pull request `#60`.
+Each result may expose only approved runtime facts such as:
 
-Implemented and verified:
+- component type
+- registered component name
+- current component state
+- whether initialization previously succeeded
+- whether the component is currently operational
+- lifecycle actions supported by the current state
 
-- frozen statuses and focused errors
-- immutable validated records
-- defensive in-memory storage
-- active Discord and game identity uniqueness
-- stale-state detection
-- atomic replacement and rollback
+Results must be frozen, defensive, deterministic, and free of raw errors, stack traces, configuration, credentials, addresses, IPs, paths, sockets, clients, stores, database handles, and other component internals.
 
-### Phase 3 - SQLite Persistence
+Phase 1 is read-only. It does not mutate lifecycle state.
 
-Completed through pull request `#61`.
+### Phase 2 - Controlled Individual Stop and Start
 
-Implemented and verified:
+Planned objective: add narrow, validated operations for stopping and starting one registered recoverable component while preserving lifecycle ownership and dependency safety.
 
-- migration `006_create_identity_links`
-- SQLite identity-link persistence
-- partial unique indexes for active identities
-- defensive reads and ordered listing
-- transactional replacement and rollback
-- restart recovery
-- synchronized migration-order coverage
+### Phase 3 - Safe Restart Coordination
 
-### Phase 4 - Fail-Closed 7DTD Proof Contract
+Planned objective: serialize lifecycle mutations, prevent overlapping operations, and provide one controlled restart operation with truthful results and rollback-safe behavior where applicable.
 
-Completed through pull request `#63`.
+### Phase 4 - Provider Reconnect Policy
 
-Implemented and verified:
+Planned objective: define evidence-backed opt-in reconnect behavior for eligible Providers without creating uncontrolled retry loops or hiding persistent failures.
 
-- short-lived in-game challenge requirement
-- one exact durable Steam/EOS identifier and challenge match
-- sanitized evidence fields limited to `gameUserId`, `challenge`, and `observedAt`
-- five-minute evidence lifetime
-- immediate disposal requirement after evaluation
-- rejection of missing, malformed, stale, future, and ambiguous evidence
-- explicit rejection of display names and online entity IDs as sufficient proof
+### Phase 5 - Configuration-Backed Reload and Safe Replacement
 
-### Phase 5A - Identity Module and Private Owner Status
+Planned objective: reconstruct approved components from trusted Loader-owned configuration and replace them atomically without arbitrary paths, dynamic code loading, or request-controlled constructors.
 
-Completed through pull request `#64`.
+### Phase 6 - Restricted Lifecycle Administration
 
-Implemented and verified:
+Planned objective: expose approved private staff workflows through Discord and, when appropriate, Website administration boundaries.
 
-- framework-loaded `Identity` Module
-- in-memory store for direct construction
-- SQLite store injection when a framework database is available
-- durable-state validation during Module initialization
-- frozen private owner-status results
-- ordinary status output limited to approved status and timestamp fields
-- no Steam, EOS, or Discord identifiers in owner-status results
+### Phase 7 - Live Recovery Verification and Release Hardening
 
-### Phase 5B - 7DTD Provider Proof Collection
+Planned objective: verify degraded operation, controlled recovery, privacy-safe output, operation serialization, restart and reload behavior, and final release documentation.
 
-Completed through pull request `#66`.
+## Phase 1 Explicit Exclusions
 
-Implemented and verified:
+Phase 1 must not add:
 
-- parsing of the live global-chat event that contains durable Steam/EOS identity and the exact short-lived challenge
-- temporary unsolicited-event collection without free-form Telnet
-- exact case-sensitive durable-ID and challenge matching
-- sanitized output limited to `gameUserId`, `challenge`, and `observedAt`
-- rejection of unrelated chat, wrong identities, malformed lines, timeout, and disconnect
-- command execution and proof collection serialized through one active Provider operation
-- no use of `listplayers`, `listplayerids`, display names, or entity IDs as ownership proof
+- start, stop, restart, reconnect, reload, or replacement operations
+- automatic retries or reconnect loops
+- Discord or Website lifecycle commands
+- configuration mutations
+- process supervision
+- multiple-server support
+- arbitrary component names passed into reconstruction code
+- component constructors, instances, Managers, Registry, configuration, or raw errors in public results
+- changes to existing startup, degraded-startup, or shutdown behavior
 
-### Phase 5C - Proof-Gated Verified Link Mutation
+## Required Safety and Privacy Boundaries
 
-Completed through pull request `#67`.
-
-Implemented and verified:
-
-- `IdentityModule.recordVerifiedSelfLink(...)`
-- exact internal verified-proof requirement
-- first identity link created directly as `VERIFIED`
-- one verification timestamp used for creation and verification
-- active Discord-user and game-identity uniqueness preserved
-- malformed, unsuccessful, ambiguous, or expanded proof objects rejected
-- replacement and relinking intentionally excluded from self-link creation
-
-### Phase 5D - Private Discord Owner Status
-
-Completed through pull request `#69`.
-
-Implemented and verified:
-
-- guild-only `/identity status`
-- ephemeral responses only
-- invoking Discord member identity derived from the interaction
-- narrow Discord-to-Identity Module resolver
-- safe unlinked, pending, and verified status formatting
-- no Discord, Steam, or EOS identifiers in ordinary responses
-- safe unavailable, stopped, and malformed boundary behavior
-
-### Phase 5E - Private Discord Self-Link
-
-Completed through pull request `#70`.
-
-Implemented and verified:
-
-- guild-only `/identity link user-id:<Steam_...|EOS_...>`
-- cryptographically random short-lived challenge generation
-- private instruction to send the exact challenge in 7 Days to Die global chat
-- deferred ephemeral interaction handling while proof is collected
-- narrow Discord-to-7DTD proof Provider resolver
-- exact proof evaluation before persistence
-- first verified link recorded only after exact `VERIFIED` proof
-- submitted Steam/EOS identifier never repeated in Discord output
-- fail-closed behavior for invalid input, existing active links, unavailable boundaries, timeout, disconnect, malformed or ambiguous proof, and persistence conflicts
-
-### Resilient Startup Isolation
-
-Completed through pull request `#72`.
-
-Implemented and verified:
-
-- every registered Provider and Module is initialized and started independently
-- failed components remain registered in `ERROR`
-- a component that fails initialization is not started
-- healthy unrelated components remain `RUNNING`
-- recoverable component failure produces `STARTED_DEGRADED` rather than total framework rollback
-- Manager lifecycle summaries are frozen and exclude raw internal errors
-- healthy Modules, Providers, and Database remain active after recoverable failures
-- Core, Loader-wide, migration, health, and Database startup failures remain fatal
-- shutdown preserves Providers -> Modules -> Database ordering with mixed `RUNNING` and `ERROR` states
-
-Automatic retry and reconnect policy, independent component status, start, stop, restart, configuration-backed reload, safe replacement, restricted administration, and process supervision remain future work.
-
-### Release-Hardening Corrections
-
-Completed through pull requests `#74` and `#75`.
-
-Implemented and verified:
-
-- recoverable Provider and Module lifecycle errors no longer expose stack traces, local paths, socket details, credentials, or raw internal exceptions
-- the exact active challenge received from a different durable Steam/EOS identifier ends collection immediately and fails closed
-- mismatched proof no longer waits for the full five-minute timeout
-- temporary proof listeners and timers are removed when collection ends
-
-## Release Verification
-
-Required v1.5.0 live verification is complete:
-
-- `/identity status` registered and returned private owner-only status
-- `/identity link` registered and returned private challenge instructions
-- the exact challenge was observed through 7 Days to Die global chat
-- an exact Steam identity was verified and persisted
-- the verified link survived framework restart
-- an already-linked member was rejected without generating another challenge
-- normal `/game status` and `/game time` operations worked after proof collection
-- optional 7 Days to Die Provider failure left Discord, the Database, and healthy Modules running in degraded mode
-- recoverable lifecycle logs did not expose stack traces, local paths, socket details, credentials, or raw Provider errors
-
-The current v1.5 implementation remains the narrow first-link compatibility foundation. Replacement, relinking, unlinking, revocation, staff lookup, broad account attachment, and identity merging remain future work.
-
-## Required Privacy and Safety Boundaries
-
-- Platform identifiers are private operational data by default.
-- Ordinary public Discord responses must not reveal Steam IDs, EOS IDs, raw Telnet output, IP addresses, positions, health, inventory, credentials, paths, socket details, or internal errors.
-- Identity commands must use private or ephemeral responses.
-- The invoking Discord member identity must come from the Discord interaction, never from request-controlled input.
-- A Discord member must not be able to claim another member's already-linked durable game identity.
-- Display names and online entity IDs are not sufficient proof of durable identity.
-- Automatic fuzzy matching is prohibited.
-- Raw game-server output must not become the Identity Module's public record format.
-- Identity linking must fail closed when ownership or verification is ambiguous.
-
-## Outside v1.5.0
-
-- Economy purchases or automatic reward delivery
-- Continuous Discord and in-game chat bridging
-- General player statistics or telemetry
-- Multiple game servers
-- Arbitrary console execution or free-form Telnet
-- Public identifier lookup
-- Automatic account merging
-- Fuzzy player matching
-- Website identity administration unless separately approved
-- Generic identity support for unimplemented platforms
-- automatic component retries or reconnect policy
-- independent component status, start, stop, restart, configuration-backed reload, and safe replacement
-- restricted lifecycle administration or process supervision
-
-## Latest Completed Milestone
-
-### v1.4.0 - Hosted Player Administration
-
-Completed command family:
-
-- `/game kick entity-id:<id> reason:<text>`
-- `/game ban user-id:<Steam_...|EOS_...> duration:<number> unit:<choice> reason:<text> display-name:<text>`
-- `/game unban display-name:<exact text>`
-- `/game whitelist add user-id:<Steam_...|EOS_...> display-name:<text>`
-- `/game whitelist remove user-id:<Steam_...|EOS_...> display-name:<text>`
+- Lifecycle output must never expose raw errors, stack traces, local paths, credentials, tokens, IP addresses, socket details, clients, configuration objects, database handles, Module stores, or Provider internals.
+- Component names accepted by future mutation operations must resolve through registered trusted components rather than arbitrary source paths or class names.
+- Lifecycle mutations must be serialized and reject conflicting concurrent operations.
+- Failed lifecycle operations must report truthful sanitized outcomes and leave component state observable.
+- Automatic retry must be bounded, opt-in, and Provider-appropriate when implemented.
+- Core, Database, health, migration, Loader-wide, and other framework-critical failures remain fatal.
+- Recoverable component failures must not trigger total framework rollback.
+- Discord must not be able to restart or replace itself through an unsafe in-process command path.
+- Reload and replacement must use trusted Loader-owned reconstruction and atomic replacement rather than dynamic code loading.
 
 ## Current Production Boundaries
 
-- RSF supports a single-process SQLite deployment.
+- RSF supports one application process and one Core-owned SQLite connection.
 - Node.js 22.13 or newer is required for `node:sqlite`.
-- Recoverable Provider and independently recoverable Module startup failures are isolated; healthy components remain active and Bootstrap reports `STARTED_DEGRADED`.
-- Core, Loader-wide, migration, health, and Database startup failures remain fatal.
-- The optional 7 Days to Die Provider supports one active command or proof collection at a time through private raw Telnet.
-- Hosted player administration is available through Discord.
-- Identity contracts, records, persistence, proof evaluation, live proof collection, Module registration, private owner status, proof-gated verified-link mutation, and private Discord first-link commands are implemented and live verified.
-- Staff identity workflows, replacement, relinking, unlinking, revocation, and broad Identity Hub behavior remain future work.
-
-## v1.4.0 Release Record
-
-- Release pull request: `#56`
-- Release merge commit: `8d9b7c9b50bdff7cab612e3905da7606c13f27e9`
-- Annotated tag: `v1.4.0`
-- Release validation: 0 production vulnerabilities, 435 passing tests, ESLint passing, and `git diff --check` clean
+- Registered Providers and Modules are initialized and started independently.
+- Recoverable component failures leave healthy unrelated components running and produce degraded startup.
+- Failed components remain registered in `ERROR`.
+- Core, Database, health, migration, and Loader-wide failures remain fatal.
+- Shutdown remains Providers -> Modules -> Database.
+- Runtime status, individual lifecycle mutation, reconnect, reload, replacement, and administration are not yet implemented.
 
 ## Next Step
 
-Complete final automated validation, merge the v1.5.0 release pull request, and create the annotated `v1.5.0` tag.
-
-## Release Notes
-
-See `docs/Release-Notes-v1.5.0.md`.
+Implement Phase 1 as a focused read-only lifecycle status contract with complete automated coverage and no lifecycle mutations.
