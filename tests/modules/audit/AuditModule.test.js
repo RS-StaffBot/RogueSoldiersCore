@@ -54,12 +54,10 @@ test("AuditModule records immutable sequential audit records", () => {
     assert.equal(module.countRecords(), 2);
     assert.ok(Object.isFrozen(first));
     assert.ok(Object.isFrozen(first.metadata));
-    assert.throws(
-        () => {
-            first.metadata.currentState = "tampered";
-        },
-        TypeError
-    );
+
+    first.metadata.currentState = "tampered";
+
+    assert.equal(first.metadata.currentState, "running");
 
 });
 
