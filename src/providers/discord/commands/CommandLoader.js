@@ -24,7 +24,8 @@ class CommandLoader {
         identityProofProviderResolver,
         lifecycleAuditService,
         lifecycleService,
-        moderationAuditService
+        moderationAuditService,
+        ticketAuditService
     } = {}) {
 
         const commands = [
@@ -72,7 +73,9 @@ class CommandLoader {
             new PurgeCommand({
                 auditService: moderationAuditService
             }),
-            new TicketCommand(),
+            new TicketCommand({
+                auditService: ticketAuditService
+            }),
             new TimeoutCommand({
                 auditService: moderationAuditService
             }),

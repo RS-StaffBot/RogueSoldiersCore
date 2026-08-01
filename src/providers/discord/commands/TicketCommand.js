@@ -15,7 +15,7 @@ const MAX_LISTED_TICKETS = 20;
 
 class TicketCommand extends BaseCommand {
 
-    constructor() {
+    constructor({ auditService = null } = {}) {
 
         super(
             new SlashCommandBuilder()
@@ -79,6 +79,20 @@ class TicketCommand extends BaseCommand {
                 )
         );
 
+        if (
+            auditService !== null &&
+            (
+                !auditService ||
+                typeof auditService.recordAttempt !== "function"
+            )
+        ) {
+            throw new Error(
+                "Discord Ticket audit boundary is invalid."
+            );
+        }
+
+        this.auditService = auditService;
+
     }
 
     getTicketModule() {
@@ -113,7 +127,8 @@ class TicketCommand extends BaseCommand {
             await TicketStaffCommandHandler.execute(
                 interaction,
                 tickets,
-                subcommand
+                subcommand,
+                this.auditService
             );
 
             return;
