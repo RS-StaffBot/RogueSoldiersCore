@@ -1,4 +1,8 @@
+const ComponentState = require("../../core/ComponentState");
 const Logger = require("../../core/Logger");
+const ComponentLifecycleOperationResult = require(
+    "../../core/lifecycle/ComponentLifecycleOperationResult"
+);
 const ComponentLifecycleStatus = require(
     "../../core/lifecycle/ComponentLifecycleStatus"
 );
@@ -27,6 +31,109 @@ class ModuleManager {
 
     async startAll() {
         return this.runLifecycleOperation("start");
+    }
+
+    async startModule(name) {
+        return this.runIndividualOperation({
+            allowedStates: new Set([
+                ComponentState.READY,
+                ComponentState.STOPPED,
+                ComponentState.ERROR
+            ]),
+            methodName: "start",
+            name,
+            operation: "START",
+            requiresInitialization: true
+        });
+    }
+
+    async stopModule(name) {
+        return this.runIndividualOperation({
+            allowedStates: new Set([ComponentState.RUNNING]),
+            methodName: "stop",
+            name,
+            operation: "STOP",
+            requiresInitialization: false
+        });
+    }
+
+    async runIndividualOperation({
+        allowedStates,
+        methodName,
+        name,
+        operation,
+        requiresInitialization
+    }) {
+        const module = this.modules.get(name);
+
+        if (!module) {
+            return this.createOperationResult({
+                name: null,
+                operation,
+                outcome: "NOT_FOUND",
+                state: null
+            });
+        }
+
+        if (
+            requiresInitialization &&
+            !this.initializedModules.has(module)
+        ) {
+            return this.createOperationResult({
+                name: module.name,
+                operation,
+                outcome: "NOT_INITIALIZED",
+                state: module.state
+            });
+        }
+
+        if (!allowedStates.has(module.state)) {
+            return this.createOperationResult({
+                name: module.name,
+                operation,
+                outcome: "INVALID_STATE",
+                state: module.state
+            });
+        }
+
+        try {
+            await module[methodName]();
+
+            return this.createOperationResult({
+                name: module.name,
+                operation,
+                outcome: "SUCCEEDED",
+                state: module.state
+            });
+        } catch (error) {
+            if (typeof module.setError === "function") {
+                module.setError();
+            }
+
+            Logger.error(
+                `Module '${module.name}' failed to ${methodName}.`
+            );
+            Logger.error(
+                "Module reported a recoverable lifecycle error."
+            );
+
+            return this.createOperationResult({
+                name: module.name,
+                operation,
+                outcome: "FAILED",
+                state: module.state
+            });
+        }
+    }
+
+    createOperationResult({ name, operation, outcome, state }) {
+        return ComponentLifecycleOperationResult.create({
+            componentType: "MODULE",
+            name,
+            operation,
+            outcome,
+            state
+        });
     }
 
     async runLifecycleOperation(operation) {
