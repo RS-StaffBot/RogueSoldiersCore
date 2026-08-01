@@ -1,5 +1,6 @@
 class SqliteAuditStore {
 
+    #database;
     #insertRecord;
     #selectBySequence;
     #listAll;
@@ -14,6 +15,7 @@ class SqliteAuditStore {
             );
         }
 
+        this.#database = database;
         this.#insertRecord = database.prepare(`
             INSERT INTO audit_records (
                 actor_type,
@@ -137,6 +139,59 @@ class SqliteAuditStore {
 
     listRecent(limit) {
         return this.#listRecent.all(limit).map(
+            row => this.mapRecord(row)
+        );
+    }
+
+    queryPage({ beforeSequence = null, limit, filters }) {
+        const columnMap = Object.freeze({
+            actorType: "actor_type",
+            source: "source",
+            action: "action",
+            targetType: "target_type",
+            outcome: "outcome"
+        });
+        const clauses = [];
+        const values = [];
+
+        if (beforeSequence !== null) {
+            clauses.push("sequence < ?");
+            values.push(beforeSequence);
+        }
+
+        for (const [field, value] of Object.entries(filters)) {
+            const column = columnMap[field];
+
+            if (!column) {
+                throw new Error("Audit query field is unsupported.");
+            }
+
+            clauses.push(`${column} = ?`);
+            values.push(value);
+        }
+
+        const where = clauses.length > 0
+            ? `WHERE ${clauses.join(" AND ")}`
+            : "";
+        const statement = this.#database.prepare(`
+            SELECT
+                sequence,
+                actor_type AS actorType,
+                actor_id AS actorId,
+                source,
+                action,
+                target_type AS targetType,
+                target_id AS targetId,
+                outcome,
+                metadata,
+                created_at AS createdAt
+            FROM audit_records
+            ${where}
+            ORDER BY sequence DESC
+            LIMIT ?
+        `);
+
+        return statement.all(...values, limit).map(
             row => this.mapRecord(row)
         );
     }
