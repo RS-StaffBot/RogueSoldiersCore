@@ -1,4 +1,10 @@
+const AuditRecordingService = require(
+    "../../modules/audit/services/AuditRecordingService"
+);
 const DiscordProvider = require("../discord/DiscordProvider");
+const DiscordLifecycleAuditService = require(
+    "../discord/services/DiscordLifecycleAuditService"
+);
 const DiscordLifecycleService = require(
     "../discord/services/DiscordLifecycleService"
 );
@@ -70,6 +76,7 @@ class ProviderLoader {
         }
 
         let lifecycleService;
+        let lifecycleAuditService;
         if (
             typeof providerManager.getProviderStatus === "function" &&
             typeof providerManager.restartProvider === "function" &&
@@ -87,10 +94,14 @@ class ProviderLoader {
                 ),
                 providerManager
             }).asBoundary();
+
+            lifecycleAuditService =
+                this.createLifecycleAuditService(moduleManager);
         }
 
         const providers = [
             new DiscordProvider({
+                lifecycleAuditService,
                 lifecycleService,
                 resolveGameServerProvider: name =>
                     providerManager.get(name),
@@ -153,6 +164,35 @@ class ProviderLoader {
         );
 
         return providers;
+    }
+
+    createLifecycleAuditService(moduleManager) {
+
+        let auditModule;
+
+        try {
+            auditModule = moduleManager.get("Audit");
+        } catch {
+            return undefined;
+        }
+
+        if (
+            !auditModule ||
+            typeof auditModule.recordAction !== "function"
+        ) {
+            return undefined;
+        }
+
+        try {
+            return new DiscordLifecycleAuditService({
+                recordingService: new AuditRecordingService({
+                    auditModule
+                })
+            }).asBoundary();
+        } catch {
+            return undefined;
+        }
+
     }
 
     createProvider(name, {

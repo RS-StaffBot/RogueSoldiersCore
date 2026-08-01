@@ -38,6 +38,7 @@ class DiscordProvider extends BaseProvider {
         identityModuleResolver = null,
         identityProofProviderResolver = null,
         interactionHandler = InteractionHandler,
+        lifecycleAuditService = undefined,
         lifecycleService = undefined,
         logger = Logger,
         resolveGameServerProvider = () => undefined,
@@ -68,6 +69,7 @@ class DiscordProvider extends BaseProvider {
                 resolveProvider: resolveGameServerProvider
             });
         this.interactionHandler = interactionHandler;
+        this.lifecycleAuditService = lifecycleAuditService;
         this.lifecycleService = lifecycleService;
         this.logger = logger;
         this.client = null;
@@ -217,6 +219,7 @@ class DiscordProvider extends BaseProvider {
                 this.identityModuleResolver,
             identityProofProviderResolver:
                 this.identityProofProviderResolver,
+            lifecycleAuditService: this.lifecycleAuditService,
             lifecycleService: this.lifecycleService
         });
         for (const command of commands) {
