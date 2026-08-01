@@ -28,6 +28,28 @@ ANSI formatting belongs only in `src/core/Logger.js`.
 
 Core provides Registry, EventBus, component lifecycle, Bootstrap coordination, configuration loading, database infrastructure, migrations, settings services, settings persistence, administration audit history, and secret-configuration boundaries.
 
+## Bootstrap Lifecycle Coordination
+
+Bootstrap owns the framework-wide startup result while ProviderManager and ModuleManager own the lifecycle of their registered components.
+
+Verified startup behavior:
+
+- Database initialization, health, and migrations complete before Module loading.
+- ModuleManager initializes and starts each registered Module independently.
+- ProviderManager initializes and starts each registered Provider independently.
+- A failed component remains registered in `ERROR`.
+- A component that fails initialization is not started.
+- Healthy unrelated components remain active.
+- Frozen, privacy-safe Manager summaries allow Bootstrap to distinguish `STARTED` from `STARTED_DEGRADED`.
+- `STARTED` means all recoverable component lifecycle operations succeeded.
+- `STARTED_DEGRADED` means Core and the Database started safely, but one or more recoverable Modules or Providers failed.
+
+Core configuration, Registry or Bootstrap infrastructure, Loader-wide construction, Database initialization, Database health, and migration failures remain fatal. Fatal startup failures preserve rollback and the original error remains authoritative.
+
+Recoverable component failures do not trigger total rollback. Shutdown continues in Providers -> Modules -> Database order and safely handles mixed `RUNNING` and `ERROR` component states.
+
+Automatic retry, reconnect policy, independent component start or stop, restart, configuration-backed reload, safe replacement, and restricted lifecycle administration are not implemented by the current Bootstrap contract.
+
 ## Settings Infrastructure
 
 The v1.1 settings foundation is Core-owned. Verified responsibilities include:
