@@ -7,7 +7,11 @@ const BaseCommand = require("./BaseCommand");
 
 class LifecycleCommand extends BaseCommand {
 
-    constructor({ authorizer, lifecycleService } = {}) {
+    constructor({
+        auditService = null,
+        authorizer,
+        lifecycleService
+    } = {}) {
 
         if (
             !authorizer ||
@@ -16,7 +20,11 @@ class LifecycleCommand extends BaseCommand {
             !lifecycleService ||
             typeof lifecycleService.getStatus !== "function" ||
             typeof lifecycleService.restart !== "function" ||
-            typeof lifecycleService.reload !== "function"
+            typeof lifecycleService.reload !== "function" ||
+            (
+                auditService !== null &&
+                typeof auditService.recordAttempt !== "function"
+            )
         ) {
             throw new Error(
                 "Discord lifecycle command boundary is invalid."
@@ -56,6 +64,7 @@ class LifecycleCommand extends BaseCommand {
                 )
         );
 
+        this.auditService = auditService;
         this.authorizer = authorizer;
         this.lifecycleService = lifecycleService;
 
@@ -70,6 +79,7 @@ class LifecycleCommand extends BaseCommand {
             return;
         }
 
+        const subcommand = interaction.options.getSubcommand(true);
         let authorized = false;
 
         try {
@@ -81,13 +91,19 @@ class LifecycleCommand extends BaseCommand {
         }
 
         if (!authorized) {
+            if (subcommand === "restart" || subcommand === "reload") {
+                this.recordAudit(interaction, {
+                    operation: subcommand,
+                    outcome: "DENIED",
+                    status: "permission-denied"
+                });
+            }
+
             await this.reply(interaction,
                 "You do not have permission to manage Provider lifecycle."
             );
             return;
         }
-
-        const subcommand = interaction.options.getSubcommand(true);
 
         if (subcommand === "status") {
             await this.reply(
@@ -105,6 +121,8 @@ class LifecycleCommand extends BaseCommand {
             return;
         }
 
+        const previousStatus = this.getStatusSafely();
+
         await interaction.deferReply({
             flags: MessageFlags.Ephemeral
         });
@@ -117,10 +135,72 @@ class LifecycleCommand extends BaseCommand {
             result = null;
         }
 
+        this.recordAudit(interaction, {
+            operation: subcommand,
+            outcome: this.resolveAuditOutcome(result),
+            previousState: previousStatus?.state,
+            currentState: result?.state,
+            status: this.resolveAuditStatus(result)
+        });
+
         await interaction.editReply({
             content: this.formatOperation(subcommand, result)
         });
 
+    }
+
+    getStatusSafely() {
+        try {
+            return this.lifecycleService.getStatus();
+        } catch {
+            return null;
+        }
+    }
+
+    recordAudit(interaction, details) {
+        if (!this.auditService) {
+            return;
+        }
+
+        try {
+            this.auditService.recordAttempt({
+                actorId: interaction.user?.id,
+                ...details
+            });
+        } catch {
+            // Audit failure must not change lifecycle command behavior.
+        }
+    }
+
+    resolveAuditOutcome(result) {
+        if (
+            result &&
+            result.succeeded === true &&
+            result.state === "RUNNING"
+        ) {
+            return "SUCCESS";
+        }
+
+        return "FAILED";
+    }
+
+    resolveAuditStatus(result) {
+        if (!result || typeof result !== "object") {
+            return "failed";
+        }
+
+        const supported = new Set([
+            "BUSY",
+            "FAILED",
+            "INVALID_STATE",
+            "NOT_FOUND",
+            "NOT_INITIALIZED",
+            "SUCCEEDED"
+        ]);
+
+        return supported.has(result.outcome)
+            ? result.outcome.toLowerCase()
+            : "failed";
     }
 
     reply(interaction, content) {
