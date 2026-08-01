@@ -2,7 +2,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 
 const DiscordModerationAuditService = require(
-    "../../../src/providers/discord/services/DiscordModerationAuditService"
+    "../../../../src/providers/discord/services/DiscordModerationAuditService"
 );
 
 test("maps ban and kick attempts to fixed privacy-safe records", () => {
