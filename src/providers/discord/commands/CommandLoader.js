@@ -21,6 +21,7 @@ class CommandLoader {
         gameServerProviderResolver,
         identityModuleResolver,
         identityProofProviderResolver,
+        lifecycleAuditService,
         lifecycleService
     } = {}) {
 
@@ -52,6 +53,7 @@ class CommandLoader {
         if (lifecycleService !== undefined) {
             commands.push(
                 new LifecycleCommand({
+                    auditService: lifecycleAuditService,
                     authorizer: gameCommandAuthorizer,
                     lifecycleService
                 })
