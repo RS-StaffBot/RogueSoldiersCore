@@ -2,13 +2,13 @@
 
 ## Current Status
 
-**Repository Version:** v1.7.0 release candidate
+**Repository Version:** v1.7.0
 
-**Latest Completed Milestone:** v1.6.0 - Component Resilience and Runtime Lifecycle
+**Latest Completed Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Current Milestone:** v1.7.0 - Audit and Activity Foundation
+**Current Milestone:** No broader implementation milestone activated
 
-**Status:** Active and unreleased; Phases 1 through 6 are merged. Phase 7 release hardening is complete on the release branch, pending pull-request review, merge, and separate release authorization
+**Status:** v1.7.0 is released and complete. Repository hygiene and documentation consolidation is the approved checkpoint. Broader v1.8.0 work remains held.
 
 ## Completed Milestones
 
@@ -30,10 +30,11 @@
 - v1.4.0 - Hosted Player Administration
 - v1.5.0 - Player Identity Linking Foundation
 - v1.6.0 - Component Resilience and Runtime Lifecycle
+- v1.7.0 - Audit and Activity Foundation
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active and unreleased; Phase 6 is merged through PR `#98`. Phase 7 release hardening is complete on the release branch and awaiting pull-request review and merge
+Status: Completed, merged through release pull request `#101`, tagged as `v1.7.0`, and published as a GitHub release
 
 ### Completed Checkpoint
 
@@ -170,11 +171,10 @@ Implemented:
 - no lookup self-recording
 - no Module, store, SQLite, SQL, rows, or mutable internals exposed
 
-Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 
-Status: Completed on the release-hardening branch; pending pull-request review and merge.
+Status: Completed, merged in release pull request `#101`, tagged as `v1.7.0`, and published.
 
 Evidence:
 
@@ -188,14 +188,14 @@ Evidence:
 - temporary verification data was removed
 - 60 focused outcome, authorization, privacy, and compatibility tests passed
 - version files are synchronized to `1.7.0`
-- release documentation and `docs/Release-Notes-v1.7.0.md` are prepared
+- release documentation and `docs/releases/Release-Notes-v1.7.0.md` are prepared
 
 Release state:
 
-- v1.7.0 remains unreleased
-- no tag exists
-- no GitHub release exists
-- merge, tag, and release require separate authorization
+- release pull request `#101` is merged
+- annotated tag `v1.7.0` exists
+- the GitHub release is published
+- v1.7.0 is released and complete
 
 Deferred and non-blocking:
 
@@ -244,7 +244,7 @@ Status: Completed, merged, live verified, and tagged
 - Release merge commit: `2519014b7b1a80bc8e12d45787c644da91c21d8a`
 - Annotated tag: `v1.6.0`
 - GitHub Actions validation: passed
-- Release notes: `docs/Release-Notes-v1.6.0.md`
+- Release notes: `docs/releases/Release-Notes-v1.6.0.md`
 
 ### Completed Capabilities
 
@@ -262,7 +262,7 @@ Status: Completed, merged, live verified, and tagged
 
 The working milestone order is:
 
-1. Complete v1.7.0 release review, merge, tag, and GitHub release through separately authorized steps
+1. Complete the approved repository hygiene and documentation consolidation checkpoint
 2. Identity Hub and Platform Attachments
 3. Linux and Docker Deployment Hardening
 4. Expanded Ticket Workflows and Staff Portal Foundation

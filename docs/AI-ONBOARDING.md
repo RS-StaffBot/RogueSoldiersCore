@@ -150,6 +150,24 @@ Do not close or tag a milestone while required documentation is incomplete or in
 
 ---
 
+## Current Authorized State
+
+The current released repository version is `v1.7.0`.
+
+The v1.7.0 Audit and Activity Foundation milestone is complete, tagged, and published. The annotated `v1.7.0` tag and published GitHub release are the authoritative release records.
+
+Repository hygiene and documentation consolidation is the currently approved checkpoint.
+
+Broader v1.8.0 implementation work is not active. Existing forward-foundation code must not be treated as milestone activation without explicit Framework Planning approval.
+
+Permanent release notes are stored under `docs/releases/`.
+
+Supporting external research is stored under `docs/research/`.
+
+Research documents are not implementation sources of truth and must be revalidated before they are used for planning or implementation.
+
+---
+
 ## Implementation Phases
 
 Every implementation phase must:

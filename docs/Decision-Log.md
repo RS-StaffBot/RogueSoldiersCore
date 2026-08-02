@@ -8,7 +8,7 @@ Complete v1.7.0 Audit and Activity Foundation release hardening before any broad
 
 Phase 7 uses existing automated evidence plus controlled disposable-database reconstruction to verify durable Audit recovery, exact lookup, newest-first ordering, deterministic ID continuation, privacy exclusions, and cleanup.
 
-Version-bearing files are synchronized to `1.7.0`, release documentation is prepared, and the release remains unreleased until the release pull request is reviewed and merged and separate tag and GitHub release authorization is provided.
+Version-bearing files are synchronized to `1.7.0`. Release pull request `#101` is merged, annotated tag `v1.7.0` exists, and the GitHub release is published. v1.7.0 is released and complete.
 
 PR `#100` is retained as merged dormant forward foundation included on current `main`.
 
@@ -26,13 +26,13 @@ Discord identity presentation and Ticket command-family restructuring are deferr
 ### Guardrails
 
 - Do not revert PR `#100`.
-- Do not activate broader v1.8.0 permission work before v1.7.0 release sequencing completes.
+- Do not activate broader v1.8.0 permission work until the approved repository hygiene checkpoint is completed and Framework Planning authorizes the next milestone.
 - Do not treat dormant contracts as replacement authorization behavior.
 - Do not persist mutable Discord names.
 - Keep mentions disabled and permit inert ID-only fallback.
 - Keep the mixed `/ticket` command family for v1.7.0.
 - Runtime authorization remains mandatory.
-- Do not create a tag or GitHub release without separate authorization.
+- Do not alter or recreate the authoritative v1.7.0 tag or GitHub release during repository hygiene work.
 
 ## Runtime Lifecycle Coordination and Recovery
 
@@ -162,7 +162,7 @@ Audit recording for the integrated workflows is best effort and non-blocking aft
 - Successful accountability must not be recorded before the authoritative owning Module mutation commits or Provider operation completes.
 - Ordinary read-only commands and harmless member interactions are not recorded by default.
 - The authoritative intentional exclusion list is maintained in `04-Modules.md`.
-- Phase 6 - Restricted Discord Audit Lookup was completed and merged through PR `#98`. Phase 7 is next and has not started.
+- Phase 6 - Restricted Discord Audit Lookup was completed and merged through PR `#98`. Phase 7 release hardening was completed and merged through release pull request `#101`. v1.7.0 is released and complete.
 
 ## Restricted Discord Audit Lookup
 
