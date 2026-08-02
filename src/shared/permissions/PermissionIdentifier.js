@@ -8,4 +8,5 @@ const PermissionIdentifier = Object.freeze({
     }
 });
 
+// Shared contract for naming permissions without assigning policy meaning.
 module.exports = PermissionIdentifier;
