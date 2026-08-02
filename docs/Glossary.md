@@ -190,9 +190,9 @@ The Module registry and lifecycle coordinator used by Providers to resolve frame
 
 ## Audit and Activity Foundation
 
-The active unreleased `v1.7.0` milestone for durable privacy-safe actor-attributed accountability records.
+The released and completed `v1.7.0` milestone for durable privacy-safe actor-attributed accountability records.
 
-`v1.6.0` remains the latest released version. Current `main` contains unreleased `v1.7.0` Audit and Activity Foundation development. Phase 6 is merged development and is not part of the `v1.6.0` release.
+Release pull request `#101` is merged, annotated tag `v1.7.0` exists, and the GitHub release is published. Broader v1.8.0 work has not been activated.
 
 ## Audit Module
 
@@ -235,9 +235,9 @@ A privacy-safe Audit record or query result containing only approved fields and 
 
 The decision that production Moderation, Economy, Ticket, settings, and other implemented durable state use Core-managed SQLite while Modules retain business ownership.
 
-## v1.7.0 Release Candidate
+## v1.7.0 Release
 
-The synchronized but unreleased Audit and Activity Foundation state prepared by the Phase 7 release-hardening branch. It is not a released version until the release pull request is merged and separate tag and GitHub release steps are authorized and completed.
+The completed Audit and Activity Foundation release represented by release pull request `#101`, merge commit `0ef848b0bc073c43d038694172d9e8d6974feb4f`, annotated tag `v1.7.0`, and the published GitHub release.
 
 ## Controlled Audit Restart Verification
 

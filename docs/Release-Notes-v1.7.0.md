@@ -4,7 +4,7 @@
 
 v1.7.0 introduces a durable, privacy-safe, actor-attributed Audit foundation for meaningful RSF staff, infrastructure, moderation, Ticket, lifecycle, and hosted-player administration actions.
 
-This file describes the prepared v1.7.0 release candidate. The version remains unreleased until the release pull request is reviewed and merged and separate tag and GitHub release authorization is completed.
+This file describes the released v1.7.0 milestone. Release pull request `#101` is merged, annotated tag `v1.7.0` exists, and the GitHub release is published.
 
 ## Highlights
 

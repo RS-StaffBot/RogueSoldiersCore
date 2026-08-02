@@ -104,7 +104,7 @@ These workflows preserve their existing private responses and authority boundari
 
 ### Restricted Discord Query Flow
 
-Phase 6 was completed and merged through PR `#98` as unreleased `v1.7.0` development.
+Phase 6 was completed and merged through PR `#98` and released as part of `v1.7.0`.
 
 ```text
 Discord /audit command

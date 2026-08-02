@@ -2,34 +2,35 @@
 
 ## Current Version
 
-v1.7.0 release candidate
+v1.7.0
 
-Status: Version files are synchronized to `1.7.0` on the release-hardening branch. v1.7.0 remains unreleased until the release pull request is reviewed and merged and separate tag and GitHub release authorization is provided.
+Status: Released and complete. Version files are synchronized to `1.7.0`, release pull request `#101` is merged, annotated tag `v1.7.0` exists, and the GitHub release is published.
 
 ## Latest Completed Milestone
 
-v1.6.0 - Component Resilience and Runtime Lifecycle
+v1.7.0 - Audit and Activity Foundation
 
-Status: Completed, merged, live verified, and tagged.
+Status: Completed, merged, verified, tagged, and published.
 
 Release record:
 
-- Implementation pull requests: `#77` through `#84`
-- Release pull request: `#85`
-- Release merge commit: `2519014b7b1a80bc8e12d45787c644da91c21d8a`
-- Annotated tag: `v1.6.0`
+- Implementation and documentation pull requests: `#86` through `#101`
+- Release pull request: `#101`
+- Release merge commit: `0ef848b0bc073c43d038694172d9e8d6974feb4f`
+- Annotated tag: `v1.7.0`
+- GitHub release: published
 - Release validation: GitHub Actions passed
-- Release notes: `docs/Release-Notes-v1.6.0.md`
+- Release notes: `docs/Release-Notes-v1.7.0.md`
 
 ## Current Milestone
 
-v1.7.0 - Audit and Activity Foundation
+No broader implementation milestone is active.
 
-Status: Active and unreleased; Audit Phases 1 through 6 are merged. Phase 7 controlled restart verification and release hardening are complete on the release branch, pending pull-request review, merge, and separate release authorization.
+Status: Repository hygiene and documentation consolidation is the approved checkpoint. PR `#100` remains dormant forward foundation and does not activate broader v1.8.0 work.
 
 ## Completed Implementation Checkpoint
 
-This checkpoint records completed unreleased `v1.7.0` Audit development through merged pull request `#98`:
+The released `v1.7.0` milestone includes Audit development through merged pull request `#98` and release hardening through pull request `#101`:
 
 - Milestone activation and architecture approval: `#86`
 - Phase 1 - Audit contracts and in-memory foundation: `#87`
@@ -97,7 +98,7 @@ Phase 7 release-hardening evidence:
 - temporary verification data was removed
 - 60 focused outcome, authorization, privacy, and compatibility tests passed
 
-Final repository validation and the release pull request complete this release-hardening branch. v1.7.0 remains unreleased until separate merge, tag, and GitHub release authorization.
+Final repository validation and release pull request `#101` completed the milestone. Annotated tag `v1.7.0` and the published GitHub release are authoritative.
 
 ## Milestone Goal
 
@@ -244,7 +245,7 @@ Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 
-Status: Completed on the release-hardening branch; pending pull-request review and merge.
+Status: Completed, merged in release pull request `#101`, tagged as `v1.7.0`, and published.
 
 Verified:
 
@@ -299,12 +300,6 @@ v1.7.0 does not include:
 
 ## Next Step
 
-Review and merge the v1.7.0 release-hardening pull request.
+Complete the approved repository hygiene and documentation consolidation checkpoint.
 
-After merge, Framework Planning may separately authorize:
-
-- annotated `v1.7.0` tag creation
-- GitHub release creation
-- release-branch cleanup
-
-Do not treat PR `#100` as an active v1.8.0 milestone or permission-system release. Do not begin broader v1.8.0 work before v1.7.0 release sequencing is complete.
+Do not treat PR `#100` as an active v1.8.0 milestone or permission-system release. Broader v1.8.0 work remains held until the hygiene checkpoint is completed and Framework Planning authorizes the next milestone.
