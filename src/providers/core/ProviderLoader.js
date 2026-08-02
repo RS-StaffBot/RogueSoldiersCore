@@ -1,3 +1,6 @@
+const AuditQueryService = require(
+    "../../modules/audit/services/AuditQueryService"
+);
 const AuditRecordingService = require(
     "../../modules/audit/services/AuditRecordingService"
 );
@@ -87,11 +90,20 @@ class ProviderLoader {
             );
         }
 
-        let hostedPlayerAuditService;
+        const auditServices =
+            this.createDiscordAuditServices(moduleManager);
+        const auditQueryBoundary = auditServices.query;
+        const hostedPlayerAuditService =
+            auditServices.hostedPlayer;
+        const lifecycleAuditService =
+            auditServices.lifecycle;
+        const moderationAuditService =
+            auditServices.moderation;
+        const ticketAuditService =
+            auditServices.ticket;
+
         let lifecycleService;
-        let lifecycleAuditService;
-        let moderationAuditService;
-        let ticketAuditService;
+
         if (
             typeof providerManager.getProviderStatus === "function" &&
             typeof providerManager.restartProvider === "function" &&
@@ -109,14 +121,6 @@ class ProviderLoader {
                 ),
                 providerManager
             }).asBoundary();
-
-            const auditServices =
-                this.createDiscordAuditServices(moduleManager);
-
-            hostedPlayerAuditService = auditServices.hostedPlayer;
-            lifecycleAuditService = auditServices.lifecycle;
-            moderationAuditService = auditServices.moderation;
-            ticketAuditService = auditServices.ticket;
         }
 
         const commandLoader = Object.freeze({
@@ -127,6 +131,7 @@ class ProviderLoader {
         });
         const providers = [
             new DiscordProvider({
+                auditQueryBoundary,
                 commandLoader,
                 lifecycleAuditService,
                 lifecycleService,
@@ -201,6 +206,7 @@ class ProviderLoader {
             hostedPlayer: undefined,
             lifecycle: undefined,
             moderation: undefined,
+            query: undefined,
             ticket: undefined
         });
         let auditModule;
@@ -211,38 +217,77 @@ class ProviderLoader {
             return unavailable;
         }
 
+        if (!auditModule) {
+            return unavailable;
+        }
+
+        let hostedPlayer;
+        let lifecycle;
+        let moderation;
+        let ticket;
+
+        if (typeof auditModule.recordAction === "function") {
+            try {
+                const recordingService =
+                    new AuditRecordingService({
+                        auditModule
+                    });
+
+                hostedPlayer =
+                    new DiscordHostedPlayerAuditService({
+                        recordingService
+                    }).asBoundary();
+                lifecycle =
+                    new DiscordLifecycleAuditService({
+                        recordingService
+                    }).asBoundary();
+                moderation =
+                    new DiscordModerationAuditService({
+                        recordingService
+                    }).asBoundary();
+                ticket =
+                    new DiscordTicketAuditService({
+                        recordingService
+                    }).asBoundary();
+            } catch {
+                hostedPlayer = undefined;
+                lifecycle = undefined;
+                moderation = undefined;
+                ticket = undefined;
+            }
+        }
+
+        let query;
+
         if (
-            !auditModule ||
-            typeof auditModule.recordAction !== "function"
+            typeof auditModule.getRecord === "function" &&
+            typeof auditModule.queryRecords === "function"
         ) {
-            return unavailable;
+            try {
+                const queryService = new AuditQueryService({
+                    auditModule
+                });
+
+                query = Object.freeze({
+                    getById: id =>
+                        queryService.getById(id),
+                    list: options =>
+                        queryService.list(options)
+                });
+            } catch {
+                query = undefined;
+            }
         }
 
-        try {
-            const recordingService = new AuditRecordingService({
-                auditModule
-            });
-
-            return Object.freeze({
-                hostedPlayer: new DiscordHostedPlayerAuditService({
-                    recordingService
-                }).asBoundary(),
-                lifecycle: new DiscordLifecycleAuditService({
-                    recordingService
-                }).asBoundary(),
-                moderation: new DiscordModerationAuditService({
-                    recordingService
-                }).asBoundary(),
-                ticket: new DiscordTicketAuditService({
-                    recordingService
-                }).asBoundary()
-            });
-        } catch {
-            return unavailable;
-        }
+        return Object.freeze({
+            hostedPlayer,
+            lifecycle,
+            moderation,
+            query,
+            ticket
+        });
 
     }
-
     createProvider(name, {
         configuration = Configuration,
         createSevenDaysToDieClient = () =>
@@ -258,8 +303,10 @@ class ProviderLoader {
         if (
             !configuration ||
             typeof configuration.get !== "function" ||
-            (reloadConfiguration &&
-                typeof configuration.load !== "function")
+            (
+                reloadConfiguration &&
+                typeof configuration.load !== "function"
+            )
         ) {
             throw new Error(
                 "Provider reconstruction configuration boundary is invalid."

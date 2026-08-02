@@ -1,3 +1,4 @@
+const AuditCommand = require("./AuditCommand");
 const AuditedGameCommand = require("./AuditedGameCommand");
 const BanCommand = require("./BanCommand");
 const BalanceCommand = require("./BalanceCommand");
@@ -17,6 +18,8 @@ const WarnCommand = require("./WarnCommand");
 class CommandLoader {
 
     load({
+        auditAuthorizer,
+        auditQueryBoundary,
         gameCommandAuthorizer,
         gameServerProviderResolver,
         hostedPlayerAuditService,
@@ -24,6 +27,7 @@ class CommandLoader {
         identityProofProviderResolver,
         lifecycleAuditService,
         lifecycleService,
+        logger,
         moderationAuditService,
         ticketAuditService
     } = {}) {
@@ -41,6 +45,19 @@ class CommandLoader {
             }),
             new HelpCommand()
         ];
+
+        if (
+            auditAuthorizer !== undefined &&
+            auditQueryBoundary !== undefined
+        ) {
+            commands.unshift(
+                new AuditCommand({
+                    authorizer: auditAuthorizer,
+                    logger,
+                    queryBoundary: auditQueryBoundary
+                })
+            );
+        }
 
         if (identityModuleResolver !== undefined) {
             commands.push(
