@@ -4,7 +4,8 @@ const Logger = require("../../core/Logger");
 
 const {
     Client,
-    GatewayIntentBits
+    GatewayIntentBits,
+    PermissionFlagsBits
 } = require("discord.js");
 
 const CommandLoader = require("./commands/CommandLoader");
@@ -13,6 +14,9 @@ const CommandRegistrar = require("./services/CommandRegistrar");
 const CommandRegistry = require("./services/CommandRegistry");
 const DiscordGameCommandAuthorizer = require(
     "./services/DiscordGameCommandAuthorizer"
+);
+const DiscordPermissionAuthorizer = require(
+    "./services/DiscordPermissionAuthorizer"
 );
 const DiscordGameServerProviderResolver = require(
     "./services/DiscordGameServerProviderResolver"
@@ -27,6 +31,10 @@ const DiscordIdentityProofProviderResolver = require(
 class DiscordProvider extends BaseProvider {
 
     constructor({
+        auditAuthorizer = new DiscordPermissionAuthorizer({
+            requiredPermission: PermissionFlagsBits.ManageGuild
+        }),
+        auditQueryBoundary = undefined,
         commandLoader = CommandLoader,
         commandRegistrar = CommandRegistrar,
         commandRegistry = CommandRegistry,
@@ -49,6 +57,8 @@ class DiscordProvider extends BaseProvider {
 
         super("Discord");
 
+        this.auditAuthorizer = auditAuthorizer;
+        this.auditQueryBoundary = auditQueryBoundary;
         this.commandLoader = commandLoader;
         this.commandRegistrar = commandRegistrar;
         this.commandRegistry = commandRegistry;
@@ -215,6 +225,8 @@ class DiscordProvider extends BaseProvider {
 
         this.commandRegistry.clear();
         const commands = this.commandLoader.load({
+            auditAuthorizer: this.auditAuthorizer,
+            auditQueryBoundary: this.auditQueryBoundary,
             gameCommandAuthorizer:
                 this.gameCommandAuthorizer,
             gameServerProviderResolver:
@@ -225,6 +237,7 @@ class DiscordProvider extends BaseProvider {
                 this.identityProofProviderResolver,
             lifecycleAuditService: this.lifecycleAuditService,
             lifecycleService: this.lifecycleService,
+            logger: this.logger,
             moderationAuditService: this.moderationAuditService,
             ticketAuditService: this.ticketAuditService
         });

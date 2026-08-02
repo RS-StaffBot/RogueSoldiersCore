@@ -108,13 +108,17 @@ test("passes focused game, identity, and lifecycle boundaries to commands", () =
         lifecycleAuditService
     );
     assert.deepEqual(Object.keys(receivedOptions), [
+        "auditAuthorizer",
+        "auditQueryBoundary",
         "gameCommandAuthorizer",
         "gameServerProviderResolver",
         "identityModuleResolver",
         "identityProofProviderResolver",
         "lifecycleAuditService",
         "lifecycleService",
-        "moderationAuditService",        "ticketAuditService"
+        "logger",
+        "moderationAuditService",
+        "ticketAuditService"
     ]);
 
 });
