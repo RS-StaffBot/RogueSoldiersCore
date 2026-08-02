@@ -265,3 +265,26 @@ Website authentication uses Discord OAuth authorization-code flow with PKCE S256
 Creator-owned Ticket listing is the only implemented Website-to-Module capability.
 
 Website lifecycle administration, Ticket creation, Ticket detail and message workflows, Moderation, Economy, configuration editing, public binding, persistent sessions, and general staff administration are not implemented.
+
+## v1.7.0 Provider Compatibility and Deferred Presentation
+
+Phase 7 verification confirmed that current Provider boundaries remain operational:
+
+- Discord restricted Audit lookup remains private and permission-gated.
+- Discord Moderation and Ticket authorization behavior remains authoritative.
+- Hosted-player Audit behavior remains covered through automation without live game mutation.
+- Audit failures remain non-blocking according to each integration's established policy.
+- No production Discord, support data, player administration, or production game mutation was required.
+
+Discord identity presentation remains deferred and non-blocking for v1.7.0.
+
+Current identity-presentation boundary:
+
+- permanent Discord IDs remain durable identifiers
+- mutable Discord names are not persisted
+- Discord mentions remain disabled in restricted Audit output
+- inert ID-only fallback remains valid
+
+The mixed `/ticket` command family remains unchanged for v1.7.0. Staff operations are not moved to a new top-level command, and runtime authorization remains mandatory.
+
+PR `#100` is merged dormant forward foundation only. It does not replace Provider permission translation or current Discord authorization behavior.

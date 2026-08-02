@@ -234,3 +234,25 @@ A privacy-safe Audit record or query result containing only approved fields and 
 ## SQLite Authority
 
 The decision that production Moderation, Economy, Ticket, settings, and other implemented durable state use Core-managed SQLite while Modules retain business ownership.
+
+## v1.7.0 Release Candidate
+
+The synchronized but unreleased Audit and Activity Foundation state prepared by the Phase 7 release-hardening branch. It is not a released version until the release pull request is merged and separate tag and GitHub release steps are authorized and completed.
+
+## Controlled Audit Restart Verification
+
+A disposable non-production reconstruction check that writes synthetic Audit records, closes the database, creates a fresh database and Audit construction against the same file, verifies recovery and ID continuation, closes all connections, and removes only the temporary verification data.
+
+## Dormant Forward Foundation
+
+Merged additive contracts that are present on current `main` but are not activated as the current milestone, are not a complete feature system, and are not a released capability.
+
+PR `#100` is the current example: dormant permission-foundation contracts that do not replace existing authorization behavior.
+
+## Durable Platform Identifier
+
+A stable provider-issued identifier used when identity must survive mutable display-name changes. For current Discord Audit presentation, permanent Discord IDs remain durable while mutable names are not persisted.
+
+## Inert ID-Only Fallback
+
+Privacy-safe presentation of a permanent identifier as plain non-mention text when no separately approved mutable display name is stored or shown.

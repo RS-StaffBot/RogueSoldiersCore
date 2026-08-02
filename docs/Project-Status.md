@@ -2,7 +2,9 @@
 
 ## Current Version
 
-v1.6.0
+v1.7.0 release candidate
+
+Status: Version files are synchronized to `1.7.0` on the release-hardening branch. v1.7.0 remains unreleased until the release pull request is reviewed and merged and separate tag and GitHub release authorization is provided.
 
 ## Latest Completed Milestone
 
@@ -23,11 +25,11 @@ Release record:
 
 v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Audit Phases 1 through 6 are completed and merged. Phase 7 is next and has not started.
+Status: Active and unreleased; Audit Phases 1 through 6 are merged. Phase 7 controlled restart verification and release hardening are complete on the release branch, pending pull-request review, merge, and separate release authorization.
 
 ## Completed Implementation Checkpoint
 
-This checkpoint records completed unreleased `v1.7.0` development through merged pull request `#98`:
+This checkpoint records completed unreleased `v1.7.0` Audit development through merged pull request `#98`:
 
 - Milestone activation and architecture approval: `#86`
 - Phase 1 - Audit contracts and in-memory foundation: `#87`
@@ -52,6 +54,20 @@ PR `#98` merge commit:
 270179ca75e4800f29c46beb80ee0593494b1388
 ```
 
+
+PR `#100` is merged dormant forward foundation on current `main`.
+
+Required interpretation:
+
+```text
+Merged, dormant forward foundation included on current main.
+Not activated as the current milestone.
+Not a completed permission system.
+Not a released v1.8.0 capability.
+```
+
+PR `#100` does not replace current Discord, Moderation, Ticket, game, lifecycle, or Audit authorization behavior.
+
 Phase 6 is completed and merged development on current `main`. It is not part of the released `v1.6.0`.
 
 Implemented restricted lookup commands:
@@ -69,9 +85,19 @@ Supporting implementation record:
 docs/Phase-6-Restricted-Discord-Audit-Lookup.md
 ```
 
-Next implementation phase: Phase 7 - Live Verification and Release Hardening.
+Phase 7 release-hardening evidence:
 
-Phase 7 has not started. This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.
+- focused SQLite Audit restart tests passed
+- controlled disposable-database restart verification passed
+- `audit-1` and `audit-2` remained available after reconstruction
+- exact lookup recovered `audit-1`
+- recent lookup remained newest-first as `audit-2`, `audit-1`
+- the next record continued as `audit-3`
+- excluded private-data terms were absent
+- temporary verification data was removed
+- 60 focused outcome, authorization, privacy, and compatibility tests passed
+
+Final repository validation and the release pull request complete this release-hardening branch. v1.7.0 remains unreleased until separate merge, tag, and GitHub release authorization.
 
 ## Milestone Goal
 
@@ -218,7 +244,25 @@ Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 
-Verify durable recovery, actor attribution, privacy boundaries, authorization, bounded queries, existing workflow compatibility, dependency audit, tests, lint, diff checks, version synchronization, and release documentation.
+Status: Completed on the release-hardening branch; pending pull-request review and merge.
+
+Verified:
+
+- durable recovery through automated and controlled disposable-database restart verification
+- deterministic Audit IDs and newest-first ordering after reconstruction
+- exact lookup after reconstruction
+- privacy-safe reconstruction with excluded data absent
+- success, denial, failure, and unavailable outcome coverage
+- Moderation, Ticket, lifecycle, hosted-player, and restricted Audit lookup compatibility
+- version synchronization to `1.7.0`
+- release documentation and release notes preparation
+
+Deferred and non-blocking:
+
+- Discord identity presentation using mutable names
+- Ticket command-family restructuring
+
+Permanent Discord IDs remain the durable identity representation. Mutable Discord names are not persisted, mentions remain disabled, and inert ID-only fallback remains valid.
 
 ## Required Safety Boundaries
 
@@ -255,6 +299,12 @@ v1.7.0 does not include:
 
 ## Next Step
 
-Phase 6 is completed and merged as unreleased `v1.7.0` development. Phase 7 - Live Verification and Release Hardening is next and has not started.
+Review and merge the v1.7.0 release-hardening pull request.
 
-This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.
+After merge, Framework Planning may separately authorize:
+
+- annotated `v1.7.0` tag creation
+- GitHub release creation
+- release-branch cleanup
+
+Do not treat PR `#100` as an active v1.8.0 milestone or permission-system release. Do not begin broader v1.8.0 work before v1.7.0 release sequencing is complete.

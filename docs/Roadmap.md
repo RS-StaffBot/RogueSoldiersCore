@@ -2,13 +2,13 @@
 
 ## Current Status
 
-**Repository Version:** v1.6.0
+**Repository Version:** v1.7.0 release candidate
 
 **Latest Completed Milestone:** v1.6.0 - Component Resilience and Runtime Lifecycle
 
 **Current Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Status:** Active; Phases 1 through 6 are completed and merged. Phase 7 is next and has not started
+**Status:** Active and unreleased; Phases 1 through 6 are merged. Phase 7 release hardening is complete on the release branch, pending pull-request review, merge, and separate release authorization
 
 ## Completed Milestones
 
@@ -33,7 +33,7 @@
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Phase 6 completed through PR `#98`. Phase 7 is next and has not started
+Status: Active and unreleased; Phase 6 is merged through PR `#98`. Phase 7 release hardening is complete on the release branch and awaiting pull-request review and merge
 
 ### Completed Checkpoint
 
@@ -47,6 +47,8 @@ Status: Active; Phase 6 completed through PR `#98`. Phase 7 is next and has not 
 - Phase 5C - remaining Discord moderation Audit integration: PR `#95`
 - Phase 5D - Ticket staff mutation Audit integration: PR `#96`
 - Phase 6 - Restricted Discord Audit Lookup: PR `#98`
+- Phase 7 - controlled restart verification, compatibility evidence, version synchronization, documentation, and release notes: release-hardening branch
+- PR `#100` - merged dormant forward permission foundation; not the active milestone, not a completed permission system, and not a released v1.8.0 capability
 
 Recent merge checkpoints:
 
@@ -172,25 +174,35 @@ Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 
-Status: Next; not started.
+Status: Completed on the release-hardening branch; pending pull-request review and merge.
 
-This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.
+Evidence:
 
-Required verification:
+- existing SQLite restart automation passed
+- controlled disposable SQLite reconstruction passed
+- recovered IDs remained `audit-1` and `audit-2`
+- exact lookup recovered `audit-1`
+- newest-first lookup returned `audit-2`, `audit-1`
+- sequence continuation produced `audit-3`
+- excluded private-data terms were absent
+- temporary verification data was removed
+- 60 focused outcome, authorization, privacy, and compatibility tests passed
+- version files are synchronized to `1.7.0`
+- release documentation and `docs/Release-Notes-v1.7.0.md` are prepared
 
-- durable Audit recovery after restart
-- deterministic IDs and ordering
-- actor and source attribution
-- denied, failed, and successful privileged outcomes
-- privacy-safe metadata and lookup output
-- permission denial
-- lifecycle and existing workflow compatibility
-- no regression to Moderation, Economy, Tickets, Identity, game commands, lifecycle, Website, Database, or shutdown
-- production dependency audit
-- complete automated tests
-- ESLint
-- `git diff --check`
-- synchronized versions and release documentation
+Release state:
+
+- v1.7.0 remains unreleased
+- no tag exists
+- no GitHub release exists
+- merge, tag, and release require separate authorization
+
+Deferred and non-blocking:
+
+- Discord identity presentation
+- Ticket command-family restructuring
+
+Permanent Discord IDs remain durable identifiers. Mutable names are not persisted, mentions remain disabled, and inert ID-only fallback remains valid.
 
 ### Safety Requirements
 
@@ -250,7 +262,7 @@ Status: Completed, merged, live verified, and tagged
 
 The working milestone order is:
 
-1. v1.7.0 - Audit and Activity Foundation
+1. Complete v1.7.0 release review, merge, tag, and GitHub release through separately authorized steps
 2. Identity Hub and Platform Attachments
 3. Linux and Docker Deployment Hardening
 4. Expanded Ticket Workflows and Staff Portal Foundation
