@@ -68,6 +68,8 @@ Shared contains reusable cross-layer objects. Moderation, Economy, Ticket, and I
 
 ## Audit Flow
 
+### Recording Flow
+
 ```text
 Authenticated Provider workflow
     |
@@ -89,9 +91,9 @@ SQLite-authoritative Audit records
 
 The source Provider authenticates the actor and supplies only the verified actor context required by the approved workflow. Workflow-specific adapters use fixed action and target shapes and bounded allowlisted metadata. Audit failures are contained according to the explicit policy tested for that workflow and do not expose storage details.
 
-The EventBus and runtime logs are not authoritative Audit storage. Audit records do not replace Moderation cases, Economy transactions, Ticket records and messages, Identity links, or current lifecycle state.
+The EventBus and runtime logs are not authoritative Audit storage. Audit records do not replace Moderation cases, Economy transactions, Ticket records and messages, Identity links, hosted-game authoritative results, or current lifecycle state.
 
-Implemented integrations through PR `#96` are:
+Implemented recording integrations through PR `#96` are:
 
 - Discord lifecycle `/lifecycle restart` and `/lifecycle reload`
 - Discord moderation `/ban`, `/kick`, `/warn`, `/timeout`, `/untimeout`, and `/purge`
@@ -99,6 +101,39 @@ Implemented integrations through PR `#96` are:
 - Ticket staff `/ticket staff message`, `/ticket staff assign`, `/ticket staff unassign`, and `/ticket staff close`
 
 These workflows preserve their existing private responses and authority boundaries. Successful accountability is recorded only after the authoritative owning Module commit or Provider operation completes successfully. Audit recording remains privacy-safe, best effort, and non-blocking; an Audit failure does not change an already determined lifecycle, moderation, hosted-game, or Ticket result.
+
+### Restricted Discord Query Flow
+
+Phase 6 was completed and merged through PR `#98` as unreleased `v1.7.0` development.
+
+```text
+Discord /audit command
+    |
+    v
+Frozen Audit query boundary
+    |
+    v
+AuditQueryService
+    |
+    v
+AuditModule bounded query policy
+    |
+    v
+Audit store contract
+```
+
+Core privately resolves the framework-loaded Audit Module and constructs `AuditQueryService`. Discord receives only a frozen narrow boundary exposing:
+
+```text
+getById()
+list()
+```
+
+The Audit Module remains responsible for record validation and bounded allowlisted query policy. The Discord Provider owns guild-only interaction handling, authorization, and sanitized private presentation.
+
+Discord does not receive the Audit Module, Audit stores, SQLite connections, SQL, database rows, or mutable query-service internals.
+
+The `/audit` command is omitted when the valid Audit query boundary is unavailable. Audit lookup does not create an Audit record for itself.
 
 Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries and do not replace Moderation history, Ticket records and messages, hosted-game command results, Identity links, Economy transactions, or lifecycle state. The authoritative intentional exclusion list is maintained in `04-Modules.md`.
 

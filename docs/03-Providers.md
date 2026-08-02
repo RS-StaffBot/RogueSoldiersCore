@@ -14,7 +14,7 @@ It reports `RUNNING` only after login readiness and slash-command registration s
 
 ### Verified Commands
 
-The Discord Provider loads 15 unique top-level commands:
+The Discord Provider loads 16 unique top-level commands:
 
 - `/ping`
 - `/help`
@@ -31,6 +31,7 @@ The Discord Provider loads 15 unique top-level commands:
 - `/game`
 - `/identity`
 - `/lifecycle`
+- `/audit`
 
 ### Module-Facing Commands
 
@@ -101,7 +102,9 @@ Discord cannot restart or replace itself through this command path.
 
 ### Privileged Audit Integration
 
-Through PR `#96`, the Discord Provider supplies authenticated actor context to narrow workflow-specific Audit adapters for:
+Through PR `#98`, the Discord Provider participates in both narrow Audit recording workflows and the restricted Discord Audit lookup.
+
+Authenticated actor context is supplied to workflow-specific recording adapters for:
 
 - `/lifecycle restart`
 - `/lifecycle reload`
@@ -121,11 +124,22 @@ Through PR `#96`, the Discord Provider supplies authenticated actor context to n
 - `/ticket staff unassign`
 - `/ticket staff close`
 
-The Provider receives only narrow recording boundaries. It does not receive the Audit store, SQLite connection, SQL, database rows, or mutable Audit Module internals.
+Phase 6 adds:
+
+- `/audit recent`
+- `/audit record`
+
+The `/audit` family is guild-only, declares Discord `ManageGuild` at registration, checks `ManageGuild` again at runtime, and denies access before `getById()` or `list()` is called. Success, denial, and failure responses are always ephemeral.
+
+Core privately constructs `AuditQueryService`. Discord receives only a frozen query boundary exposing `getById()` and `list()`. The command is omitted when that boundary is unavailable.
+
+Lookup output is bounded and sanitized. Identifiers are rendered as inert text, Discord mention parsing is disabled, and raw failures are not returned. Lookup operations do not create Audit records for themselves.
+
+The Provider receives only approved narrow recording and query boundaries. It does not receive the Audit Module, Audit store, SQLite connection, SQL, database rows, or mutable service internals.
 
 Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries. Recording is best effort and non-blocking after the owning workflow determines its result.
 
-Audit records do not copy moderation reasons, Ticket message content, raw console output, raw Discord responses, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, or arbitrary objects. The authoritative intentional exclusion list is maintained in `04-Modules.md`.
+Audit records and lookup output do not expose moderation reasons, Ticket message content, raw console output, raw Discord responses, credentials, addresses, configuration, sockets, SQL, database rows, stack traces, or arbitrary objects. The authoritative intentional exclusion list is maintained in `04-Modules.md`.
 
 ## 7 Days to Die Provider
 

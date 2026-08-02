@@ -23,11 +23,11 @@ Release record:
 
 v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Audit Phases 1 through 5 are completed and merged. Phase 6 has not started.
+Status: Active; Audit Phases 1 through 6 are completed and merged. Phase 7 is next and has not started.
 
 ## Completed Implementation Checkpoint
 
-This checkpoint records completed v1.7.0 work through merged pull request `#96`:
+This checkpoint records completed unreleased `v1.7.0` development through merged pull request `#98`:
 
 - Milestone activation and architecture approval: `#86`
 - Phase 1 - Audit contracts and in-memory foundation: `#87`
@@ -38,19 +38,40 @@ This checkpoint records completed v1.7.0 work through merged pull request `#96`:
 - Phase 5B - hosted-player administration Audit integration: `#92`
 - Phase 5C - remaining Discord moderation Audit integration: `#95`
 - Phase 5D - Ticket staff mutation Audit integration: `#96`
+- Phase 6 - Restricted Discord Audit Lookup: `#98`
 
-Recent merge checkpoints:
+PR `#98` head commit:
 
-- PR `#95` merge commit: `c91f87adcc8eee7a08e0a20f91fa99416f7c6e9e`
-- PR `#96` merge commit: `2dcfac2ef8fc10b92925b389aac5d35e48abb686`
+```text
+89fa955d1c73b9e8fa4eda1ebfef30d8b2c04704
+```
 
-The framework now loads a platform-neutral Audit Module with immutable validated records, in-memory and SQLite stores, narrow recording and bounded-query services, durable restart recovery, and completed Phase 5 integration for lifecycle administration, Discord moderation, hosted-player administration, and privileged Ticket staff mutations.
+PR `#98` merge commit:
 
-Phase 5 status: Completed
+```text
+270179ca75e4800f29c46beb80ee0593494b1388
+```
 
-Next implementation phase: Phase 6 - Restricted Discord Audit Lookup
+Phase 6 is completed and merged development on current `main`. It is not part of the released `v1.6.0`.
 
-Phase 6 has not started and is not implemented by this checkpoint.
+Implemented restricted lookup commands:
+
+- `/audit recent`
+- `/audit record`
+
+The command family is guild-only, declares `ManageGuild` at registration, checks `ManageGuild` again at runtime, denies access before protected queries, and always uses ephemeral responses. Core privately constructs `AuditQueryService` and provides Discord only a frozen `getById()` and `list()` boundary.
+
+Queries are bounded and allowlisted. Identifiers are inert, Discord mention parsing is disabled, failures are sanitized, the command is omitted when the query boundary is unavailable, and lookup does not self-record. Discord receives no Audit Module, stores, SQLite connection, SQL, rows, or mutable service internals.
+
+Supporting implementation record:
+
+```text
+docs/Phase-6-Restricted-Discord-Audit-Lookup.md
+```
+
+Next implementation phase: Phase 7 - Live Verification and Release Hardening.
+
+Phase 7 has not started. This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.
 
 ## Milestone Goal
 
@@ -174,7 +195,26 @@ The integrated workflows preserve their existing authoritative business records 
 
 ### Phase 6 - Restricted Discord Audit Lookup
 
-Add a private permission-gated staff command for bounded recent Audit lookup using allowlisted filters and sanitized presentation.
+Status: Completed and merged in PR `#98`.
+
+Implemented:
+
+- `/audit recent`
+- `/audit record`
+- guild-only private use
+- registration-time and runtime `ManageGuild`
+- denial before protected query operations
+- ephemeral success, denial, and failure responses
+- private Core construction of `AuditQueryService`
+- frozen `getById()` and `list()` boundary
+- bounded allowlisted queries
+- inert identifiers and disabled mention parsing
+- sanitized failures
+- command omission when the boundary is unavailable
+- no lookup self-recording
+- no Audit Module or persistence internals exposed
+
+Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 
@@ -215,4 +255,6 @@ v1.7.0 does not include:
 
 ## Next Step
 
-Phase 5 is completed. The next implementation phase is Phase 6 - Restricted Discord Audit Lookup. Phase 6 has not started and must remain a separate focused implementation pull request.
+Phase 6 is completed and merged as unreleased `v1.7.0` development. Phase 7 - Live Verification and Release Hardening is next and has not started.
+
+This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.

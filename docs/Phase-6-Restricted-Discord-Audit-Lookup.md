@@ -1,6 +1,22 @@
 # Phase 6 - Restricted Discord Audit Lookup
 
-Status: Implemented and locally validated; pull request review and merge pending.
+Status: Completed and merged.
+
+Pull request: `#98`
+
+PR head commit:
+
+```text
+89fa955d1c73b9e8fa4eda1ebfef30d8b2c04704
+```
+
+Merge commit:
+
+```text
+270179ca75e4800f29c46beb80ee0593494b1388
+```
+
+This document is a focused supporting implementation record. It supplements but does not replace the authoritative source-of-truth documents.
 
 ## Implemented Commands
 
@@ -37,4 +53,4 @@ Validated locally with:
 - `npm audit`
 - `git diff --check`
 
-The repository version remains `v1.6.0`. Phase 7 release hardening remains separate future work.
+The repository version remains `v1.6.0`, which is the latest released version. Phase 6 is merged but unreleased `v1.7.0` development. Phase 7 - Live Verification and Release Hardening is separate and has not started.

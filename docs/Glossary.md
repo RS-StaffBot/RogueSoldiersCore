@@ -190,7 +190,46 @@ The Module registry and lifecycle coordinator used by Providers to resolve frame
 
 ## Audit and Activity Foundation
 
-Future RSF infrastructure for durable actor-attributed records of meaningful privileged and business actions. It is not implemented in v1.6.0.
+The active unreleased `v1.7.0` milestone for durable privacy-safe actor-attributed accountability records.
+
+`v1.6.0` remains the latest released version. Current `main` contains unreleased `v1.7.0` Audit and Activity Foundation development. Phase 6 is merged development and is not part of the `v1.6.0` release.
+
+## Audit Module
+
+The platform-neutral Module that owns Audit record validation, action and actor/source/target/outcome rules, bounded allowlisted metadata, recording, bounded query policy, and its store contract.
+
+## Audit Record
+
+An immutable defensive RSF-generated accountability summary containing approved actor, source, action, target, outcome, timestamp, optional reference, and bounded allowlisted metadata.
+
+## Audit Recording Boundary
+
+A narrow workflow-specific capability used to submit validated accountability summaries without exposing the Audit Module or persistence internals.
+
+## Audit Query Boundary
+
+The frozen capability constructed privately by Core and supplied to Discord for restricted lookup. It exposes only `getById()` and `list()`.
+
+## `/audit` Command Family
+
+The guild-only private Discord command family requiring `ManageGuild` at registration and runtime:
+
+- `/audit recent`
+- `/audit record`
+
+Responses are ephemeral, bounded, inertly rendered, mention-safe, and sanitized.
+
+## Restricted Discord Audit Lookup
+
+The Phase 6 capability that allows authorized staff to review bounded Audit summaries without exposing the Audit Module, stores, SQLite, SQL, database rows, raw failures, or mutable internals. Lookup does not self-record.
+
+## Authoritative Business History
+
+The detailed record owned by the responsible Module or Provider, such as Moderation history, Economy transactions, Ticket records and messages, Identity links, hosted-game results, or lifecycle state. Audit summaries do not replace it.
+
+## Bounded Accountability Summary
+
+A privacy-safe Audit record or query result containing only approved fields and allowlisted metadata within enforced limits.
 
 ## SQLite Authority
 
