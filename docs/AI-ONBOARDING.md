@@ -228,6 +228,8 @@ node -e "const registry = require('./src/core/Registry'); console.log(registry.l
 
 Avoid command syntax that depends on Bash behavior.
 
+Follow the temporary helper-script policy in `07-Coding-Standards.md`. Use downloadable `.ps1` files for long, multiline, quoting-sensitive, loop-heavy, or Markdown-heavy operations instead of large terminal pastes.
+
 If a pasted command accidentally enters PowerShell continuation mode, press:
 
 ```text
