@@ -1,5 +1,39 @@
 # Decision Log
 
+## v1.7.0 Phase 7 Release Hardening and v1.8.0 Sequencing
+
+### Decision
+
+Complete v1.7.0 Audit and Activity Foundation release hardening before any broader v1.8.0 permission work.
+
+Phase 7 uses existing automated evidence plus controlled disposable-database reconstruction to verify durable Audit recovery, exact lookup, newest-first ordering, deterministic ID continuation, privacy exclusions, and cleanup.
+
+Version-bearing files are synchronized to `1.7.0`, release documentation is prepared, and the release remains unreleased until the release pull request is reviewed and merged and separate tag and GitHub release authorization is provided.
+
+PR `#100` is retained as merged dormant forward foundation included on current `main`.
+
+Required interpretation:
+
+```text
+Merged, dormant forward foundation included on current main.
+Not activated as the current milestone.
+Not a completed permission system.
+Not a released v1.8.0 capability.
+```
+
+Discord identity presentation and Ticket command-family restructuring are deferred and non-blocking for v1.7.0.
+
+### Guardrails
+
+- Do not revert PR `#100`.
+- Do not activate broader v1.8.0 permission work before v1.7.0 release sequencing completes.
+- Do not treat dormant contracts as replacement authorization behavior.
+- Do not persist mutable Discord names.
+- Keep mentions disabled and permit inert ID-only fallback.
+- Keep the mixed `/ticket` command family for v1.7.0.
+- Runtime authorization remains mandatory.
+- Do not create a tag or GitHub release without separate authorization.
+
 ## Runtime Lifecycle Coordination and Recovery
 
 ### Decision

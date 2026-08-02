@@ -140,3 +140,37 @@ IP addresses, credentials, positions, health, inventory, raw console output, and
 - configurable game-server lifecycle staff roles
 - Website lifecycle authorization
 - cross-platform permission administration
+
+## Dormant Permission Foundation on Current Main
+
+PR `#100` is merged and included on current `main` as dormant forward foundation.
+
+Required interpretation:
+
+```text
+Merged, dormant forward foundation included on current main.
+Not activated as the current milestone.
+Not a completed permission system.
+Not a released v1.8.0 capability.
+```
+
+The dormant contracts are additive only. They do not replace current:
+
+- Discord permission enforcement
+- Moderation authorization
+- Ticket creator or staff authorization
+- `/game` authorization
+- `/lifecycle` authorization
+- restricted `/audit` authorization
+
+Broad authorization migration, role management, permission administration, permission storage, staff hierarchy, and platform-permission replacement remain unimplemented.
+
+## v1.7.0 Authorization Preservation
+
+For v1.7.0:
+
+- current platform and Module authorization behavior remains authoritative
+- restricted Audit lookup remains `ManageGuild`-gated at registration and runtime
+- Ticket staff operations remain inside the mixed `/ticket` family
+- runtime authorization remains mandatory
+- identity presentation changes are deferred and non-blocking

@@ -245,3 +245,31 @@ Recommend a major architectural change only when at least two are true:
 SQLite supports the current single-process deployment model. `node:sqlite` is synchronous, so queries and transactions remain focused and Discord-facing history paths use bounded reads where implemented. Startup validation reads complete durable Module state where required.
 
 Backup and restore tooling, remote hosting, replication, clustering, multi-process deployment, database administration, and optimized very-large-dataset startup validation remain future work. A future database engine must preserve Module-owned validation, public identities, store contracts, transactional behavior, and Provider isolation.
+
+## v1.7.0 Release-Hardening Boundary
+
+The v1.7.0 Audit architecture has been verified through both existing automated tests and a controlled disposable-database reconstruction.
+
+Verified restart behavior:
+
+```text
+audit-1, audit-2 persisted
+        |
+        v
+database closed
+        |
+        v
+fresh DatabaseSync + AuditModule construction
+        |
+        +-- exact lookup -> audit-1
+        +-- recent lookup -> audit-2, audit-1
+        +-- next record -> audit-3
+```
+
+The verification used only synthetic records and temporary storage. No production Discord, Ticket, moderation, hosted-player, or production SQLite data was used.
+
+PR `#100` is merged dormant forward foundation on current `main`. It is not activated as the current milestone, is not a completed permission system, and is not a released v1.8.0 capability. Its contracts do not replace current Discord, Moderation, Ticket, game, lifecycle, or Audit authorization behavior.
+
+Discord identity presentation remains deferred and non-blocking. Permanent Discord IDs remain durable identifiers; mutable names are not persisted, mentions remain disabled, and inert ID-only fallback remains valid.
+
+Ticket command-family restructuring remains deferred and non-blocking. The mixed `/ticket` family remains the v1.7.0 command surface, with runtime authorization mandatory.
