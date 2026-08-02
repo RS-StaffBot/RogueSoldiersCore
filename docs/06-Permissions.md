@@ -110,6 +110,20 @@ The command cannot accept arbitrary component names and cannot restart or replac
 
 The authorization boundary grants access only to a frozen lifecycle service exposing approved status, restart, and reload operations for the `7 Days to Die` Provider. It does not grant access to ProviderManager, component instances, constructors, configuration, sockets, credentials, or raw errors.
 
+## Restricted Discord Audit Lookup Authorization
+
+The guild-only `/audit` command family uses a fixed Discord `ManageGuild` requirement.
+
+Authorization is enforced in three distinct layers:
+
+1. Discord registration metadata controls default command visibility.
+2. Runtime `ManageGuild` authorization is checked again for every interaction.
+3. Only after runtime authorization succeeds may the command call the frozen protected query capability.
+
+Permission denial occurs before `getById()` or `list()`. Success, denial, and failure responses are ephemeral.
+
+Authorization grants access only to the bounded Audit query boundary. It does not expose the Audit Module, stores, SQLite connections, SQL, database rows, or mutable internals. Command visibility alone is not sufficient authorization.
+
 ## Staff Platform Identifier Visibility
 
 Steam and EOS identifiers remain private operational data by default.
@@ -126,4 +140,3 @@ IP addresses, credentials, positions, health, inventory, raw console output, and
 - configurable game-server lifecycle staff roles
 - Website lifecycle authorization
 - cross-platform permission administration
-- durable actor-attributed framework-wide audit lookup

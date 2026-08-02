@@ -128,7 +128,37 @@ Audit recording for the integrated workflows is best effort and non-blocking aft
 - Successful accountability must not be recorded before the authoritative owning Module mutation commits or Provider operation completes.
 - Ordinary read-only commands and harmless member interactions are not recorded by default.
 - The authoritative intentional exclusion list is maintained in `04-Modules.md`.
-- Phase 6 - Restricted Discord Audit Lookup is the next implementation phase and has not started.
+- Phase 6 - Restricted Discord Audit Lookup was completed and merged through PR `#98`. Phase 7 is next and has not started.
+
+## Restricted Discord Audit Lookup
+
+### Decision
+
+Phase 6 of `v1.7.0 - Audit and Activity Foundation` was completed through PR `#98`.
+
+The Discord Provider exposes the guild-only private `/audit recent` and `/audit record` operations. Discord `ManageGuild` is fixed in registration metadata and checked again at runtime. Permission denial occurs before any protected query operation.
+
+Core privately resolves the framework-loaded Audit Module and constructs `AuditQueryService`. Discord receives only a frozen boundary exposing:
+
+```text
+getById()
+list()
+```
+
+The Audit Module owns record validation and bounded allowlisted query policy. Discord owns interaction handling, authorization, and sanitized private presentation.
+
+### Guardrails
+
+- Every success, denial, and failure response is ephemeral.
+- Identifiers are rendered as inert bounded text.
+- Discord mention parsing is disabled.
+- Failures are sanitized.
+- The command is omitted when the query capability is unavailable.
+- Lookup does not create an Audit record for itself.
+- Discord receives no Audit Module, store, SQLite connection, SQL, database rows, or mutable service internals.
+- Audit summaries do not replace authoritative Module or Provider-owned business histories.
+
+These controls preserve permanent ownership, least-privilege capability exposure, privacy-safe presentation, and defense in depth between Discord visibility, runtime authorization, Module policy, and persistence.
 
 ## Critical and Recoverable Startup Boundary
 

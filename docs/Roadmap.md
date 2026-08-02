@@ -8,7 +8,7 @@
 
 **Current Milestone:** v1.7.0 - Audit and Activity Foundation
 
-**Status:** Active; Phases 1 through 5 are completed and merged. Phase 6 has not started
+**Status:** Active; Phases 1 through 6 are completed and merged. Phase 7 is next and has not started
 
 ## Completed Milestones
 
@@ -33,7 +33,7 @@
 
 ## v1.7.0 - Audit and Activity Foundation
 
-Status: Active; Phase 5 completed through PR `#96`. Phase 6 has not started
+Status: Active; Phase 6 completed through PR `#98`. Phase 7 is next and has not started
 
 ### Completed Checkpoint
 
@@ -46,11 +46,14 @@ Status: Active; Phase 5 completed through PR `#96`. Phase 6 has not started
 - Phase 5B - hosted-player administration Audit integration: PR `#92`
 - Phase 5C - remaining Discord moderation Audit integration: PR `#95`
 - Phase 5D - Ticket staff mutation Audit integration: PR `#96`
+- Phase 6 - Restricted Discord Audit Lookup: PR `#98`
 
 Recent merge checkpoints:
 
 - PR `#95` merge commit: `c91f87adcc8eee7a08e0a20f91fa99416f7c6e9e`
 - PR `#96` merge commit: `2dcfac2ef8fc10b92925b389aac5d35e48abb686`
+- PR `#98` head commit: `89fa955d1c73b9e8fa4eda1ebfef30d8b2c04704`
+- PR `#98` merge commit: `270179ca75e4800f29c46beb80ee0593494b1388`
 
 ### Goal
 
@@ -146,18 +149,32 @@ The authoritative intentional exclusion list is maintained in `04-Modules.md`. P
 
 ### Phase 6 - Restricted Discord Audit Lookup
 
-Status: Not started.
+Status: Completed in PR `#98`.
 
-Objective:
+Implemented:
 
-- add one private guild-only staff command
-- require a fixed Discord permission at registration and runtime
-- return bounded recent Audit records
-- support only allowlisted filters
-- sanitize identifiers and metadata according to the approved staff purpose
-- expose no database, SQL, raw error, configuration, or platform-client internals
+- `/audit recent`
+- `/audit record`
+- guild-only private use
+- registration-time and runtime `ManageGuild`
+- denial before protected query operations
+- ephemeral success, denial, and failure responses
+- private Core construction of the bounded query service
+- frozen `getById()` and `list()` operations
+- command omission when the query capability is unavailable
+- inert identifiers
+- disabled Discord mention parsing
+- sanitized failures
+- no lookup self-recording
+- no Module, store, SQLite, SQL, rows, or mutable internals exposed
+
+Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
+
+Status: Next; not started.
+
+This source-of-truth synchronization pull request must be reviewed and merged before Phase 7 begins.
 
 Required verification:
 

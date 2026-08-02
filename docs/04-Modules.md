@@ -28,7 +28,7 @@ Modules retain validation, authorization, state transitions, public errors, publ
 
 The Audit Module owns durable platform-neutral accountability summaries. It does not replace the detailed histories owned by Moderation, Economy, Tickets, Identity, or lifecycle state.
 
-Verified responsibilities through PR `#96`:
+Verified responsibilities through PR `#98`:
 
 - validate immutable defensive Audit records
 - generate sequential `audit-N` record IDs and timestamps inside RSF
@@ -57,6 +57,8 @@ The integrated workflows authenticate the Discord actor at the Provider boundary
 
 Existing Module and Provider-owned records remain authoritative. Audit records are bounded accountability summaries and do not replace Moderation history, Ticket records and messages, hosted-game command results, Identity links, Economy transactions, or lifecycle state.
 
+Phase 6 consumes the Module-owned bounded query policy through a frozen Discord query boundary. Exact record lookup uses `getById()`; recent bounded lookup uses `list()`. Discord receives no Audit Module, store, SQLite connection, SQL, database rows, or mutable internals. Query operations do not create additional Audit records.
+
 Audit records do not contain moderation reasons, Ticket message content, raw Discord responses, raw game-console output, credentials, addresses, configuration, sockets, stack traces, database rows, SQL, positions, health, inventory, or arbitrary request objects.
 
 ### Intentional Audit Exclusions
@@ -74,7 +76,7 @@ The following remain unaudited by design:
 - `/identity status`
 - self-service `/identity link`
 
-Restricted Discord Audit lookup, configurable retention administration, Website Audit administration, external telemetry, general event sourcing, and logging every harmless interaction remain unimplemented.
+Configurable retention administration, Website Audit administration, external telemetry, general event sourcing, and logging every harmless interaction remain unimplemented.
 
 ## Economy Module
 
