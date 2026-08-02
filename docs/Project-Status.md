@@ -20,7 +20,7 @@ Release record:
 - Annotated tag: `v1.7.0`
 - GitHub release: published
 - Release validation: GitHub Actions passed
-- Release notes: `docs/Release-Notes-v1.7.0.md`
+- Release notes: `docs/releases/Release-Notes-v1.7.0.md`
 
 ## Current Milestone
 

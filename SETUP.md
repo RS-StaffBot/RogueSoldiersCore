@@ -104,7 +104,7 @@ The review records the automated regression gate, production dependency audit, r
 
 ## v1.0.0 Release Notes
 
-Read `docs/Release-Notes-v1.0.0.md` before closing and tagging the release.
+Read `docs/releases/Release-Notes-v1.0.0.md` before closing and tagging the release.
 
 The release notes summarize the included capabilities, verified release gates, accepted boundaries, and final release procedure.
 

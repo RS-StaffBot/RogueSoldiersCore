@@ -189,7 +189,7 @@ Evidence:
 - temporary verification data was removed
 - 60 focused outcome, authorization, privacy, and compatibility tests passed
 - version files are synchronized to `1.7.0`
-- release documentation and `docs/Release-Notes-v1.7.0.md` are prepared
+- release documentation and `docs/releases/Release-Notes-v1.7.0.md` are prepared
 
 Release state:
 
@@ -245,7 +245,7 @@ Status: Completed, merged, live verified, and tagged
 - Release merge commit: `2519014b7b1a80bc8e12d45787c644da91c21d8a`
 - Annotated tag: `v1.6.0`
 - GitHub Actions validation: passed
-- Release notes: `docs/Release-Notes-v1.6.0.md`
+- Release notes: `docs/releases/Release-Notes-v1.6.0.md`
 
 ### Completed Capabilities
 
