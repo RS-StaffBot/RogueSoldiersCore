@@ -69,7 +69,7 @@ Not a released v1.8.0 capability.
 
 PR `#100` does not replace current Discord, Moderation, Ticket, game, lifecycle, or Audit authorization behavior.
 
-Phase 6 is completed and merged development on current `main`. It is not part of the released `v1.6.0`.
+Phase 6 was completed and merged through PR `#98` and released as part of `v1.7.0`.
 
 Implemented restricted lookup commands:
 
@@ -80,11 +80,6 @@ The command family is guild-only, declares `ManageGuild` at registration, checks
 
 Queries are bounded and allowlisted. Identifiers are inert, Discord mention parsing is disabled, failures are sanitized, the command is omitted when the query boundary is unavailable, and lookup does not self-record. Discord receives no Audit Module, stores, SQLite connection, SQL, rows, or mutable service internals.
 
-Supporting implementation record:
-
-```text
-docs/Phase-6-Restricted-Discord-Audit-Lookup.md
-```
 
 Phase 7 release-hardening evidence:
 
@@ -241,7 +236,6 @@ Implemented:
 - no lookup self-recording
 - no Audit Module or persistence internals exposed
 
-Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 

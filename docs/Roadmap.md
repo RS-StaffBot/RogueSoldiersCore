@@ -171,7 +171,6 @@ Implemented:
 - no lookup self-recording
 - no Module, store, SQLite, SQL, rows, or mutable internals exposed
 
-Supporting record: `docs/Phase-6-Restricted-Discord-Audit-Lookup.md`.
 
 ### Phase 7 - Live Verification and Release Hardening
 

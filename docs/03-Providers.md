@@ -131,6 +131,10 @@ Phase 6 adds:
 
 The `/audit` family is guild-only, declares Discord `ManageGuild` at registration, checks `ManageGuild` again at runtime, and denies access before `getById()` or `list()` is called. Success, denial, and failure responses are always ephemeral.
 
+`/audit recent` defaults to 5 records and accepts at most 10. It uses only the existing allowlisted Audit query filters and passes the opaque continuation cursor without decoding or reinterpretation.
+
+`/audit record` accepts one validated Audit record ID and performs one exact lookup.
+
 Core privately constructs `AuditQueryService`. Discord receives only a frozen query boundary exposing `getById()` and `list()`. The command is omitted when that boundary is unavailable.
 
 Lookup output is bounded and sanitized. Identifiers are rendered as inert text, Discord mention parsing is disabled, and raw failures are not returned. Lookup operations do not create Audit records for themselves.
