@@ -227,17 +227,23 @@ It does not replace current Discord, Moderation, Ticket, game, lifecycle, or Aud
 
 ## Release State
 
-At preparation time:
-
 ```text
 Release pull request:
-Pending creation
+#101 — merged
+
+Release merge commit:
+0ef848b0bc073c43d038694172d9e8d6974feb4f
 
 v1.7.0 tag:
-Not created
+Annotated tag exists and targets
+0ef848b0bc073c43d038694172d9e8d6974feb4f
 
 GitHub release:
-Not created
+Published
+
+Release status:
+Released and complete
 ```
 
-Merge, tagging, and GitHub release creation require separate authorization.
+The authoritative v1.7.0 tag and published GitHub release must remain
+unchanged.
